@@ -1,9 +1,37 @@
-use tokio::{runtime::Runtime, sync::mpsc::channel};
-
 use crate::{
     game,
     gui::{GuiState, connected::ConnectedScreen},
+    network::{
+        ClientPoll, NetworkClient,
+        messages::{ClientRequest, ServerMessage},
+    },
 };
+use tokio::{
+    net::ToSocketAddrs,
+    runtime::Runtime,
+    sync::mpsc::{Receiver, Sender, channel},
+};
+
+async fn client<A: ToSocketAddrs>(
+    addr: A,
+    server_send: Sender<ServerMessage>,
+    mut client_req_recv: Receiver<ClientRequest>,
+) -> anyhow::Result<()> {
+    let mut client = NetworkClient::tcp(addr).await?;
+    let mut tick_counter: usize = 0;
+    while let Ok(res) = client.poll().await {
+        match res {
+            ClientPoll::Message(client_message) => server_send.send(client_message).await?,
+            ClientPoll::Tick => {
+                tick_counter = tick_counter.wrapping_add(1);
+                if let Ok(msg) = client_req_recv.try_recv() {
+                    client.send(msg).await?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
 
 pub struct MainMenuScreen {
     pub socket_addr: String,
@@ -24,13 +52,14 @@ impl GuiState for MainMenuScreen {
                         std::thread::sleep(std::time::Duration::from_secs_f32(0.5));
                         let rt = Runtime::new().expect("Unable to create Runtime");
                         let _enter = rt.enter();
-                        rt.block_on(game::client(addr, send, client_recv)).unwrap();
+                        rt.block_on(client(addr, send, client_recv)).unwrap();
                     });
                     *new_state = Some(Box::new(ConnectedScreen {
                         recv,
                         send: client_send,
                         msgs: Default::default(),
                         curr_message: Default::default(),
+                        server_stats: Default::default(),
                     }));
                 }
             });
@@ -48,12 +77,8 @@ impl GuiState for MainMenuScreen {
                             std::thread::sleep(std::time::Duration::from_secs_f32(0.5));
                             let rt = Runtime::new().expect("Unable to create Runtime");
                             let _enter = rt.enter();
-                            rt.block_on(game::client(
-                                format!("localhost:{port}"),
-                                send,
-                                client_recv,
-                            ))
-                            .unwrap();
+                            rt.block_on(client(format!("localhost:{port}"), send, client_recv))
+                                .unwrap();
                         });
                         rt.block_on(game::host(port)).unwrap();
                     });
@@ -62,6 +87,7 @@ impl GuiState for MainMenuScreen {
                         recv,
                         msgs: Default::default(),
                         curr_message: Default::default(),
+                        server_stats: Default::default(),
                     }));
                 }
             });
