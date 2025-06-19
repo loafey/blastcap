@@ -1,43 +1,29 @@
+use std::{net::SocketAddr, time::Instant};
+
 use crate::network::{
-    ClientPoll, HostPoll, NetworkClient, NetworkHost,
+    HostPoll, NetworkHost, TICK_RATE,
     messages::{ClientRequest, ServerMessage},
 };
-use tokio::{
-    net::ToSocketAddrs,
-    sync::mpsc::{Receiver, Sender},
-};
 
-pub async fn client<A: ToSocketAddrs>(
-    addr: A,
-    server_send: Sender<ServerMessage>,
-    mut client_req_recv: Receiver<ClientRequest>,
-) -> anyhow::Result<()> {
-    let mut client = NetworkClient::tcp(addr).await?;
-    let mut tick_counter: usize = 0;
-    while let Ok(res) = client.poll().await {
-        match res {
-            ClientPoll::Message(client_message) => server_send.send(client_message).await?,
-            ClientPoll::Tick => {
-                tick_counter = tick_counter.wrapping_add(1);
-                if let Ok(msg) = client_req_recv.try_recv() {
-                    client.send(msg).await?;
-                }
-            }
-        }
-    }
-    Ok(())
+#[derive(Default)]
+struct State {
+    host_player: Option<SocketAddr>,
+    tick: usize,
 }
 
 pub async fn host(port: u16) -> anyhow::Result<()> {
     let mut host = NetworkHost::tcp(port).await.unwrap();
 
-    let mut tick_counter: usize = 0;
-    // let mut tick_time = std::time::Instant::now();
+    let mut state = State::default();
+    let mut last_tick = Instant::now();
     while let Ok(res) = host.poll().await {
         match res {
             HostPoll::ClientConnected(socket_addr) => {
                 println!("SERVER - A user at {socket_addr} connected");
                 host.broadcast(ServerMessage::NewUser(socket_addr)).await?;
+                if host.get_client_count() == 1 {
+                    state.host_player = Some(socket_addr);
+                }
             }
             HostPoll::ClientRequest { addr, req } => match req {
                 ClientRequest::Ping => {
@@ -49,7 +35,20 @@ pub async fn host(port: u16) -> anyhow::Result<()> {
                         .await?;
                 }
             },
-            HostPoll::Tick => tick_counter = tick_counter.wrapping_add(1),
+            HostPoll::Tick => {
+                state.tick = state.tick.wrapping_add(1);
+                const TICK_DELAY: usize = 1;
+                if let Some(addr) = state.host_player
+                    && state.tick % (TICK_RATE * TICK_DELAY) == 0
+                {
+                    let msg = ServerMessage::Status {
+                        user_count: host.get_client_count(),
+                        tick_diff: last_tick.elapsed().as_secs_f32() - const { TICK_DELAY as f32 },
+                    };
+                    host.send(addr, msg).await?;
+                    last_tick = Instant::now()
+                }
+            }
             HostPoll::RemoveClient(socket_addr) => {
                 host.remove_client(socket_addr);
                 host.broadcast(ServerMessage::UserLeft(socket_addr)).await?;

@@ -7,6 +7,7 @@ pub enum ServerMessage {
     ChatMessage(SocketAddr, String),
     NewUser(SocketAddr),
     UserLeft(SocketAddr),
+    Status { user_count: usize, tick_diff: f32 },
 }
 
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
