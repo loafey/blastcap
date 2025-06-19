@@ -5,6 +5,8 @@ use std::net::SocketAddr;
 pub enum ServerMessage {
     Pong(Vec<SocketAddr>),
     ChatMessage(SocketAddr, String),
+    NewUser(SocketAddr),
+    UserLeft(SocketAddr),
 }
 
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]

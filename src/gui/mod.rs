@@ -1,4 +1,4 @@
-use crate::gui::main_menu::MainMenu;
+use crate::gui::main_menu::MainMenuScreen;
 
 mod connected;
 mod main_menu;
@@ -24,7 +24,7 @@ struct Game(Box<dyn GuiState>);
 
 impl Default for Game {
     fn default() -> Self {
-        Self(Box::new(MainMenu {
+        Self(Box::new(MainMenuScreen {
             socket_addr: "localhost:4000".to_string(),
             port: 4000,
         }))
