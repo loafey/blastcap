@@ -19,7 +19,7 @@ impl TcpClient {
         let stream = TcpStream::connect(addr).await?;
         let (send, recv) = channel(1000);
         let (mut read, write) = split(stream);
-        let closure: impl Future<Output = anyhow::Result<!>> = async move {
+        let closure: impl Future<Output = anyhow::Result<()>> = async move {
             loop {
                 let len = read.read_u32().await? as usize;
                 if len > 10000 {
@@ -29,8 +29,12 @@ impl TcpClient {
                 let mut buf = vec![0; len];
                 let _ = read.read(&mut buf).await?;
                 let msg = rkyv::from_bytes::<ServerMessage, rkyv::rancor::Error>(&buf)?;
-                send.send(msg).await.expect("client dead!");
+                if let Err(e) = send.send(msg).await {
+                    eprintln!("CLIENT - error getting message: {e}");
+                    break;
+                };
             }
+            Ok(())
         };
         tokio::spawn(async move { closure.await.unwrap() });
         Ok(Self { write, recv })
@@ -64,20 +68,26 @@ pub(super) struct TcpHost {
     clients: HashMap<SocketAddr, WriteHalf<TcpStream>>,
     recv: Receiver<(SocketAddr, ClientRequest)>,
     send: Sender<(SocketAddr, ClientRequest)>,
+    kill_recv: Receiver<SocketAddr>,
+    kill_send: Sender<SocketAddr>,
 }
 impl TcpHost {
     pub async fn new(port: u16) -> anyhow::Result<Self> {
         let (send, recv) = channel(1000);
+        let (kill_send, kill_recv) = channel(10);
         Ok(Self {
             listener: TcpListener::bind(format!("0.0.0.0:{port}")).await?,
             send,
             recv,
+            kill_send,
+            kill_recv,
             clients: Default::default(),
         })
     }
 
     async fn acc(&mut self, (stream, addr): (TcpStream, SocketAddr)) {
         let send = self.send.clone();
+        let kill_send = self.kill_send.clone();
         let (mut read, write) = split(stream);
         self.clients.insert(addr, write);
         let closure: impl Future<Output = anyhow::Result<!>> = async move {
@@ -93,7 +103,11 @@ impl TcpHost {
                 send.send((addr, msg)).await.expect("server has died!");
             }
         };
-        tokio::spawn(async move { closure.await.expect("acc crashed") });
+        tokio::spawn(async move {
+            let Err(e) = closure.await;
+            eprintln!("SERVER - recv loop for {addr} crashed: {e}");
+            kill_send.send(addr).await.expect("server is dead");
+        });
     }
 }
 
@@ -106,8 +120,12 @@ impl NetworkHostExt for TcpHost {
                 self.acc((stream, addr)).await;
                 Ok(HostPoll::ClientConnected(addr))
             },
+            remove = self.kill_recv.recv() => {
+                let Some(addr) = remove else { unreachable!() };
+                Ok(HostPoll::RemoveClient(addr))
+            },
             msg = self.recv.recv() => {
-                let Some((addr, req)) = msg else { panic!("no clients somehow") };
+                let Some((addr, req)) = msg else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr, req })
             }
             _ = tokio::time::sleep(std::time::Duration::from_secs_f64(const { 1.0 / TICK_RATE as f64 })) => {
@@ -142,5 +160,13 @@ impl NetworkHostExt for TcpHost {
 
     fn get_clients(&self) -> Vec<SocketAddr> {
         self.clients.keys().copied().collect()
+    }
+
+    fn get_client_count(&self) -> usize {
+        self.clients.len()
+    }
+
+    fn remove_client(&mut self, addr: SocketAddr) {
+        self.clients.remove(&addr);
     }
 }

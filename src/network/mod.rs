@@ -74,6 +74,7 @@ impl NetworkHost {
 }
 
 pub enum HostPoll {
+    RemoveClient(SocketAddr),
     ClientConnected(SocketAddr),
     ClientRequest {
         addr: SocketAddr,
@@ -87,5 +88,7 @@ pub trait NetworkHostExt {
     async fn poll(&mut self) -> anyhow::Result<HostPoll>;
     async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()>;
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()>;
+    fn remove_client(&mut self, addr: SocketAddr);
     fn get_clients(&self) -> Vec<SocketAddr>;
+    fn get_client_count(&self) -> usize;
 }
