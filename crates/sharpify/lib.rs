@@ -101,6 +101,9 @@ public void Send{name}({arg_string}) {{
         writeln!(
             rust_out,
             "
+///
+/// # Safety
+/// 
 #[unsafe(no_mangle)]
 pub unsafe extern \"C\" fn {rust_name}({rust_arg_string}) {{
     let client = unsafe {{ &mut *client }} as &mut ClientHandle;
