@@ -31,7 +31,6 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                     host.send(addr, ServerMessage::Pong(clients)).await?
                 }
                 ClientRequest::ChatMessage(msg) => {
-                    println!("msg: {msg}");
                     host.broadcast(ServerMessage::ChatMessage(addr, msg))
                         .await?;
                 }

@@ -539,12 +539,9 @@ dependencies = [
  "eframe",
  "egui",
  "futures",
- "proc-macro2",
- "quote",
  "rand 0.9.1",
  "rkyv",
  "sharpify",
- "syn",
  "tokio",
 ]
 

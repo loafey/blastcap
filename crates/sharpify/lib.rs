@@ -13,6 +13,26 @@ fn csharp_type(ty: &str) -> &str {
     }
 }
 
+fn rust_type(ty: &str) -> &str {
+    match ty {
+        "String" => "*const std::ffi::c_char",
+        _ => panic!("unsupported type {ty:?}"),
+    }
+}
+
+fn rust_convert_arg(arg: &str, ty: &str) -> String {
+    match ty {
+        "String" => {
+            format!(
+                "let {arg} = unsafe {{ CStr::from_ptr({arg}) }}
+        .to_string_lossy()
+        .to_string();\n"
+            )
+        }
+        _ => String::new(),
+    }
+}
+
 fn ffi_type(ty: &str) -> &str {
     match ty {
         "String" => "[MarshalAs(UnmanagedType.LPUTF8Str)] string",
@@ -25,6 +45,7 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
     let item = TokenStream::from(item_og.clone());
     let em = syn::parse_macro_input!(item_og as ItemEnum);
     let mut csharp_out = String::new();
+    let mut rust_out = String::new();
     for em in em.variants {
         let name = em.ident.span().source_text().unwrap();
         let mut args = Vec::new();
@@ -46,15 +67,24 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
             syn::Fields::Unit => {}
         };
         let mut arg_string = String::new();
-        let mut rust_arg_string = "void* ptr".to_string();
+        let mut csharp_rust_arg_string = "void* ptr".to_string();
+        let mut rust_arg_string = "client: *mut ClientHandle".to_string();
+        let mut rust_pre_process = String::new();
+        let mut rust_args = String::new();
         let mut call = "this.inner".to_string();
         for (i, (n, t)) in args.iter().enumerate() {
             let prefix = if i == 0 { "" } else { ", " };
             write!(arg_string, "{prefix}{} {n}", csharp_type(t)).unwrap();
-            write!(rust_arg_string, ", {} {n}", ffi_type(t)).unwrap();
+            write!(csharp_rust_arg_string, ", {} {n}", ffi_type(t)).unwrap();
+            write!(rust_arg_string, ", {n}: {}", rust_type(t)).unwrap();
             write!(call, ", {n}").unwrap();
+            write!(rust_pre_process, "{}", rust_convert_arg(n, t)).unwrap();
+            write!(rust_args, "{n}").unwrap();
         }
-        let rust_name = name.to_case(convert_case::Case::Snake);
+        if !rust_args.is_empty() {
+            rust_args = format!("({rust_args})")
+        }
+        let rust_name = format!("client_send_{}", name.to_case(convert_case::Case::Snake));
 
         writeln!(
             csharp_out,
@@ -62,10 +92,25 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
 public void Send{name}({arg_string}) {{
     unsafe {{
         [DllImport(\"../target/debug/libblastcap.so\", SetLastError = true)]
-        static extern void client_send_{rust_name}({rust_arg_string});
-        client_send_{rust_name}({call});
+        static extern void {rust_name}({csharp_rust_arg_string});
+        {rust_name}({call});
     }}
 }}"
+        )
+        .unwrap();
+        writeln!(
+            rust_out,
+            "
+#[unsafe(no_mangle)]
+pub unsafe extern \"C\" fn {rust_name}({rust_arg_string}) {{
+    let client = unsafe {{ &mut *client }} as &mut ClientHandle;
+    {rust_pre_process}
+    client
+        .send
+        .blocking_send(ClientRequest::{name}{rust_args})
+        .unwrap();
+}}
+"
         )
         .unwrap();
     }
@@ -77,6 +122,8 @@ public partial class NetworkClient {{{csharp_out}}}"
     );
     let mut f = std::fs::File::create("godot/src/FFI_ClientCalls.cs").unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
+    let mut f = std::fs::File::create("src/lib_gen.rs").unwrap();
+    f.write_all(rust_out.as_bytes()).unwrap();
     let raw = proc_macro2::Literal::string(&csharp_out);
     quote! {
         const CSHARP_CODE: &str = #raw;

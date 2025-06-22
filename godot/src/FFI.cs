@@ -24,7 +24,6 @@ public partial class NetworkClient
         start_host_loop(port);
     }
 
-
     public static NetworkClient StartClientLoop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr)
     {
         [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
@@ -33,16 +32,6 @@ public partial class NetworkClient
         {
             void* ptr = start_client_loop(addr);
             return new NetworkClient(ptr);
-        }
-    }
-
-    public void SendChatMessage()
-    {
-        unsafe
-        {
-            [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
-            static extern void client_send_chat_msg(void* ptr);
-            client_send_chat_msg(this.inner);
         }
     }
 }

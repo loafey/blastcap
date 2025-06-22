@@ -1,3 +1,6 @@
 {
-    "dotnet.defaultSolution": "godot/Blastcap.sln"
+    "dotnet.defaultSolution": "godot/Blastcap.sln",
+    "cSpell.words": [
+        "cchar"
+    ]
 }

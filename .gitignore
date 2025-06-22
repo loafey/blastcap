@@ -2,3 +2,4 @@
 .direnv/
 .env
 dump.rs
+src/lib_gen.rs

@@ -29,16 +29,7 @@ pub struct ClientHandle {
     send: Sender<ClientRequest>,
 }
 
-/// # Safety
-///
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn client_send_chat_msg(client: *mut ClientHandle) {
-    let client = unsafe { &mut *client } as &mut ClientHandle;
-    client
-        .send
-        .blocking_send(ClientRequest::ChatMessage("yooo".to_string()))
-        .unwrap();
-}
+include!("lib_gen.rs");
 
 ///
 /// # Safety
