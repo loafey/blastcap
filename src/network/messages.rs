@@ -12,6 +12,7 @@ pub enum ServerMessage {
 }
 
 #[repr(C)]
+#[sharpify::client_interface]
 #[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
 pub enum ClientRequest {
     Ping,

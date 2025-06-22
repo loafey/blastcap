@@ -3,31 +3,17 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Godot;
 
-static class FFI
+public partial class NetworkClient
 {
-
-    public class NetworkClient
+    unsafe void* inner;
+    public unsafe NetworkClient(void* inner)
     {
-        unsafe void* inner;
-        public unsafe NetworkClient(void* inner)
-        {
-            this.inner = inner;
-        }
-        ~NetworkClient()
-        {
-            GD.PrintErr("Ouchi!");
-            System.Environment.Exit(1);
-        }
-
-        public void SendChatMessage()
-        {
-            unsafe
-            {
-                [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
-                static extern void client_send_chat_msg(void* ptr);
-                client_send_chat_msg(this.inner);
-            }
-        }
+        this.inner = inner;
+    }
+    ~NetworkClient()
+    {
+        GD.PrintErr("Ouchi!");
+        System.Environment.Exit(1);
     }
 
 
@@ -49,4 +35,15 @@ static class FFI
             return new NetworkClient(ptr);
         }
     }
+
+    public void SendChatMessage()
+    {
+        unsafe
+        {
+            [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
+            static extern void client_send_chat_msg(void* ptr);
+            client_send_chat_msg(this.inner);
+        }
+    }
 }
+
