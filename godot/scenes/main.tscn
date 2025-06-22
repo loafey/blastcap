@@ -1,0 +1,13 @@
+[gd_scene load_steps=2 format=3 uid="uid://bo5tvenb8rnc8"]
+
+[ext_resource type="Script" uid="uid://c2biuv8qm1hi8" path="res://scenes/MainMenu.cs" id="1_o5qli"]
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_o5qli")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Button" type="Button" parent="CanvasLayer"]
+offset_right = 8.0
+offset_bottom = 8.0
+text = "Yooo"

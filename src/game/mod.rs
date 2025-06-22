@@ -11,7 +11,7 @@ struct State {
     tick: usize,
 }
 
-pub async fn host(port: u16) -> anyhow::Result<()> {
+pub async fn host_loop(port: u16) -> anyhow::Result<()> {
     let mut host = NetworkHost::tcp(port).await.unwrap();
 
     let mut state = State::default();
@@ -31,6 +31,7 @@ pub async fn host(port: u16) -> anyhow::Result<()> {
                     host.send(addr, ServerMessage::Pong(clients)).await?
                 }
                 ClientRequest::ChatMessage(msg) => {
+                    println!("msg: {msg}");
                     host.broadcast(ServerMessage::ChatMessage(addr, msg))
                         .await?;
                 }

@@ -13,18 +13,17 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         overlays = [ fenix.overlays.default ];
-        pkgs = import nixpkgs {
-          inherit system overlays;
-        };
-        toolchain = with fenix.packages.${system};  combine [
-          minimal.cargo
-          minimal.rustc
-          latest.clippy
-          latest.rust-src
-          latest.rustfmt
-          targets.wasm32-unknown-unknown.latest.rust-std
-          targets.x86_64-unknown-linux-gnu.latest.rust-std
-        ];
+        pkgs = import nixpkgs { inherit system overlays; };
+        toolchain = with fenix.packages.${system};
+          combine [
+            minimal.cargo
+            minimal.rustc
+            latest.clippy
+            latest.rust-src
+            latest.rustfmt
+            targets.wasm32-unknown-unknown.latest.rust-std
+            targets.x86_64-unknown-linux-gnu.latest.rust-std
+          ];
 
         fetchy = (naersk.lib.${system}.override {
           cargo = toolchain;
@@ -54,27 +53,29 @@
           ffmpeg
           clang
           libclang
+          godot-mono
+          dotnet-sdk_9
+          dotnet-sdk_8
+          dotnetCorePackages.runtime_9_0-bin
         ];
-      in
-      {
+      in {
         defaultPackage = fetchy;
 
-        packages = {
-          fetchy = fetchy;
-        };
+        packages = { fetchy = fetchy; };
 
         devShell = (naersk.lib.${system}.override {
           cargo = toolchain;
           rustc = toolchain;
-        }).buildPackage
-          {
-            src = ./.;
-            nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
-            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+        }).buildPackage {
+          src = ./.;
+          nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
+          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
 
-            shellHook = ''
-              export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.lib.makeLibraryPath min-pkgs}"
-            '';
-          };
+          shellHook = ''
+            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${
+              pkgs.lib.makeLibraryPath min-pkgs
+            }"
+          '';
+        };
       });
 }
