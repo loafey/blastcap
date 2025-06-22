@@ -20,18 +20,16 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
         match res {
             HostPoll::ClientConnected(socket_addr) => {
                 println!("SERVER - A user at {socket_addr} connected");
-                host.broadcast(ServerMessage::NewUser(socket_addr)).await?;
+                host.broadcast(ServerMessage::NewUser(format!("{socket_addr}")))
+                    .await?;
                 if host.get_client_count() == 1 {
                     state.host_player = Some(socket_addr);
                 }
             }
             HostPoll::ClientRequest { addr, req } => match req {
-                ClientRequest::Ping => {
-                    let clients = host.get_clients();
-                    host.send(addr, ServerMessage::Pong(clients)).await?
-                }
+                ClientRequest::Ping => host.send(addr, ServerMessage::Pong).await?,
                 ClientRequest::ChatMessage(msg) => {
-                    host.broadcast(ServerMessage::ChatMessage(addr, msg))
+                    host.broadcast(ServerMessage::ChatMessage(format!("{addr}"), msg))
                         .await?;
                 }
             },
@@ -51,7 +49,8 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
             }
             HostPoll::RemoveClient(socket_addr) => {
                 host.remove_client(socket_addr);
-                host.broadcast(ServerMessage::UserLeft(socket_addr)).await?;
+                host.broadcast(ServerMessage::UserLeft(format!("{socket_addr}")))
+                    .await?;
             }
         }
     }
