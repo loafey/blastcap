@@ -23,13 +23,24 @@ pub extern "C" fn start_host_loop(port: u16) {
     });
 }
 
-#[repr(C)]
 pub struct ClientHandle {
     recv: Receiver<ServerMessage>,
     send: Sender<ClientRequest>,
 }
 
 include!("lib_gen.rs");
+
+///
+/// # Safety
+///
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn client_poll(client: *mut ClientHandle) {
+    let client = unsafe { &mut *client } as &mut ClientHandle;
+    let Ok(msg) = client.recv.try_recv() else {
+        return;
+    };
+    println!("CLIENT - GOT MESSAGE: {msg:?}")
+}
 
 ///
 /// # Safety

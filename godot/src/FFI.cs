@@ -34,5 +34,15 @@ public partial class NetworkClient
             return new NetworkClient(ptr);
         }
     }
+
+    public void Poll()
+    {
+        unsafe
+        {
+            [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
+            static extern void client_poll(void* ptr);
+            client_poll(this.inner);
+        }
+    }
 }
 
