@@ -8,6 +8,7 @@ pub enum ServerMessage {
     ChatMessage(String, String),
     NewUser(String),
     UserLeft(String),
+    PlayerList(Vec<String>),
     Status { user_count: u32, tick_diff: f32 },
 }
 

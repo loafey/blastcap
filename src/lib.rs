@@ -1,4 +1,4 @@
-#![feature(impl_trait_in_bindings, never_type)]
+#![feature(impl_trait_in_bindings, never_type, vec_into_raw_parts)]
 
 use crate::network::{
     ClientPoll, NetworkClient,

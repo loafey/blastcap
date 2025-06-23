@@ -2,7 +2,7 @@ using Godot;
 
 public partial class MainMenu : Node3D
 {
-    NetworkManager nw;
+    private NetworkManager nw;
 
     private void showMessage(string msg)
     {

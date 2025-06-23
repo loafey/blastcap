@@ -18,13 +18,19 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
     let mut last_tick = Instant::now();
     while let Ok(res) = host.poll().await {
         match res {
-            HostPoll::ClientConnected(socket_addr) => {
-                println!("SERVER - A user at {socket_addr} connected");
-                host.broadcast(ServerMessage::NewUser(format!("{socket_addr}")))
+            HostPoll::ClientConnected(addr) => {
+                println!("SERVER - A user at {addr} connected");
+                host.broadcast(ServerMessage::NewUser(format!("{addr}")))
                     .await?;
                 if host.get_client_count() == 1 {
-                    state.host_player = Some(socket_addr);
+                    state.host_player = Some(addr);
                 }
+                let clients = host
+                    .get_clients()
+                    .into_iter()
+                    .map(|v| format!("{v}"))
+                    .collect::<Vec<_>>();
+                host.send(addr, ServerMessage::PlayerList(clients)).await?;
             }
             HostPoll::ClientRequest { addr, req } => match req {
                 ClientRequest::Ping => host.send(addr, ServerMessage::Pong).await?,

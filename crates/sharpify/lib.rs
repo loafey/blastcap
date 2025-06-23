@@ -18,6 +18,7 @@ fn rust_type(ty: &str) -> &str {
         "String" => "*const std::ffi::c_char",
         "u32" => "u32",
         "f32" => "f32",
+        "Vec<String>" => "u64, *const *const std::ffi::c_char",
         _ => panic!("unsupported Rust type {ty:?}"),
     }
 }
@@ -38,12 +39,27 @@ fn rust_convert_arg(arg: &str, ty: &str) -> String {
 fn rust_poll_pre(arg: &str, ty: &str) -> String {
     match ty {
         "String" => format!("let {arg} = CString::new({arg}).unwrap().into_raw();"),
+        "Vec<String>" => format!(
+            "let {arg} = {arg}.into_iter()
+    .map(|s|CString::new(s).unwrap().into_raw())
+    .collect::<Vec<_>>();
+let ({arg}, {arg}_len, {arg}_cap) = {arg}.into_raw_parts();
+let {arg}_len = {arg}_len as u64;
+let {arg} = {arg} as *const *const i8;"
+        ),
         _ => String::new(),
     }
 }
 fn rust_poll_suf(arg: &str, ty: &str) -> String {
     match ty {
         "String" => format!("_ = CString::from_raw({arg});"),
+        "Vec<String>" => {
+            format!(
+                "let {arg} = {arg} as *mut *mut i8;
+let {arg} = Vec::from_raw_parts({arg}, {arg}_len as usize, {arg}_cap);
+{arg}.into_iter().for_each(|l| _ = CString::from_raw(l));"
+            )
+        }
         _ => String::new(),
     }
 }
@@ -53,6 +69,9 @@ fn ffi_type(ty: &str) -> &str {
         "String" => "[MarshalAs(UnmanagedType.LPUTF8Str)] string",
         "u32" => "UInt32",
         "f32" => "float",
+        "Vec<String>" => {
+            "[MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPUTF8Str, SizeParamIndex = 0)] string[]"
+        }
         _ => panic!("unsupported FFI type {ty:?}"),
     }
 }
@@ -162,7 +181,6 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
     let mut cs_callbacks_fields = String::new();
     let mut cs_rust_callback_types = String::new();
     let mut cs_cons_args = String::new();
-    let mut cs_cons = String::new();
     let mut cs_set_cons = String::new();
     let mut cs_signals = String::new();
     let mut rust_matches = String::new();
@@ -216,6 +234,17 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
             .map(|(_, n, _)| n.clone())
             .collect::<Vec<_>>()
             .join(", ");
+        let rust_processed_args = args
+            .iter()
+            .map(|(_, n, ty)| {
+                if ty.starts_with("Vec<") {
+                    format!("{n}_len, {n}")
+                } else {
+                    n.clone()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join(", ");
         let rust_type_args = args
             .iter()
             .map(|(_, _, ty)| rust_type(ty))
@@ -242,7 +271,7 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
         ));
         rust_matches.push_str(&format!(
             "ServerMessage::{name}{wrap_rust_args} => {{
-{pre}{}_callback({rust_args});
+{pre}{}_callback({rust_processed_args});
 {suf}
 }}\n",
             name.to_case(convert_case::Case::Snake)
