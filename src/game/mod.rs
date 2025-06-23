@@ -12,7 +12,7 @@ struct State {
 }
 
 pub async fn host_loop(port: u16) -> anyhow::Result<()> {
-    let mut host = NetworkHost::tcp(port).await.unwrap();
+    let mut host = NetworkHost::tcp(port).await?;
 
     let mut state = State::default();
     let mut last_tick = Instant::now();

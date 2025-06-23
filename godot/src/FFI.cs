@@ -6,33 +6,29 @@ using Godot;
 public partial class NetworkClient
 {
     unsafe void* inner;
-    public unsafe NetworkClient(void* inner)
-    {
-        this.inner = inner;
-    }
     ~NetworkClient()
     {
         GD.PrintErr("Ouchi!");
         System.Environment.Exit(1);
     }
 
+    private delegate void OnFail([MarshalAs(UnmanagedType.LPUTF8Str)] string error);
 
-    public static void StartHostLoop(short port)
+    private static bool _success = true;
+    public static bool StartHostLoop(short port)
     {
+        _success = true;
         [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
-        static extern void start_host_loop(Int16 port);
-        start_host_loop(port);
-    }
+        static extern void start_host_loop(Int16 port, OnFail onFail);
 
-    public static NetworkClient StartClientLoop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr)
-    {
-        [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
-        static extern unsafe void* start_client_loop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr);
-        unsafe
+        start_host_loop(port, (err) =>
         {
-            void* ptr = start_client_loop(addr);
-            return new NetworkClient(ptr);
-        }
+            _success = false;
+            GD.PrintErr($"SERVER - {err}");
+        });
+
+        System.Threading.Thread.Sleep(50);
+        return _success;
     }
 }
 

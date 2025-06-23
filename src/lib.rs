@@ -4,7 +4,7 @@ use crate::network::{
     ClientPoll, NetworkClient,
     messages::{ClientRequest, ServerMessage},
 };
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use tokio::{
     net::ToSocketAddrs,
     sync::mpsc::{Receiver, Sender},
@@ -15,11 +15,31 @@ mod game;
 mod network;
 
 #[unsafe(no_mangle)]
-pub extern "C" fn start_host_loop(port: u16) {
+pub extern "C" fn start_host_loop(
+    port: u16,
+    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
+) {
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().expect("Unable to create Runtime");
+        let rt = match tokio::runtime::Runtime::new() {
+            Ok(rt) => rt,
+            Err(err) => {
+                unsafe {
+                    let str = CString::new(format!("{err}")).unwrap().into_raw();
+                    on_fail(str);
+                    _ = CString::from_raw(str)
+                };
+                return;
+            }
+        };
         let _enter = rt.enter();
-        rt.block_on(game::host_loop(port)).unwrap();
+        let Err(err) = rt.block_on(game::host_loop(port)) else {
+            return;
+        };
+        unsafe {
+            let str = CString::new(format!("{err}")).unwrap().into_raw();
+            on_fail(str);
+            _ = CString::from_raw(str)
+        };
     });
 }
 
@@ -30,18 +50,7 @@ pub struct ClientHandle {
 
 include!("lib_gen.rs");
 
-///
-/// # Safety
-///
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn client_poll(client: *mut ClientHandle) -> *const ServerMessage {
-    let client = unsafe { &mut *client } as &mut ClientHandle;
-    let Ok(msg) = client.recv.try_recv() else {
-        return std::ptr::null();
-    };
-    println!("CLIENT - GOT MESSAGE: {msg:?}");
-    Box::leak(Box::new(msg))
-}
+include!("lib_poll.rs");
 
 ///
 /// # Safety

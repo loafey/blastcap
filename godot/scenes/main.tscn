@@ -7,7 +7,42 @@ script = ExtResource("1_o5qli")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
+[node name="MainMenu" type="VBoxContainer" parent="CanvasLayer"]
+offset_right = 319.0
+offset_bottom = 101.0
+
+[node name="Host" type="HBoxContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 2
+
+[node name="Edit" type="LineEdit" parent="CanvasLayer/MainMenu/Host"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "4000"
+placeholder_text = "Port"
+
+[node name="Button" type="Button" parent="CanvasLayer/MainMenu/Host"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Host"
+
+[node name="Connect" type="HBoxContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 2
+
+[node name="Edit" type="LineEdit" parent="CanvasLayer/MainMenu/Connect"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "localhost:4000"
+placeholder_text = "Connect"
+
+[node name="Button" type="Button" parent="CanvasLayer/MainMenu/Connect"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Connect
+"
+
 [node name="Button" type="Button" parent="CanvasLayer"]
-offset_right = 8.0
-offset_bottom = 8.0
-text = "Yooo"
+offset_left = 401.0
+offset_top = 225.0
+offset_right = 458.0
+offset_bottom = 256.0
+text = "Yoooo"
