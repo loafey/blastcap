@@ -4,51 +4,32 @@ using System.Runtime.InteropServices;
 
 public partial class MainMenu : Node3D
 {
-    private NetworkClient _nc = null;
-
-    private void Connect(String addr)
-    {
-        if (this._nc != null) return;
-        this._nc = NetworkClient.StartClientLoop(
-            addr,
-            onFail: (err) =>
-            {
-                GD.PrintErr(err);
-                this._nc.Drop();
-                this._nc = null;
-            },
-            PongFn: () => GD.Print("PONG! :)"),
-            ChatMessageFn: (user, msg) => GD.Print($"{user}: {msg}"),
-            NewUserFn: (user) => GD.Print($"{user} connected"),
-            UserLeftFn: (user) => GD.Print($"{user} left"),
-            StatusFn: (userCount, tickRate) => {/*GD.Print($"STATUS: {userCount}U/{tickRate}S")*/}
-        );
-    }
+    NetworkManager nw;
 
     public override void _Ready()
     {
         GD.Print("==================================");
+        this.nw = GetNode<NetworkManager>("/root/NetworkManager");
 
         GetNode<Button>("CanvasLayer/Button").Pressed += () =>
         {
-            this._nc.SendChatMessage("hello everybody!");
+            nw.Inner.SendChatMessage("hello everybody!");
         };
 
         GetNode<Button>("CanvasLayer/MainMenu/Host/Button").Pressed += () =>
         {
-            if (NetworkClient.StartHostLoop(4000)) Connect("localhost:4000");
+            if (NetworkClient.StartHostLoop(4000))
+                nw.Connect("localhost:4000");
 
         };
 
         GetNode<Button>("CanvasLayer/MainMenu/Connect/Button").Pressed += () =>
         {
-            Connect("localhost:4000");
+            nw.Connect("localhost:4000");
         };
     }
 
     public override void _Process(double delta)
     {
-        base._Process(delta);
-        if (this._nc != null) this._nc.Poll();
     }
 }

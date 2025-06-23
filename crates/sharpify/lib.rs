@@ -145,7 +145,7 @@ using System.Runtime.InteropServices;
 
 public partial class NetworkClient {{{csharp_out}}}"
     );
-    let mut f = std::fs::File::create("godot/src/FFI_ClientCalls.cs").unwrap();
+    let mut f = std::fs::File::create("godot/src/FFI/FFI_ClientCalls.cs").unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
     let mut f = std::fs::File::create("src/lib_gen.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
@@ -301,7 +301,7 @@ pub unsafe extern \"C\" fn client_poll(
 }}
 "
     );
-    let mut f = File::create("godot/src/FFI_Polling.cs").unwrap();
+    let mut f = File::create("godot/src/FFI/FFI_Polling.cs").unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
     let mut f = File::create("src/lib_poll.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
