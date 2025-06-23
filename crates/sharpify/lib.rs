@@ -145,7 +145,7 @@ using System.Runtime.InteropServices;
 
 public partial class NetworkClient {{{csharp_out}}}"
     );
-    let mut f = std::fs::File::create("godot/src/FFI/FFI_ClientCalls.cs").unwrap();
+    let mut f = std::fs::File::create("godot/src/Globals/Network/Network_ClientCalls.cs").unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
     let mut f = std::fs::File::create("src/lib_gen.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
@@ -164,12 +164,29 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
     let mut cs_cons_args = String::new();
     let mut cs_cons = String::new();
     let mut cs_set_cons = String::new();
+    let mut cs_signals = String::new();
     let mut rust_matches = String::new();
     let mut rust_fn_args = String::new();
     let mut named = false;
     for em in em.variants {
         let name = em.ident.span().source_text().unwrap();
         let mut args = Vec::new();
+        cs_signals.push_str(&format!("    private event {name}Callback _on{name};\n"));
+        cs_signals.push_str(&format!(
+            "    public event {name}Callback On{name}
+    {{
+        add
+        {{
+            _on{name} = null;
+            _on{name} += value;
+        }}
+        remove
+        {{
+            _on{name} -= value;
+        }}
+    }}
+"
+        ));
         match em.fields {
             syn::Fields::Named(f) => {
                 named = true;
@@ -242,18 +259,27 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
         cs_callbacks_fields.push_str(&format!("    private {name}Callback {name}Fn;\n"));
         cs_callbacks.push_str(&format!(", this.{name}Fn"));
         cs_cons_args.push_str(&format!(", {name}Callback {name}Fn"));
-        cs_set_cons.push_str(&format!("this.{name}Fn = {name}Fn;"));
-        cs_cons.push_str(&format!(", {name}Fn"));
+        cs_set_cons.push_str(&format!(
+            "
+            this.{name}Fn = ({cs_args}) => _on{name}({});
+            this.On{name} += ({cs_args}) => {{GD.PrintErr(\"Using default event handler for On{name}, please set it!\");}};",
+            args.iter()
+                .map(|(n, _, _)| n.clone())
+                .collect::<Vec<_>>()
+                .join(", ")
+        ));
         cs_rust_callbacks.push_str(&format!(", {name}Callback {name}Fn"));
     }
 
     let csharp_out = format!(
         "using System.Runtime.InteropServices;
 using System;
+using Godot;
 
 public partial class NetworkClient {{
     {cs_rust_callback_types}
 {cs_callbacks_fields}
+{cs_signals}
     public void Poll()
     {{
         unsafe
@@ -263,18 +289,15 @@ public partial class NetworkClient {{
             client_poll(this.inner{cs_callbacks});
         }}
     }}
-    private unsafe NetworkClient (void* inner{cs_cons_args}) {{
-        this.inner = inner;
-        {cs_set_cons}
-    }}
-    public static NetworkClient StartClientLoop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr{cs_cons_args}, OnFail onFail)
+    public NetworkClient([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail)
     {{
         [DllImport(\"../target/debug/libblastcap.so\", SetLastError = true)]
         static extern unsafe void* start_client_loop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail);
         unsafe
         {{
             void* ptr = start_client_loop(addr, onFail);
-            return new NetworkClient(ptr{cs_cons});
+            this.inner = ptr;
+            {cs_set_cons}
         }}
     }}
 }}"
@@ -301,7 +324,7 @@ pub unsafe extern \"C\" fn client_poll(
 }}
 "
     );
-    let mut f = File::create("godot/src/FFI/FFI_Polling.cs").unwrap();
+    let mut f = File::create("godot/src/Globals/Network/Network_Polling.cs").unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
     let mut f = File::create("src/lib_poll.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();

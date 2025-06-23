@@ -1,6 +1,4 @@
 using Godot;
-using System;
-using System.Runtime.InteropServices;
 
 public partial class MainMenu : Node3D
 {
@@ -14,6 +12,14 @@ public partial class MainMenu : Node3D
         chatList.AddChild(label);
     }
 
+    private void onConnect()
+    {
+        nw.Inner.OnChatMessage += (user, msg) => showMessage($"{user}: {msg}");
+        nw.Inner.OnNewUser += (user) => showMessage($"{user} joined");
+        nw.Inner.OnUserLeft += (user) => showMessage($"{user} left");
+        nw.Inner.OnStatus += (count, diff) => { };
+    }
+
     public override void _Ready()
     {
         GD.Print("==================================");
@@ -22,13 +28,16 @@ public partial class MainMenu : Node3D
         GetNode<Button>("CanvasLayer/MainMenu/Host/Button").Pressed += () =>
         {
             if (NetworkClient.StartHostLoop(4000))
+            {
                 nw.Connect("localhost:4000");
-
+                onConnect();
+            }
         };
 
         GetNode<Button>("CanvasLayer/MainMenu/Connect/Button").Pressed += () =>
         {
             nw.Connect("localhost:4000");
+            onConnect();
         };
 
         GetNode<LineEdit>("CanvasLayer/ChatBox/Edit/Edit").TextSubmitted += (text) =>
@@ -36,12 +45,6 @@ public partial class MainMenu : Node3D
             nw.Inner.SendChatMessage(text);
             GetNode<LineEdit>("CanvasLayer/ChatBox/Edit/Edit").Text = "";
         };
-
-        nw.ChatMessage += (user, msg) => showMessage($"{user}: {msg}");
-        nw.UserJoin += (user) => showMessage($"{user} joined");
-        nw.UserLeave += (user) => showMessage($"{user} left");
-
-
     }
 
     public override void _Process(double delta)
