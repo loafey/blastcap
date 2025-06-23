@@ -90,5 +90,5 @@ pub trait NetworkHostExt {
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()>;
     fn remove_client(&mut self, addr: SocketAddr);
     fn get_clients(&self) -> Vec<SocketAddr>;
-    fn get_client_count(&self) -> usize;
+    fn get_client_count(&self) -> u32;
 }

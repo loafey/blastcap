@@ -1,23 +1,34 @@
 extern crate proc_macro;
 use convert_case::Casing;
 use proc_macro::TokenStream as TS1;
-use proc_macro2::TokenStream;
-use quote::quote;
-use std::{fmt::Write as _, io::Write as _};
+use std::{fmt::Write as _, fs::File, io::Write as _};
 use syn::{ItemEnum, spanned::Spanned};
 
 fn csharp_type(ty: &str) -> &str {
     match ty {
         "String" => "string",
-        _ => panic!("unsupported type {ty:?}"),
+        "u32" => "UInt32",
+        "f32" => "float",
+        _ => panic!("unsupported C# type {ty:?}"),
     }
 }
 
 fn rust_type(ty: &str) -> &str {
     match ty {
         "String" => "*const std::ffi::c_char",
-        _ => panic!("unsupported type {ty:?}"),
+        _ => panic!("unsupported Rust type {ty:?}"),
     }
+}
+
+fn csharp_type_offset(off: usize, ty: &str) -> usize {
+    let size = match ty {
+        "String" => 8,
+        "u32" | "f32" => 4,
+        _ => panic!("unsupported offset type {ty:?}"),
+    };
+    let new_off = off + size;
+    let diff = new_off % 8;
+    new_off + diff
 }
 
 fn rust_convert_arg(arg: &str, ty: &str) -> String {
@@ -42,8 +53,8 @@ fn ffi_type(ty: &str) -> &str {
 
 #[proc_macro_attribute]
 pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
-    let item = TokenStream::from(item_og.clone());
-    let em = syn::parse_macro_input!(item_og as ItemEnum);
+    let item = item_og.clone();
+    let em = syn::parse_macro_input!(item as ItemEnum);
     let mut csharp_out = String::new();
     let mut rust_out = String::new();
     for em in em.variants {
@@ -127,10 +138,97 @@ public partial class NetworkClient {{{csharp_out}}}"
     f.write_all(csharp_out.as_bytes()).unwrap();
     let mut f = std::fs::File::create("src/lib_gen.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
-    let raw = proc_macro2::Literal::string(&csharp_out);
-    quote! {
-        const CSHARP_CODE: &str = #raw;
-        #item
+    item_og
+}
+
+#[proc_macro_attribute]
+pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
+    let item = item_og.clone();
+    let em = syn::parse_macro_input!(item as ItemEnum);
+
+    let mut csharp_union: Vec<String> = Vec::new();
+    let mut csharp_tags = Vec::new();
+
+    for em in em.variants {
+        let name = em.ident.span().source_text().unwrap();
+        csharp_tags.push(name.clone());
+        let mut args = Vec::new();
+        match em.fields {
+            syn::Fields::Named(f) => {
+                for f in f.named {
+                    let ident = f.ident.unwrap();
+                    args.push((
+                        format!("{name}_{}", ident.span().source_text().unwrap()),
+                        f.ty.span().source_text().unwrap(),
+                    ))
+                }
+            }
+            syn::Fields::Unnamed(f) => {
+                for (i, f) in f.unnamed.into_iter().enumerate() {
+                    args.push((format!("{name}_arg{i}"), f.ty.span().source_text().unwrap()));
+                }
+            }
+            syn::Fields::Unit => {}
+        };
+        let mut start = 4;
+        for (name, ty) in args {
+            start = csharp_type_offset(start, &ty);
+            let ty = csharp_type(&ty);
+            csharp_union.push(format!(
+                "
+    [System.Runtime.InteropServices.FieldOffset({start})]
+    {ty} {name};
+"
+            ));
+        }
     }
-    .into()
+
+    let mut csharp_out = String::new();
+    {
+        let mut em = String::new();
+        for (i, t) in csharp_tags.into_iter().enumerate() {
+            let pre = if i == 0 { "" } else { ", " };
+            em.push_str(&format!("{pre}{t}"));
+        }
+        writeln!(csharp_out, "enum ServerMessageTag {{ {em} }}").unwrap();
+    }
+    {
+        let mut str = String::new();
+        for s in csharp_union {
+            str.push_str(&s);
+        }
+        writeln!(
+            csharp_out,
+            "
+[System.Runtime.InteropServices.StructLayout(LayoutKind.Explicit)]
+struct ServerMessage {{ 
+    [System.Runtime.InteropServices.FieldOffset(0)]
+    public ServerMessageTag tag;
+    {str}
+}}"
+        )
+        .unwrap();
+    }
+    csharp_out = format!(
+        "using System.Runtime.InteropServices;
+using System;
+
+public partial class NetworkClient {{
+{csharp_out}
+
+    public void Poll()
+    {{
+        unsafe
+        {{
+            [DllImport(\"../target/debug/libblastcap.so\", SetLastError = true)]
+            static extern ServerMessage* client_poll(void* ptr);
+            client_poll(this.inner);
+        }}
+    }}
+}}"
+    );
+    let mut f = File::create("godot/src/FFI_Polling.cs").unwrap();
+    f.write_all(csharp_out.as_bytes()).unwrap();
+
+    item_og
 }

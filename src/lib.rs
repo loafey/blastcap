@@ -34,12 +34,13 @@ include!("lib_gen.rs");
 /// # Safety
 ///
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn client_poll(client: *mut ClientHandle) {
+pub unsafe extern "C" fn client_poll(client: *mut ClientHandle) -> *const ServerMessage {
     let client = unsafe { &mut *client } as &mut ClientHandle;
     let Ok(msg) = client.recv.try_recv() else {
-        return;
+        return std::ptr::null();
     };
-    println!("CLIENT - GOT MESSAGE: {msg:?}")
+    println!("CLIENT - GOT MESSAGE: {msg:?}");
+    Box::leak(Box::new(msg))
 }
 
 ///

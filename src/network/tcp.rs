@@ -162,8 +162,8 @@ impl NetworkHostExt for TcpHost {
         self.clients.keys().copied().collect()
     }
 
-    fn get_client_count(&self) -> usize {
-        self.clients.len()
+    fn get_client_count(&self) -> u32 {
+        self.clients.len() as u32
     }
 
     fn remove_client(&mut self, addr: SocketAddr) {
