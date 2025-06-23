@@ -11,6 +11,12 @@ public partial class MainMenu : Node3D
         if (this._nc != null) return;
         this._nc = NetworkClient.StartClientLoop(
             addr,
+            onFail: (err) =>
+            {
+                GD.PrintErr(err);
+                this._nc.Drop();
+                this._nc = null;
+            },
             PongFn: () => GD.Print("PONG! :)"),
             ChatMessageFn: (user, msg) => GD.Print($"{user}: {msg}"),
             NewUserFn: (user) => GD.Print($"{user} connected"),

@@ -125,10 +125,15 @@ public void Send{name}({arg_string}) {{
 pub unsafe extern \"C\" fn {rust_name}({rust_arg_string}) {{
     let client = unsafe {{ &mut *client }} as &mut ClientHandle;
     {rust_pre_process}
-    client
+    let Err(err) = client
         .send
         .blocking_send(ClientRequest::{name}{rust_args})
-        .unwrap();
+        else {{ return; }};
+    unsafe {{
+        let str = CString::new(format!(\"{{err}}\")).unwrap().into_raw();
+        (client.on_fail)(str);
+        _ = CString::from_raw(str)
+    }};
 }}
 "
         )
@@ -262,13 +267,13 @@ public partial class NetworkClient {{
         this.inner = inner;
         {cs_set_cons}
     }}
-    public static NetworkClient StartClientLoop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr{cs_cons_args})
+    public static NetworkClient StartClientLoop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr{cs_cons_args}, OnFail onFail)
     {{
         [DllImport(\"../target/debug/libblastcap.so\", SetLastError = true)]
-        static extern unsafe void* start_client_loop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr);
+        static extern unsafe void* start_client_loop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail);
         unsafe
         {{
-            void* ptr = start_client_loop(addr);
+            void* ptr = start_client_loop(addr, onFail);
             return new NetworkClient(ptr{cs_cons});
         }}
     }}

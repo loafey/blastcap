@@ -20,17 +20,7 @@ pub extern "C" fn start_host_loop(
     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 ) {
     std::thread::spawn(move || {
-        let rt = match tokio::runtime::Runtime::new() {
-            Ok(rt) => rt,
-            Err(err) => {
-                unsafe {
-                    let str = CString::new(format!("{err}")).unwrap().into_raw();
-                    on_fail(str);
-                    _ = CString::from_raw(str)
-                };
-                return;
-            }
-        };
+        let rt = tokio::runtime::Runtime::new().unwrap();
         let _enter = rt.enter();
         let Err(err) = rt.block_on(game::host_loop(port)) else {
             return;
@@ -46,16 +36,29 @@ pub extern "C" fn start_host_loop(
 pub struct ClientHandle {
     recv: Receiver<ServerMessage>,
     send: Sender<ClientRequest>,
+    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 }
 
 include!("lib_gen.rs");
 
 include!("lib_poll.rs");
+///
+/// # Safety
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn client_drop_handle(ch: *mut ClientHandle) {
+    unsafe {
+        println!("CLIENT - being dropped!");
+        drop(Box::from_raw(ch));
+    }
+}
 
 ///
 /// # Safety
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn start_client_loop(addr: *const std::ffi::c_char) -> *mut ClientHandle {
+pub unsafe extern "C" fn start_client_loop(
+    addr: *const std::ffi::c_char,
+    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
+) -> *mut ClientHandle {
     async fn client<A: ToSocketAddrs + std::fmt::Debug>(
         addr: A,
         server_send: Sender<ServerMessage>,
@@ -85,10 +88,18 @@ pub unsafe extern "C" fn start_client_loop(addr: *const std::ffi::c_char) -> *mu
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Unable to create Runtime");
         let _enter = rt.enter();
-        rt.block_on(client(addr, send, client_recv)).unwrap();
+        let Err(err) = rt.block_on(client(addr, send, client_recv)) else {
+            return;
+        };
+        unsafe {
+            let str = CString::new(format!("{err}")).unwrap().into_raw();
+            on_fail(str);
+            _ = CString::from_raw(str)
+        };
     });
     Box::leak(Box::new(ClientHandle {
         recv,
         send: client_send,
+        on_fail,
     }))
 }

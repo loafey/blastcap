@@ -12,7 +12,7 @@ public partial class NetworkClient
         System.Environment.Exit(1);
     }
 
-    private delegate void OnFail([MarshalAs(UnmanagedType.LPUTF8Str)] string error);
+    public delegate void OnFail([MarshalAs(UnmanagedType.LPUTF8Str)] string error);
 
     private static bool _success = true;
     public static bool StartHostLoop(short port)
@@ -29,6 +29,17 @@ public partial class NetworkClient
 
         System.Threading.Thread.Sleep(50);
         return _success;
+    }
+
+    public void Drop()
+    {
+        unsafe
+        {
+            [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
+            static extern void client_drop_handle(void* inner);
+
+            client_drop_handle(this.inner);
+        }
     }
 }
 
