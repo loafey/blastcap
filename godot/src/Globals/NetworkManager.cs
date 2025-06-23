@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class NetworkManager : Node
 {
@@ -8,6 +9,15 @@ public partial class NetworkManager : Node
     {
         get => _inner;
     }
+
+    public delegate void OnChatMessage(String user, String msg);
+    public event OnChatMessage ChatMessage;
+
+    public delegate void OnUserJoin(String user);
+    public event OnUserJoin UserJoin;
+
+    public delegate void OnUserLeave(String user);
+    public event OnUserLeave UserLeave;
 
     public void Connect(String addr)
     {
@@ -21,9 +31,9 @@ public partial class NetworkManager : Node
                 this._inner = null;
             },
             PongFn: () => GD.Print("PONG! :)"),
-            ChatMessageFn: (user, msg) => GD.Print($"{user}: {msg}"),
-            NewUserFn: (user) => GD.Print($"{user} connected"),
-            UserLeftFn: (user) => GD.Print($"{user} left"),
+            ChatMessageFn: (user, msg) => ChatMessage(user, msg),
+            NewUserFn: (user) => UserJoin(user),
+            UserLeftFn: (user) => UserLeave(user),
             StatusFn: (userCount, tickRate) => {/*GD.Print($"STATUS: {userCount}U/{tickRate}S")*/}
         );
     }
