@@ -10,8 +10,6 @@ crate-type = ["cdylib"]
 anyhow.workspace = true
 async-trait.workspace = true
 clap.workspace = true
-eframe.workspace = true
-egui.workspace = true
 futures.workspace = true
 rand.workspace = true
 rkyv.workspace = true
@@ -25,8 +23,6 @@ members = [ "crates/*" ]
 anyhow = "1.0"
 async-trait = "0.1.88"
 clap = { version = "4.5", features = ["derive"] }
-eframe = "0.31.1"
-egui = "0.31.1"
 futures = "0.3.31"
 rand = "0.9.1"
 rkyv = "0.8.10"
