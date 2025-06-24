@@ -54,8 +54,10 @@ func _on_press():
 
 
 func exit_clicked():
-    popup.queue_free()
-    textContent = ""
+    if popup != null:
+        popup.queue_free()
+        textContent = ""
+        popup = null
 
 func scrollbar_change():
     scrollArea.scroll_vertical = scrollArea.get_v_scroll_bar().max_value
