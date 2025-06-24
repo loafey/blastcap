@@ -22,3 +22,7 @@ NetworkManager="*res://src/Globals/NetworkManager.cs"
 [dotnet]
 
 project/assembly_name="Blastcap"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/commandrunner/plugin.cfg")
