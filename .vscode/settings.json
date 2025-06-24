@@ -2,5 +2,6 @@
     "dotnet.defaultSolution": "godot/Blastcap.sln",
     "cSpell.words": [
         "cchar"
-    ]
+    ],
+    "godotTools.editorPath.godot4": "/nix/store/2sdmqah6b0sd1p0jhpabk8n40dr3kd4y-godot-mono-4.4.1-stable/bin/godot-mono"
 }
