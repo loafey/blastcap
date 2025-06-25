@@ -9,6 +9,7 @@ use crate::network::{
 struct State {
     host_player: Option<SocketAddr>,
     tick: usize,
+    started: bool,
 }
 
 pub async fn host_loop(port: u16) -> anyhow::Result<()> {
@@ -22,13 +23,13 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                 println!("SERVER - A user at {addr} connected");
                 if host.get_client_count() == 1 {
                     state.host_player = Some(addr);
+                    host.send(addr, ServerMessage::NotifyHost).await?;
                 }
                 let raw_clients = host.get_clients();
                 let clients = raw_clients
                     .iter()
                     .map(|v| format!("{v}"))
                     .collect::<Vec<_>>();
-                println!("{clients:?}");
                 for client in raw_clients {
                     if client != addr {
                         host.send(client, ServerMessage::NewUser(format!("{addr}")))
@@ -42,6 +43,24 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                 ClientRequest::ChatMessage(msg) => {
                     host.broadcast(ServerMessage::ChatMessage(format!("{addr}"), msg))
                         .await?;
+                }
+                ClientRequest::RequestMapList => {
+                    if Some(addr) != state.host_player {
+                        continue;
+                    };
+                    host.send(
+                        addr,
+                        ServerMessage::MapList(vec!["SimpleTestMap".to_string()]),
+                    )
+                    .await?;
+                }
+                ClientRequest::StartMap(map) => {
+                    if Some(addr) != state.host_player {
+                        continue;
+                    };
+                    state.started = true;
+
+                    host.broadcast(ServerMessage::StartMap(map)).await?;
                 }
             },
             HostPoll::Tick => {

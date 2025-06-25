@@ -10,6 +10,8 @@ public partial class NetworkManager : Node
         get => _inner;
     }
 
+    public bool IsHost { get => NetworkClient.IsHost; }
+
     public void Connect(String addr)
     {
         if (this.Inner != null) return;

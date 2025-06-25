@@ -10,6 +10,9 @@ pub enum ServerMessage {
     UserLeft(String),
     PlayerList(Vec<String>),
     Status { user_count: u32, tick_diff: f32 },
+    NotifyHost,
+    MapList(Vec<String>),
+    StartMap(String),
 }
 
 #[repr(C)]
@@ -18,4 +21,6 @@ pub enum ServerMessage {
 pub enum ClientRequest {
     Ping,
     ChatMessage(String),
+    RequestMapList,
+    StartMap(String),
 }

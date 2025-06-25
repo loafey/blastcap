@@ -232,8 +232,8 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
     let mut cs_signals = String::new();
     let mut rust_matches = String::new();
     let mut rust_fn_args = String::new();
-    let mut named = false;
     for em in em.variants {
+        let mut named = false;
         let name = em.ident.span().source_text().unwrap();
         let mut args = Vec::new();
         cs_signals.push_str(&format!("    private event {name}Callback _on{name};\n"));

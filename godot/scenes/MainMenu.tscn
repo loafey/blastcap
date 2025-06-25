@@ -1,15 +1,33 @@
-[gd_scene load_steps=2 format=3 uid="uid://bo5tvenb8rnc8"]
+[gd_scene load_steps=4 format=3 uid="uid://bo5tvenb8rnc8"]
 
-[ext_resource type="Script" uid="uid://c2biuv8qm1hi8" path="res://scenes/MainMenu.cs" id="1_o5qli"]
+[ext_resource type="Script" uid="uid://c2biuv8qm1hi8" path="res://scenes/MainMenu.cs" id="1_yqorp"]
+
+[sub_resource type="Gradient" id="Gradient_o5qli"]
+offsets = PackedFloat32Array(0, 0.438312, 0.746753, 1)
+colors = PackedColorArray(0.465402, 0.670186, 0.706926, 1, 0.798942, 0.894868, 0.95406, 1, 0.927278, 0.817614, 0.838991, 1, 0.886463, 0.63288, 0.627549, 1)
+
+[sub_resource type="GradientTexture2D" id="GradientTexture2D_0wfyh"]
+gradient = SubResource("Gradient_o5qli")
+fill_to = Vector2(1, 1)
 
 [node name="Node3D" type="Node3D"]
-script = ExtResource("1_o5qli")
+script = ExtResource("1_yqorp")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("GradientTexture2D_0wfyh")
+
 [node name="MainMenu" type="VBoxContainer" parent="CanvasLayer"]
-offset_right = 319.0
-offset_bottom = 101.0
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 318.0
+grow_vertical = 2
 
 [node name="Host" type="HBoxContainer" parent="CanvasLayer/MainMenu"]
 layout_mode = 2
@@ -39,6 +57,17 @@ layout_mode = 2
 size_flags_horizontal = 3
 text = "Connect
 "
+
+[node name="MapList" type="VBoxContainer" parent="CanvasLayer/MainMenu"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Label" type="Label" parent="CanvasLayer/MainMenu/MapList"]
+layout_mode = 2
+text = "Select a map:"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="ChatBox" type="VBoxContainer" parent="CanvasLayer"]
 anchors_preset = 1
@@ -80,7 +109,9 @@ grow_vertical = 0
 
 [node name="Label" type="Label" parent="CanvasLayer/PlayerList"]
 layout_mode = 2
-text = "Players:"
+text = "- Players- "
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="Scroll" type="ScrollContainer" parent="CanvasLayer/PlayerList"]
 layout_mode = 2

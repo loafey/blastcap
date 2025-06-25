@@ -34,7 +34,6 @@ public partial class MainMenu : Node3D
         nw.Inner.OnChatMessage += (user, msg) => showMessage($"{user}: {msg}");
         nw.Inner.OnNewUser += (user) =>
         {
-            GD.Print("new player");
             showMessage($"{user} joined");
             players.Add(user);
             drawPlayerList();
@@ -48,10 +47,25 @@ public partial class MainMenu : Node3D
         nw.Inner.OnStatus += (count, diff) => { };
         nw.Inner.OnPlayerList += (playerList) =>
         {
-            GD.Print("set player list");
             players.Clear();
             foreach (var player in playerList) players.Add(player);
             drawPlayerList();
+        };
+        nw.Inner.OnNotifyHost += () => nw.Inner.SendRequestMapList();
+        nw.Inner.OnMapList += (list) =>
+        {
+            var guiList = GetNode<VBoxContainer>("CanvasLayer/MainMenu/MapList");
+            guiList.Visible = true;
+            foreach (var map in list)
+            {
+                var button = new Button();
+                button.Text = map;
+                button.Pressed += () =>
+                {
+                    nw.Inner.SendStartMap(map);
+                };
+                guiList.AddChild(button);
+            }
         };
     }
 
