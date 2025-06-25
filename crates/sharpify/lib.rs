@@ -4,6 +4,24 @@ use proc_macro::TokenStream as TS1;
 use std::{fmt::Write as _, fs::File, io::Write as _};
 use syn::{ItemEnum, spanned::Spanned};
 
+fn is_rust_prim(ty: &str) -> bool {
+    matches!(
+        ty,
+        "i8" | "u8"
+            | "i16"
+            | "u16"
+            | "i32"
+            | "u32"
+            | "i64"
+            | "u64"
+            | "isize"
+            | "usize"
+            | "bool"
+            | "f32"
+            | "f64"
+    )
+}
+
 fn csharp_type(ty: &str) -> &str {
     match ty {
         "String" => "string",
@@ -15,53 +33,43 @@ fn csharp_type(ty: &str) -> &str {
 
 fn rust_type(ty: &str) -> &str {
     match ty {
-        "String" => "*const std::ffi::c_char",
-        "u32" => "u32",
-        "f32" => "f32",
-        "Vec<String>" => "u64, *const *const std::ffi::c_char",
-        _ => panic!("unsupported Rust type {ty:?}"),
+        _ if is_rust_prim(ty) => ty,
+        _ => " *const std::ffi::c_char, u32",
+    }
+}
+fn rust_gen_type(name: &str, ty: &str) -> String {
+    match ty {
+        _ if is_rust_prim(ty) => ty.to_string(),
+        _ => format!("*const std::ffi::c_char, {name}_len: u32"),
     }
 }
 
 fn rust_convert_arg(arg: &str, ty: &str) -> String {
-    match ty {
-        "String" => {
-            format!(
-                "let {arg} = unsafe {{ CStr::from_ptr({arg}) }}
-        .to_string_lossy()
-        .to_string();\n"
-            )
-        }
-        _ => String::new(),
+    if is_rust_prim(ty) {
+        return String::new();
     }
+    format!(
+        "let {arg} = unsafe {{ std::slice::from_raw_parts({arg} as *const u8, {arg}_len as usize) }};
+    let {arg} = rmp_serde::from_slice({arg}).unwrap();\n"
+    )
 }
 
 fn rust_poll_pre(arg: &str, ty: &str) -> String {
-    match ty {
-        "String" => format!("let {arg} = CString::new({arg}).unwrap().into_raw();"),
-        "Vec<String>" => format!(
-            "let {arg} = {arg}.into_iter()
-    .map(|s|CString::new(s).unwrap().into_raw())
-    .collect::<Vec<_>>();
-let ({arg}, {arg}_len, {arg}_cap) = {arg}.into_raw_parts();
-let {arg}_len = {arg}_len as u64;
-let {arg} = {arg} as *const *const i8;"
-        ),
-        _ => String::new(),
+    if is_rust_prim(ty) {
+        return String::new();
     }
+
+    format!(
+        "let ({arg}, {arg}_len, {arg}_size) = rmp_serde::to_vec(&{arg}).unwrap().into_raw_parts();
+let {arg}_len = {arg}_len as u32;
+let {arg} = {arg} as *const i8;"
+    )
 }
 fn rust_poll_suf(arg: &str, ty: &str) -> String {
-    match ty {
-        "String" => format!("_ = CString::from_raw({arg});"),
-        "Vec<String>" => {
-            format!(
-                "let {arg} = {arg} as *mut *mut i8;
-let {arg} = Vec::from_raw_parts({arg}, {arg}_len as usize, {arg}_cap);
-{arg}.into_iter().for_each(|l| _ = CString::from_raw(l));"
-            )
-        }
-        _ => String::new(),
+    if is_rust_prim(ty) {
+        return String::new();
     }
+    format!("_ = Vec::from_raw_parts({arg} as *mut i8, {arg}_len as usize, {arg}_size);")
 }
 
 fn ffi_type(ty: &str) -> &str {
@@ -112,7 +120,7 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
             let prefix = if i == 0 { "" } else { ", " };
             write!(arg_string, "{prefix}{} {n}", csharp_type(t)).unwrap();
             write!(csharp_rust_arg_string, ", {} {n}", ffi_type(t)).unwrap();
-            write!(rust_arg_string, ", {n}: {}", rust_type(t)).unwrap();
+            write!(rust_arg_string, ", {n}: {}", rust_gen_type(n, t)).unwrap();
             write!(call, ", {n}").unwrap();
             write!(rust_pre_process, "{}", rust_convert_arg(n, t)).unwrap();
             write!(rust_args, "{n}").unwrap();
@@ -237,10 +245,10 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
         let rust_processed_args = args
             .iter()
             .map(|(_, n, ty)| {
-                if ty.starts_with("Vec<") {
-                    format!("{n}_len, {n}")
-                } else {
+                if is_rust_prim(ty) {
                     n.clone()
+                } else {
+                    format!("{n}, {n}_len")
                 }
             })
             .collect::<Vec<_>>()
