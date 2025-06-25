@@ -19,7 +19,7 @@ public partial class MainMenu : Node3D
 
     private void drawPlayerList()
     {
-        var playerList = GetNode<VBoxContainer>("CanvasLayer/PlayerList/List");
+        var playerList = GetNode<VBoxContainer>("CanvasLayer/PlayerList/Scroll/List");
         foreach (var child in playerList.GetChildren()) child.QueueFree();
         foreach (var player in players)
         {

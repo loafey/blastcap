@@ -67,7 +67,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="PlayerList" type="ScrollContainer" parent="CanvasLayer"]
+[node name="PlayerList" type="VBoxContainer" parent="CanvasLayer"]
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -77,11 +77,17 @@ offset_left = -352.0
 offset_top = -246.0
 grow_horizontal = 0
 grow_vertical = 0
-size_flags_horizontal = 3
-size_flags_vertical = 3
 
-[node name="List" type="VBoxContainer" parent="CanvasLayer/PlayerList"]
+[node name="Label" type="Label" parent="CanvasLayer/PlayerList"]
+layout_mode = 2
+text = "Players:"
+
+[node name="Scroll" type="ScrollContainer" parent="CanvasLayer/PlayerList"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-alignment = 2
+
+[node name="List" type="VBoxContainer" parent="CanvasLayer/PlayerList/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
