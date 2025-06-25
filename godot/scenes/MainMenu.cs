@@ -67,6 +67,11 @@ public partial class MainMenu : Node3D
                 guiList.AddChild(button);
             }
         };
+        nw.Inner.OnStartMap += (map) =>
+        {
+            GD.Print($"Starting map: {map}");
+            GetTree().ChangeSceneToFile("res://scenes/Game.tscn");
+        };
     }
 
     public override void _Ready()
