@@ -41,26 +41,13 @@ text = "Connect
 "
 
 [node name="ChatBox" type="VBoxContainer" parent="CanvasLayer"]
-anchors_preset = 3
+anchors_preset = 1
 anchor_left = 1.0
-anchor_top = 1.0
 anchor_right = 1.0
-anchor_bottom = 1.0
 offset_left = -352.0
-offset_top = -246.0
+offset_bottom = 246.0
 grow_horizontal = 0
-grow_vertical = 0
 size_flags_horizontal = 4
-
-[node name="Messages" type="ScrollContainer" parent="CanvasLayer/ChatBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="List" type="VBoxContainer" parent="CanvasLayer/ChatBox/Messages"]
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-alignment = 2
 
 [node name="Edit" type="HBoxContainer" parent="CanvasLayer/ChatBox"]
 custom_minimum_size = Vector2(0, 38.93)
@@ -70,3 +57,31 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Chat message..."
+
+[node name="Messages" type="ScrollContainer" parent="CanvasLayer/ChatBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="List" type="VBoxContainer" parent="CanvasLayer/ChatBox/Messages"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PlayerList" type="ScrollContainer" parent="CanvasLayer"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -352.0
+offset_top = -246.0
+grow_horizontal = 0
+grow_vertical = 0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="List" type="VBoxContainer" parent="CanvasLayer/PlayerList"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 2

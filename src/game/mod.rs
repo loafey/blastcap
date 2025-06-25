@@ -20,16 +20,21 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
         match res {
             HostPoll::ClientConnected(addr) => {
                 println!("SERVER - A user at {addr} connected");
-                host.broadcast(ServerMessage::NewUser(format!("{addr}")))
-                    .await?;
                 if host.get_client_count() == 1 {
                     state.host_player = Some(addr);
                 }
-                let clients = host
-                    .get_clients()
-                    .into_iter()
+                let raw_clients = host.get_clients();
+                let clients = raw_clients
+                    .iter()
                     .map(|v| format!("{v}"))
                     .collect::<Vec<_>>();
+                println!("{clients:?}");
+                for client in raw_clients {
+                    if client != addr {
+                        host.send(client, ServerMessage::NewUser(format!("{addr}")))
+                            .await?;
+                    }
+                }
                 host.send(addr, ServerMessage::PlayerList(clients)).await?;
             }
             HostPoll::ClientRequest { addr, req } => match req {
