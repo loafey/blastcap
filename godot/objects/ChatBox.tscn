@@ -1,0 +1,31 @@
+[gd_scene load_steps=2 format=3 uid="uid://5kl4v2ka7ejj"]
+
+[ext_resource type="Script" uid="uid://dkrw4mlbn7juf" path="res://src/Objects/ChatBox.cs" id="1_iv7i8"]
+
+[node name="ChatBox" type="VBoxContainer"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -352.0
+offset_bottom = 246.0
+grow_horizontal = 0
+size_flags_horizontal = 4
+script = ExtResource("1_iv7i8")
+
+[node name="Edit" type="HBoxContainer" parent="."]
+custom_minimum_size = Vector2(0, 38.93)
+layout_mode = 2
+
+[node name="Edit" type="LineEdit" parent="Edit"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Chat message..."
+
+[node name="Messages" type="ScrollContainer" parent="."]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="List" type="VBoxContainer" parent="Messages"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
