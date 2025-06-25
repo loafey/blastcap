@@ -4,6 +4,8 @@ use proc_macro::TokenStream as TS1;
 use std::{fmt::Write as _, fs::File, io::Write as _};
 use syn::{ItemEnum, spanned::Spanned};
 
+/// TODO: This is a bunch of spaghetti!
+
 fn is_rust_prim(ty: &str) -> bool {
     matches!(
         ty,
