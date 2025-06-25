@@ -108,11 +108,17 @@ fn rust_poll_suf(arg: &str, ty: &str) -> String {
     format!("_ = Vec::from_raw_parts({arg} as *mut i8, {arg}_len as usize, {arg}_size);")
 }
 
-fn ffi_type(name: &str, ty: &str) -> String {
+fn ffi_type(index: usize, name: &str, ty: &str) -> (usize, String) {
     if is_rust_prim(ty) {
-        return format!("{} {name}", csharp_type(ty));
+        return (0, format!("{} {name}", csharp_type(ty)));
     }
-    format!("[MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] byte[] {name}, UInt32 {name}_len")
+    (
+        1,
+        format!(
+            "[MarshalAs(UnmanagedType.LPArray, SizeParamIndex={})] byte[] {name}, UInt32 {name}_len",
+            index + 1
+        ),
+    )
 }
 
 #[proc_macro_attribute]
@@ -148,10 +154,13 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
         let mut rust_args = String::new();
         let mut csharp_conv = String::new();
         let mut call = "this.inner".to_string();
+        let mut r#mod = 0;
         for (i, (n, t)) in args.iter().enumerate() {
             let prefix = if i == 0 { "" } else { ", " };
             write!(arg_string, "{prefix}{} {n}", csharp_type(t)).unwrap();
-            write!(csharp_rust_arg_string, ", {}", ffi_type(n, t)).unwrap();
+            let (m, ffi) = ffi_type(i + r#mod, n, t);
+            r#mod += m;
+            write!(csharp_rust_arg_string, ", {ffi}").unwrap();
             if is_rust_prim(t) {
                 write!(call, ", {n}").unwrap();
             } else {
@@ -297,11 +306,15 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
             .map(|(_, _, ty)| rust_type(ty))
             .collect::<Vec<_>>()
             .join(", ");
-        let cs_raw_callback_args = args
-            .iter()
-            .map(|(n, _, ty2)| ffi_type(n, ty2))
-            .collect::<Vec<_>>()
-            .join(", ");
+
+        let mut cs_raw_callback_args = Vec::new();
+        let mut r#mod = 0;
+        args.iter().enumerate().for_each(|(i, (n, _, ty2))| {
+            let (m, ffi) = ffi_type(i + r#mod, n, ty2);
+            r#mod += m;
+            cs_raw_callback_args.push(ffi);
+        });
+        let cs_raw_callback_args = cs_raw_callback_args.join(", ");
         let cs_callback_args = args
             .iter()
             .map(|(n, _, _)| format!("{n}_conv"))
