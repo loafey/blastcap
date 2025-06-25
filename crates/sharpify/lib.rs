@@ -22,11 +22,45 @@ fn is_rust_prim(ty: &str) -> bool {
     )
 }
 
+fn csharp_gen_conv(name: &str, ty: &str) -> String {
+    if is_rust_prim(ty) {
+        return format!("var {name}_conv = {name};");
+    }
+
+    format!(
+        "byte[] {name}_conv = MessagePackSerializer.Serialize({name});
+        UInt32 {name}_len = (UInt32){name}_conv.Length;"
+    )
+}
+
+fn csharp_gen_de_conv(name: &str, ty: &str) -> String {
+    if is_rust_prim(ty) {
+        return format!("                var {name}_conv = {name};");
+    }
+
+    format!(
+        "                var {name}_conv = MessagePackSerializer.Deserialize<{}>({name});",
+        csharp_type(ty)
+    )
+}
+
 fn csharp_type(ty: &str) -> &str {
     match ty {
         "String" => "string",
+        "i8" => "sbyte",
+        "u8" => "byte",
+        "i16" => "Int16",
+        "u16" => "UInt16",
+        "i32" => "Int32",
         "u32" => "UInt32",
+        "i64" => "Int64",
+        "u64" => "UInt64",
+        "isize" => "nint",
+        "usize" => "nuint",
+        "bool" => "bool",
         "f32" => "float",
+        "f64" => "double",
+        "Vec<String>" => "List<string>",
         _ => panic!("unsupported C# type {ty:?}"),
     }
 }
@@ -72,16 +106,11 @@ fn rust_poll_suf(arg: &str, ty: &str) -> String {
     format!("_ = Vec::from_raw_parts({arg} as *mut i8, {arg}_len as usize, {arg}_size);")
 }
 
-fn ffi_type(ty: &str) -> &str {
-    match ty {
-        "String" => "[MarshalAs(UnmanagedType.LPUTF8Str)] string",
-        "u32" => "UInt32",
-        "f32" => "float",
-        "Vec<String>" => {
-            "[MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPUTF8Str, SizeParamIndex = 0)] string[]"
-        }
-        _ => panic!("unsupported FFI type {ty:?}"),
+fn ffi_type(name: &str, ty: &str) -> String {
+    if is_rust_prim(ty) {
+        return format!("{} {name}", csharp_type(ty));
     }
+    format!("[MarshalAs(UnmanagedType.LPArray, SizeParamIndex=1)] byte[] {name}, UInt32 {name}_len")
 }
 
 #[proc_macro_attribute]
@@ -115,13 +144,19 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
         let mut rust_arg_string = "client: *mut ClientHandle".to_string();
         let mut rust_pre_process = String::new();
         let mut rust_args = String::new();
+        let mut csharp_conv = String::new();
         let mut call = "this.inner".to_string();
         for (i, (n, t)) in args.iter().enumerate() {
             let prefix = if i == 0 { "" } else { ", " };
             write!(arg_string, "{prefix}{} {n}", csharp_type(t)).unwrap();
-            write!(csharp_rust_arg_string, ", {} {n}", ffi_type(t)).unwrap();
+            write!(csharp_rust_arg_string, ", {}", ffi_type(n, t)).unwrap();
+            if is_rust_prim(t) {
+                write!(call, ", {n}").unwrap();
+            } else {
+                write!(call, ", {n}_conv, {n}_len").unwrap();
+            }
+            write!(csharp_conv, "{}", csharp_gen_conv(n, t)).unwrap();
             write!(rust_arg_string, ", {n}: {}", rust_gen_type(n, t)).unwrap();
-            write!(call, ", {n}").unwrap();
             write!(rust_pre_process, "{}", rust_convert_arg(n, t)).unwrap();
             write!(rust_args, "{n}").unwrap();
         }
@@ -137,6 +172,7 @@ public void Send{name}({arg_string}) {{
     unsafe {{
         [DllImport(\"../target/debug/libblastcap.so\", SetLastError = true)]
         static extern void {rust_name}({csharp_rust_arg_string});
+        {csharp_conv}
         {rust_name}({call});
     }}
 }}"
@@ -167,7 +203,8 @@ pub unsafe extern \"C\" fn {rust_name}({rust_arg_string}) {{
         .unwrap();
     }
     csharp_out = format!(
-        "
+        "using System;
+using MessagePack;
 using System.Runtime.InteropServices;
 
 public partial class NetworkClient {{{csharp_out}}}"
@@ -258,6 +295,20 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
             .map(|(_, _, ty)| rust_type(ty))
             .collect::<Vec<_>>()
             .join(", ");
+        let cs_raw_callback_args = args
+            .iter()
+            .map(|(n, _, ty2)| ffi_type(n, ty2))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let cs_callback_args = args
+            .iter()
+            .map(|(n, _, _)| format!("{n}_conv"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        let cs_de_conv = args
+            .iter()
+            .map(|(n, _, ty)| format!("{}\n", csharp_gen_de_conv(n, ty)))
+            .collect::<String>();
         let pre = args
             .iter()
             .map(|(_, n, ty)| format!("{}\n", rust_poll_pre(n, ty)))
@@ -286,15 +337,26 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
         ));
         let cs_args = args
             .iter()
-            .map(|(name, _, ty)| format!("{} {name}", ffi_type(ty)))
+            .map(|(name, _, _)| name.clone())
+            .collect::<Vec<_>>()
+            .join(", ");
+        let cs_args_with_types = args
+            .iter()
+            .map(|(name, _, ty)| format!("{} {name}", csharp_type(ty)))
             .collect::<Vec<_>>()
             .join(", ");
         cs_rust_callback_types.push_str(&format!(
-            "public delegate void {name}Callback({cs_args});
+            "public delegate void {name}Callback({cs_args_with_types});
+    private delegate void {name}CallbackRaw({cs_raw_callback_args});
     "
         ));
         cs_callbacks_fields.push_str(&format!("    private {name}Callback {name}Fn;\n"));
-        cs_callbacks.push_str(&format!(", this.{name}Fn"));
+        cs_callbacks.push_str(&format!(
+            ", ({cs_raw_callback_args}) => {{
+{cs_de_conv}
+                this._on{name}({cs_callback_args});
+            }}"
+        ));
         cs_cons_args.push_str(&format!(", {name}Callback {name}Fn"));
         cs_set_cons.push_str(&format!(
             "
@@ -305,13 +367,15 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
                 .collect::<Vec<_>>()
                 .join(", ")
         ));
-        cs_rust_callbacks.push_str(&format!(", {name}Callback {name}Fn"));
+        cs_rust_callbacks.push_str(&format!(", {name}CallbackRaw {name}Fn"));
     }
 
     let csharp_out = format!(
         "using System.Runtime.InteropServices;
 using System;
 using Godot;
+using MessagePack;
+using System.Collections.Generic;
 
 public partial class NetworkClient {{
     {cs_rust_callback_types}

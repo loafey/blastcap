@@ -1,3 +1,4 @@
+using System;
 using Godot;
 
 public partial class MainMenu : Node3D
@@ -18,6 +19,11 @@ public partial class MainMenu : Node3D
         nw.Inner.OnNewUser += (user) => showMessage($"{user} joined");
         nw.Inner.OnUserLeft += (user) => showMessage($"{user} left");
         nw.Inner.OnStatus += (count, diff) => { };
+        nw.Inner.OnPlayerList += (players) =>
+        {
+            GD.Print("Player list:");
+            foreach (var player in players) GD.Print($"\t{player}");
+        };
     }
 
     public override void _Ready()

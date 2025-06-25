@@ -58,6 +58,7 @@
           dotnet-sdk_8
           dotnetCorePackages.runtime_9_0-bin
           cargo-expand
+          dotnetPackages.Nuget
         ];
       in {
         defaultPackage = fetchy;
