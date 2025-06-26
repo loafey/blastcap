@@ -1,6 +1,7 @@
 [gd_scene load_steps=8 format=3 uid="uid://bjmfx6nsekf58"]
 
 [ext_resource type="PackedScene" uid="uid://d35nkowtrw54c" path="res://objects/PlayerCamera.tscn" id="1_ibkli"]
+[ext_resource type="Script" uid="uid://ow2rlu86ladi" path="res://scenes/Game.cs" id="1_qbsmt"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ibkli"]
 sky_horizon_color = Color(0.632766, 0.679045, 0.697352, 1)
@@ -19,15 +20,15 @@ ssao_enabled = true
 sdfgi_enabled = true
 glow_enabled = true
 
-[sub_resource type="BoxMesh" id="BoxMesh_ve7bo"]
-
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ibkli"]
 albedo_color = Color(0, 1, 0, 1)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_qbsmt"]
 material = SubResource("StandardMaterial3D_ibkli")
+center_offset = Vector3(0.5, 0, 0.5)
 
 [node name="Game" type="Node3D"]
+script = ExtResource("1_qbsmt")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_cpr0p")
@@ -38,9 +39,8 @@ shadow_enabled = true
 
 [node name="PlayerCamera" parent="." instance=ExtResource("1_ibkli")]
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("BoxMesh_ve7bo")
-
 [node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
 transform = Transform3D(12.6364, 0, 0, 0, 1, 0, 0, 0, 14.4, 0, -1, 0)
 mesh = SubResource("PlaneMesh_qbsmt")
+
+[node name="Actors" type="Node3D" parent="."]

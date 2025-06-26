@@ -13,6 +13,7 @@ pub enum ServerMessage {
     NotifyHost,
     MapList(Vec<String>),
     StartMap(String),
+    SpawnPlayer { id: usize, x: usize, y: usize },
 }
 
 #[repr(C)]
@@ -23,4 +24,5 @@ pub enum ClientRequest {
     ChatMessage(String),
     RequestMapList,
     StartMap(String),
+    NotifyReady,
 }

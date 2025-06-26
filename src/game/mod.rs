@@ -1,15 +1,51 @@
-use std::{net::SocketAddr, time::Instant};
+use std::{collections::HashSet, net::SocketAddr, time::Instant};
 
 use crate::network::{
     HostPoll, NetworkHost, TICK_RATE,
     messages::{ClientRequest, ServerMessage},
 };
 
+type Map = [[u8; 16]; 16];
+enum Controller {
+    Player(SocketAddr),
+}
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
+struct Vec2 {
+    x: usize,
+    y: usize,
+}
+impl Vec2 {
+    pub fn new(x: usize, y: usize) -> Self {
+        Self { x, y }
+    }
+}
+struct Actor {
+    id: usize,
+    controller: Controller,
+    position: Vec2,
+}
+
+#[derive(Default)]
+enum StateChoices {
+    #[default]
+    Lobby,
+    Waiting {
+        waiting_for: HashSet<SocketAddr>,
+        players: HashSet<SocketAddr>,
+    },
+    GameStarted {
+        id_counter: usize,
+        waiting_actors: Vec<Actor>,
+        done_actors: Vec<Actor>,
+        map: Box<Map>,
+    },
+}
+
 #[derive(Default)]
 struct State {
     host_player: Option<SocketAddr>,
     tick: usize,
-    started: bool,
+    state: StateChoices,
 }
 
 pub async fn host_loop(port: u16) -> anyhow::Result<()> {
@@ -58,9 +94,63 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                     if Some(addr) != state.host_player {
                         continue;
                     };
-                    state.started = true;
+                    state.state = StateChoices::Waiting {
+                        waiting_for: HashSet::from_iter(host.get_clients()),
+                        players: HashSet::new(),
+                    };
 
                     host.broadcast(ServerMessage::StartMap(map)).await?;
+                }
+                ClientRequest::NotifyReady => {
+                    let StateChoices::Waiting {
+                        waiting_for,
+                        players,
+                    } = &mut state.state
+                    else {
+                        continue;
+                    };
+                    if waiting_for.remove(&addr) {
+                        players.insert(addr);
+                    }
+
+                    if waiting_for.is_empty() {
+                        println!(
+                            "SERVER - Starting game with player actor controllers: {players:?}"
+                        );
+
+                        let mut posses = [
+                            Vec2::new(0, 0),
+                            Vec2::new(0, 16),
+                            Vec2::new(16, 0),
+                            Vec2::new(16, 16),
+                        ]
+                        .into_iter()
+                        .cycle();
+                        let waiting_actors = players
+                            .iter()
+                            .copied()
+                            .enumerate()
+                            .map(|(id, addr)| Actor {
+                                id,
+                                controller: Controller::Player(addr),
+                                position: posses.next().unwrap(),
+                            })
+                            .collect::<Vec<_>>();
+                        for wa in &waiting_actors {
+                            host.broadcast(ServerMessage::SpawnPlayer {
+                                id: wa.id,
+                                x: wa.position.x,
+                                y: wa.position.y,
+                            })
+                            .await?;
+                        }
+                        state.state = StateChoices::GameStarted {
+                            id_counter: waiting_actors.len(),
+                            waiting_actors,
+                            done_actors: Default::default(),
+                            map: Default::default(),
+                        };
+                    }
                 }
             },
             HostPoll::Tick => {
