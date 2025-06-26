@@ -1,3 +1,46 @@
-[gd_scene format=3 uid="uid://bjmfx6nsekf58"]
+[gd_scene load_steps=8 format=3 uid="uid://bjmfx6nsekf58"]
+
+[ext_resource type="PackedScene" uid="uid://d35nkowtrw54c" path="res://objects/PlayerCamera.tscn" id="1_ibkli"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ibkli"]
+sky_horizon_color = Color(0.632766, 0.679045, 0.697352, 1)
+ground_bottom_color = Color(0.0829476, 0.199065, 0.176295, 1)
+ground_horizon_color = Color(0.632766, 0.679045, 0.697352, 1)
+energy_multiplier = 0.9
+
+[sub_resource type="Sky" id="Sky_qbsmt"]
+sky_material = SubResource("ProceduralSkyMaterial_ibkli")
+
+[sub_resource type="Environment" id="Environment_cpr0p"]
+background_mode = 2
+sky = SubResource("Sky_qbsmt")
+tonemap_mode = 2
+ssao_enabled = true
+sdfgi_enabled = true
+glow_enabled = true
+
+[sub_resource type="BoxMesh" id="BoxMesh_ve7bo"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ibkli"]
+albedo_color = Color(0, 1, 0, 1)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_qbsmt"]
+material = SubResource("StandardMaterial3D_ibkli")
 
 [node name="Game" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_cpr0p")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+shadow_enabled = true
+
+[node name="PlayerCamera" parent="." instance=ExtResource("1_ibkli")]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_ve7bo")
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="."]
+transform = Transform3D(12.6364, 0, 0, 0, 1, 0, 0, 0, 14.4, 0, -1, 0)
+mesh = SubResource("PlaneMesh_qbsmt")

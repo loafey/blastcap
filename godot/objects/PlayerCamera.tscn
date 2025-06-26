@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3 uid="uid://d35nkowtrw54c"]
+
+[ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://src/Objects/PlayerCamera.cs" id="1_11u5k"]
+
+[node name="PlayerCamera" type="Node3D"]
+script = ExtResource("1_11u5k")
+
+[node name="BoomArm" type="Node3D" parent="."]
+
+[node name="Camera" type="Camera3D" parent="BoomArm"]
+transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 9, 0)
+current = true
