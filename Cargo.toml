@@ -15,8 +15,9 @@ rand.workspace = true
 rkyv.workspace = true
 tokio.workspace = true
 sharpify.workspace = true
-serde = { version = "1.0.219", features = ["derive"] }
-rmp-serde = "1.3.0"
+serde.workspace = true
+rmp-serde.workspace = true
+pathfinding.workspace = true
 
 [workspace]
 members = [ "crates/*" ]
@@ -34,3 +35,6 @@ proc-macro2 = "1.0.95"
 quote = "1.0.40"
 syn = "2.0.104"
 convert_case = "0.8.0"
+serde = { version = "1.0.219", features = ["derive"] }
+rmp-serde = "1.3.0"
+pathfinding = "4.14.0"
