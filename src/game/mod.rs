@@ -1,4 +1,10 @@
-use std::{collections::HashSet, net::SocketAddr, time::Instant};
+use std::{
+    collections::{HashSet, VecDeque},
+    mem::swap,
+    net::SocketAddr,
+    time::Instant,
+    usize,
+};
 
 use crate::network::{
     HostPoll, NetworkHost, TICK_RATE,
@@ -6,6 +12,7 @@ use crate::network::{
 };
 
 type Map = [[u8; 16]; 16];
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Controller {
     Player(SocketAddr),
 }
@@ -20,9 +27,40 @@ impl Vec2 {
     }
 }
 struct Actor {
+    name: String,
     id: usize,
     controller: Controller,
     position: Vec2,
+}
+
+struct GameStarted {
+    id_counter: usize,
+    actors: VecDeque<Actor>,
+    map: Box<Map>,
+    current_turn: Option<Controller>,
+    current_id: usize,
+}
+impl GameStarted {
+    async fn next_actor(&mut self, host: &mut NetworkHost) -> anyhow::Result<()> {
+        if let Some(actor) = self.actors.pop_front() {
+            let addr = match actor.controller {
+                Controller::Player(addr) => Some(addr),
+            };
+            self.current_turn = Some(actor.controller);
+            self.current_id = actor.id;
+            for cl in host.get_clients() {
+                if Some(cl) == addr {
+                    host.send(cl, ServerMessage::YourTurn { actor: actor.id })
+                        .await?;
+                } else {
+                    host.send(cl, ServerMessage::ActorTurn { actor: actor.id })
+                        .await?;
+                }
+            }
+            self.actors.push_back(actor);
+        }
+        Ok(())
+    }
 }
 
 #[derive(Default)]
@@ -33,12 +71,7 @@ enum StateChoices {
         waiting_for: HashSet<SocketAddr>,
         players: HashSet<SocketAddr>,
     },
-    GameStarted {
-        id_counter: usize,
-        waiting_actors: Vec<Actor>,
-        done_actors: Vec<Actor>,
-        map: Box<Map>,
-    },
+    GameStarted(GameStarted),
 }
 
 #[derive(Default)]
@@ -120,9 +153,9 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
 
                         let mut posses = [
                             Vec2::new(0, 0),
-                            Vec2::new(0, 16),
-                            Vec2::new(16, 0),
-                            Vec2::new(16, 16),
+                            Vec2::new(0, 15),
+                            Vec2::new(15, 0),
+                            Vec2::new(15, 15),
                         ]
                         .into_iter()
                         .cycle();
@@ -131,6 +164,7 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                             .copied()
                             .enumerate()
                             .map(|(id, addr)| Actor {
+                                name: format!("Player {id}"),
                                 id,
                                 controller: Controller::Player(addr),
                                 position: posses.next().unwrap(),
@@ -138,19 +172,40 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                             .collect::<Vec<_>>();
                         for wa in &waiting_actors {
                             host.broadcast(ServerMessage::SpawnPlayer {
+                                name: wa.name.clone(),
                                 id: wa.id,
                                 x: wa.position.x,
                                 y: wa.position.y,
                             })
                             .await?;
                         }
-                        state.state = StateChoices::GameStarted {
+                        let mut gs = GameStarted {
                             id_counter: waiting_actors.len(),
-                            waiting_actors,
-                            done_actors: Default::default(),
+                            actors: VecDeque::from(waiting_actors),
                             map: Default::default(),
+                            current_turn: None,
+                            current_id: usize::MAX,
                         };
+                        gs.next_actor(&mut host).await?;
+                        state.state = StateChoices::GameStarted(gs);
                     }
+                }
+                ClientRequest::MoveActor(x, y) => {
+                    let StateChoices::GameStarted(gs) = &mut state.state else {
+                        continue;
+                    };
+                    if Some(Controller::Player(addr)) != gs.current_turn {
+                        continue;
+                    };
+
+                    println!("UPDATE ON SERVER!!! {x} {y}");
+                    host.broadcast(ServerMessage::MoveActor {
+                        actor: gs.current_id,
+                        x,
+                        y,
+                    })
+                    .await?;
+                    gs.next_actor(&mut host).await?;
                 }
             },
             HostPoll::Tick => {

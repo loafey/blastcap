@@ -169,7 +169,12 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
             write!(csharp_conv, "{}", csharp_gen_conv(n, t)).unwrap();
             write!(rust_arg_string, ", {n}: {}", rust_gen_type(n, t)).unwrap();
             write!(rust_pre_process, "{}", rust_convert_arg(n, t)).unwrap();
-            write!(rust_args, "{n}").unwrap();
+            write!(
+                rust_args,
+                "{}{n}",
+                if rust_args.is_empty() { "" } else { ", " }
+            )
+            .unwrap();
         }
         if !rust_args.is_empty() {
             rust_args = format!("({rust_args})")

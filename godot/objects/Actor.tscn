@@ -1,4 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://dmad3dtbb46yk"]
+[gd_scene load_steps=4 format=3 uid="uid://dmad3dtbb46yk"]
+
+[ext_resource type="Script" uid="uid://0esud7lu33pt" path="res://src/Objects/Actor.cs" id="1_0bejo"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_iwa78"]
 albedo_color = Color(1, 0.301961, 1, 1)
@@ -7,6 +9,14 @@ albedo_color = Color(1, 0.301961, 1, 1)
 material = SubResource("StandardMaterial3D_iwa78")
 
 [node name="Actor" type="Node3D"]
+script = ExtResource("1_0bejo")
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("CylinderMesh_iwa78")
+
+[node name="Label3D" type="Label3D" parent="."]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 1, 0, 1.65718, 0)
+pixel_size = 0.001
+billboard = 1
+fixed_size = true
+text = "Yoo"

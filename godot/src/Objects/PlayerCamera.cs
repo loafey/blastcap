@@ -8,6 +8,7 @@ public partial class PlayerCamera : Node3D
     private bool _cameraLock = false;
     private Node3D _boomArm;
     private Camera3D _camera;
+    public Camera3D Camera { get => _camera; }
 
     public override void _Ready()
     {

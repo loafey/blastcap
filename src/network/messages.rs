@@ -9,11 +9,30 @@ pub enum ServerMessage {
     NewUser(String),
     UserLeft(String),
     PlayerList(Vec<String>),
-    Status { user_count: u32, tick_diff: f32 },
+    Status {
+        user_count: u32,
+        tick_diff: f32,
+    },
     NotifyHost,
     MapList(Vec<String>),
     StartMap(String),
-    SpawnPlayer { id: usize, x: usize, y: usize },
+    SpawnPlayer {
+        name: String,
+        id: usize,
+        x: usize,
+        y: usize,
+    },
+    YourTurn {
+        actor: usize,
+    },
+    ActorTurn {
+        actor: usize,
+    },
+    MoveActor {
+        actor: usize,
+        x: usize,
+        y: usize,
+    },
 }
 
 #[repr(C)]
@@ -25,4 +44,5 @@ pub enum ClientRequest {
     RequestMapList,
     StartMap(String),
     NotifyReady,
+    MoveActor(usize, usize),
 }

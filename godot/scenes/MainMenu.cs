@@ -8,14 +8,7 @@ public partial class MainMenu : Node3D
 
     private HashSet<String> players = new HashSet<string>();
 
-    private void showMessage(string msg)
-    {
-        var chatList = GetNode<VBoxContainer>("CanvasLayer/ChatBox/Messages/List");
-        var label = new Label();
-        label.Text = msg;
-        chatList.AddChild(label);
-        chatList.MoveChild(label, 0);
-    }
+    private ChatBox _chatBox;
 
     private void drawPlayerList()
     {
@@ -31,16 +24,16 @@ public partial class MainMenu : Node3D
 
     private void onConnect()
     {
-        nw.Inner.OnChatMessage += (user, msg) => showMessage($"{user}: {msg}");
+        nw.Inner.OnChatMessage += (user, msg) => _chatBox.ShowMessage($"{user}: {msg}");
         nw.Inner.OnNewUser += (user) =>
         {
-            showMessage($"{user} joined");
+            _chatBox.ShowMessage($"{user} joined");
             players.Add(user);
             drawPlayerList();
         };
         nw.Inner.OnUserLeft += (user) =>
         {
-            showMessage($"{user} left");
+            _chatBox.ShowMessage($"{user} left");
             players.Remove(user);
             drawPlayerList();
         };
@@ -78,6 +71,7 @@ public partial class MainMenu : Node3D
     {
         GD.Print("==================================");
         nw = GetNode<NetworkManager>("/root/NetworkManager");
+        _chatBox = GetNode<ChatBox>("CanvasLayer/ChatBox");
 
         GetNode<Button>("CanvasLayer/MainMenu/Host/Button").Pressed += () =>
         {
@@ -93,13 +87,8 @@ public partial class MainMenu : Node3D
             nw.Connect("localhost:4000");
             onConnect();
         };
-
-        GetNode<LineEdit>("CanvasLayer/ChatBox/Edit/Edit").TextSubmitted += (text) =>
-        {
-            nw.Inner.SendChatMessage(text);
-            GetNode<LineEdit>("CanvasLayer/ChatBox/Edit/Edit").Text = "";
-        };
     }
+
 
     public override void _Process(double delta)
     {
