@@ -9,7 +9,6 @@ crate-type = ["cdylib"]
 [dependencies]
 anyhow.workspace = true
 async-trait.workspace = true
-clap.workspace = true
 futures.workspace = true
 rand.workspace = true
 rkyv.workspace = true
@@ -25,7 +24,6 @@ members = [ "crates/*" ]
 [workspace.dependencies]
 anyhow = "1.0"
 async-trait = "0.1.88"
-clap = { version = "4.5", features = ["derive"] }
 futures = "0.3.31"
 rand = "0.9.1"
 rkyv = "0.8.10"

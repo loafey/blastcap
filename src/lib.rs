@@ -10,7 +10,6 @@ use tokio::{
     sync::mpsc::{Receiver, Sender},
 };
 
-mod args;
 mod game;
 mod network;
 

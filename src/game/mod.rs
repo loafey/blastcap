@@ -1,9 +1,7 @@
 use std::{
     collections::{HashSet, VecDeque},
-    mem::swap,
     net::SocketAddr,
     time::Instant,
-    usize,
 };
 
 use crate::network::{
