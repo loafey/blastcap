@@ -1,13 +1,14 @@
+use crate::network::{
+    HostPoll, NetworkHost, TICK_RATE,
+    messages::{ClientRequest, ServerMessage},
+};
 use std::{
     collections::{HashSet, VecDeque},
     net::SocketAddr,
     time::Instant,
 };
 
-use crate::network::{
-    HostPoll, NetworkHost, TICK_RATE,
-    messages::{ClientRequest, ServerMessage},
-};
+mod state;
 
 type Map = [[u8; 16]; 16];
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -62,7 +63,7 @@ impl GameStarted {
 }
 
 #[derive(Default)]
-enum StateChoices {
+enum State {
     #[default]
     Lobby,
     Waiting {
@@ -73,23 +74,23 @@ enum StateChoices {
 }
 
 #[derive(Default)]
-struct State {
+struct ServerData {
     host_player: Option<SocketAddr>,
     tick: usize,
-    state: StateChoices,
 }
 
 pub async fn host_loop(port: u16) -> anyhow::Result<()> {
     let mut host = NetworkHost::tcp(port).await?;
 
-    let mut state = State::default();
+    let mut data = ServerData::default();
+    let mut state = State::Lobby;
     let mut last_tick = Instant::now();
     while let Ok(res) = host.poll().await {
         match res {
             HostPoll::ClientConnected(addr) => {
                 println!("SERVER - A user at {addr} connected");
                 if host.get_client_count() == 1 {
-                    state.host_player = Some(addr);
+                    data.host_player = Some(addr);
                     host.send(addr, ServerMessage::NotifyHost).await?;
                 }
                 let raw_clients = host.get_clients();
@@ -112,7 +113,7 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                         .await?;
                 }
                 ClientRequest::RequestMapList => {
-                    if Some(addr) != state.host_player {
+                    if Some(addr) != data.host_player {
                         continue;
                     };
                     host.send(
@@ -122,10 +123,10 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                     .await?;
                 }
                 ClientRequest::StartMap(map) => {
-                    if Some(addr) != state.host_player {
+                    if Some(addr) != data.host_player {
                         continue;
                     };
-                    state.state = StateChoices::Waiting {
+                    state = State::Waiting {
                         waiting_for: HashSet::from_iter(host.get_clients()),
                         players: HashSet::new(),
                     };
@@ -133,10 +134,10 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                     host.broadcast(ServerMessage::StartMap(map)).await?;
                 }
                 ClientRequest::NotifyReady => {
-                    let StateChoices::Waiting {
+                    let State::Waiting {
                         waiting_for,
                         players,
-                    } = &mut state.state
+                    } = &mut state
                     else {
                         continue;
                     };
@@ -185,11 +186,11 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                             current_id: usize::MAX,
                         };
                         gs.next_actor(&mut host).await?;
-                        state.state = StateChoices::GameStarted(gs);
+                        state = State::GameStarted(gs);
                     }
                 }
                 ClientRequest::MoveActor(x, y) => {
-                    let StateChoices::GameStarted(gs) = &mut state.state else {
+                    let State::GameStarted(gs) = &mut state else {
                         continue;
                     };
                     if Some(Controller::Player(addr)) != gs.current_turn {
@@ -207,10 +208,10 @@ pub async fn host_loop(port: u16) -> anyhow::Result<()> {
                 }
             },
             HostPoll::Tick => {
-                state.tick = state.tick.wrapping_add(1);
+                data.tick = data.tick.wrapping_add(1);
                 const TICK_DELAY: usize = 1;
-                if let Some(addr) = state.host_player
-                    && state.tick % (TICK_RATE * TICK_DELAY) == 0
+                if let Some(addr) = data.host_player
+                    && data.tick % (TICK_RATE * TICK_DELAY) == 0
                 {
                     let msg = ServerMessage::Status {
                         user_count: host.get_client_count(),
