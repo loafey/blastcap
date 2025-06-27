@@ -1,5 +1,3 @@
-use std::{collections::HashSet, net::SocketAddr};
-
 use super::Arg;
 use crate::{
     game::{
@@ -8,6 +6,7 @@ use crate::{
     },
     network::messages::{ClientRequest, ServerMessage},
 };
+use std::{collections::HashSet, net::SocketAddr};
 
 pub struct WaitingState {
     waiting_for: HashSet<SocketAddr>,

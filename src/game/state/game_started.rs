@@ -1,5 +1,4 @@
-use std::collections::VecDeque;
-
+use super::Arg;
 use crate::{
     game::{
         Actor, Controller, Map,
@@ -10,8 +9,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-
-use super::Arg;
+use std::collections::VecDeque;
 
 pub struct GameStartedState {
     id_counter: usize,
@@ -69,7 +67,9 @@ impl State for GameStartedState {
                     .await?;
                 Ok(None)
             }
-            ClientRequest::MoveActor(x, y) => {
+            ClientRequest::MoveActor(x, y)
+                if Some(Controller::Player(addr)) == self.current_turn =>
+            {
                 println!("UPDATE ON SERVER!!! {x} {y}");
                 arg.host
                     .broadcast(ServerMessage::MoveActor {

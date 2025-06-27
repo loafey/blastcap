@@ -1,9 +1,8 @@
+use super::Arg;
 use crate::{
     game::state::{Res, State, WaitingState},
     network::messages::{ClientRequest, ServerMessage},
 };
-
-use super::Arg;
 
 pub struct LobbyState;
 impl LobbyState {
@@ -29,14 +28,12 @@ impl State for LobbyState {
                     .await?;
                 Ok(None)
             }
-            ClientRequest::RequestMapList => {
-                if Some(addr) == data.host_player {
-                    host.send(
-                        addr,
-                        ServerMessage::MapList(vec!["SimpleTestMap".to_string()]),
-                    )
-                    .await?;
-                };
+            ClientRequest::RequestMapList if Some(addr) == data.host_player => {
+                host.send(
+                    addr,
+                    ServerMessage::MapList(vec!["SimpleTestMap".to_string()]),
+                )
+                .await?;
                 Ok(None)
             }
             ClientRequest::StartMap(map) if Some(addr) == data.host_player => {
