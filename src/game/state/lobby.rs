@@ -39,13 +39,9 @@ impl State for LobbyState {
                 };
                 Ok(None)
             }
-            ClientRequest::StartMap(map) => {
-                if Some(addr) == data.host_player {
-                    host.broadcast(ServerMessage::StartMap(map)).await?;
-                    Ok(Some(WaitingState::new(host.get_clients())))
-                } else {
-                    Ok(None)
-                }
+            ClientRequest::StartMap(map) if Some(addr) == data.host_player => {
+                host.broadcast(ServerMessage::StartMap(map)).await?;
+                Ok(Some(WaitingState::new(host.get_clients())))
             }
             req => {
                 self.default_client_request(

@@ -2,15 +2,9 @@ use tokio::time::Instant;
 
 use crate::{
     game::state::{Arg, LobbyState, State},
-    network::{
-        HostPoll, NetworkHost, TICK_RATE,
-        messages::{ClientRequest, ServerMessage},
-    },
+    network::NetworkHost,
 };
-use std::{
-    collections::{HashSet, VecDeque},
-    net::SocketAddr,
-};
+use std::net::SocketAddr;
 
 mod state;
 

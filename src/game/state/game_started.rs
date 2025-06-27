@@ -70,17 +70,15 @@ impl State for GameStartedState {
                 Ok(None)
             }
             ClientRequest::MoveActor(x, y) => {
-                if Some(Controller::Player(addr)) == self.current_turn {
-                    println!("UPDATE ON SERVER!!! {x} {y}");
-                    arg.host
-                        .broadcast(ServerMessage::MoveActor {
-                            actor: self.current_id,
-                            x,
-                            y,
-                        })
-                        .await?;
-                    self.next_actor(arg.host).await?;
-                };
+                println!("UPDATE ON SERVER!!! {x} {y}");
+                arg.host
+                    .broadcast(ServerMessage::MoveActor {
+                        actor: self.current_id,
+                        x,
+                        y,
+                    })
+                    .await?;
+                self.next_actor(arg.host).await?;
                 Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,
