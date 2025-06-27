@@ -1,7 +1,6 @@
 use super::Arg;
 use crate::{
     game::{
-        Map,
         actor::{Actor, Controller},
         state::{Res, State},
     },
@@ -11,6 +10,15 @@ use crate::{
     },
 };
 use std::collections::VecDeque;
+
+type Map = [[Piece; 16]; 16];
+#[derive(Default)]
+enum Piece {
+    #[default]
+    Empty,
+    Rock,
+    Actor,
+}
 
 pub struct GameStartedState {
     id_counter: usize,

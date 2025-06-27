@@ -8,8 +8,6 @@ use tokio::time::Instant;
 mod actor;
 mod state;
 
-type Map = [[u8; 16]; 16];
-
 #[derive(Default)]
 struct ServerData {
     host_player: Option<SocketAddr>,
