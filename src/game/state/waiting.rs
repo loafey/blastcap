@@ -1,11 +1,12 @@
 use super::Arg;
 use crate::{
     game::{
-        Actor, Controller, Vec2,
+        actor::{Actor, Controller},
         state::{GameStartedState, Res, State},
     },
     network::messages::{ClientRequest, ServerMessage},
 };
+use math::Vec2;
 use std::{collections::HashSet, net::SocketAddr};
 
 pub struct WaitingState {

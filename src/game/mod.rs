@@ -1,34 +1,14 @@
-use tokio::time::Instant;
-
 use crate::{
     game::state::{Arg, LobbyState, State},
     network::NetworkHost,
 };
 use std::net::SocketAddr;
+use tokio::time::Instant;
 
+mod actor;
 mod state;
 
 type Map = [[u8; 16]; 16];
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum Controller {
-    Player(SocketAddr),
-}
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
-struct Vec2 {
-    x: usize,
-    y: usize,
-}
-impl Vec2 {
-    pub fn new(x: usize, y: usize) -> Self {
-        Self { x, y }
-    }
-}
-struct Actor {
-    name: String,
-    id: usize,
-    controller: Controller,
-    position: Vec2,
-}
 
 #[derive(Default)]
 struct ServerData {

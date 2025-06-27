@@ -1,7 +1,8 @@
 use super::Arg;
 use crate::{
     game::{
-        Actor, Controller, Map,
+        Map,
+        actor::{Actor, Controller},
         state::{Res, State},
     },
     network::{
