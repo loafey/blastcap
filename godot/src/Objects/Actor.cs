@@ -37,13 +37,11 @@ public partial class Actor : Node3D
                 _walkGoals[0],
                 (float)_posCount / (float)movvy
             );
-            GD.Print(_curPos, ": ", Position);
             if (_posCount > movvy)
             {
                 _curPos = _walkGoals[0];
                 _walkGoals.RemoveAt(0);
                 _posCount = 0;
-                GD.Print("pop");
             }
         }
     }
