@@ -33,28 +33,19 @@ impl std::fmt::Debug for Piece {
     }
 }
 
-type DelayFn = Box<
-    dyn Fn(&'static mut GameStartedState, Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>>
-        + Send,
->;
 pub struct GameStartedState {
     actors: Vec<Actor>,
     actor_pointer: usize,
     map: Box<Map>,
     current_turn: Option<Controller>,
     waiting: bool,
-    delayed_sender: Sender<DelayFn>,
-    delayed_recv: Receiver<DelayFn>,
 }
 impl GameStartedState {
     pub fn new() -> Box<Self> {
-        let (delayed_sender, delayed_recv) = channel(10);
         Box::new(Self {
             actors: Vec::new(),
             actor_pointer: 0,
             map: Default::default(),
-            delayed_sender,
-            delayed_recv,
             current_turn: None,
             waiting: false,
         })
@@ -136,40 +127,18 @@ impl GameStartedState {
         )
     }
 
-    async fn delay<
-        F: Fn(&'static mut Self, Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>>
-            + Send
-            + 'static,
-    >(
-        &self,
-        delay: Duration,
-        func: F,
-    ) {
-        let send = self.delayed_sender.clone();
-        let pinned: DelayFn = Box::new(func);
-        tokio::task::spawn(async move {
-            tokio::time::sleep(delay).await;
-            send.send(pinned).await.unwrap();
-        });
+    async fn task(&mut self, arg: Arg<'_>, func: impl AsyncFn(&mut GameStartedState, Arg)) {
+        unsafe {
+            func(
+                std::mem::transmute::<&mut GameStartedState, &'static mut GameStartedState>(self),
+                std::mem::transmute::<Arg<'_>, Arg<'static>>(arg),
+            )
+        }
+        .await
     }
 }
 #[async_trait::async_trait]
 impl State for GameStartedState {
-    async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
-        if let Ok(func) = self.delayed_recv.try_recv() {
-            // Yes, I know, shoot me with a canon.
-            unsafe {
-                func(
-                    std::mem::transmute::<&mut GameStartedState, &'static mut GameStartedState>(
-                        self,
-                    ),
-                    std::mem::transmute::<Arg<'_>, Arg<'static>>(arg),
-                )
-            }
-            .await
-        }
-        Ok(None)
-    }
     async fn client_req<'l>(
         &mut self,
         addr: std::net::SocketAddr,
@@ -199,7 +168,7 @@ impl State for GameStartedState {
                 let time = path.len() as f32 / TILES_PER_SECOND as f32;
                 arg.host
                     .broadcast(ServerMessage::ChatMessage(
-                        "server".to_string(),
+                        "SERVER".to_string(),
                         format!("Should take {time}s"),
                     ))
                     .await?;
@@ -225,18 +194,17 @@ impl State for GameStartedState {
                     .await?;
                 self.waiting = true;
 
-                self.delay(Duration::from_secs_f32(time), |state, arg: Arg| {
-                    Box::pin(async move {
-                        state.waiting = false;
-                        state.next_actor(arg.host).await.unwrap();
-                        arg.host
-                            .broadcast(ServerMessage::ChatMessage(
-                                "Server".to_string(),
-                                "Timer up!".to_string(),
-                            ))
-                            .await
-                            .unwrap();
-                    })
+                self.task(arg, async move |state, arg| {
+                    tokio::time::sleep(Duration::from_secs_f32(time)).await;
+                    state.waiting = false;
+                    state.next_actor(arg.host).await.unwrap();
+                    arg.host
+                        .broadcast(ServerMessage::ChatMessage(
+                            "SERVER".to_string(),
+                            "Timer up!".to_string(),
+                        ))
+                        .await
+                        .unwrap();
                 })
                 .await;
                 Ok(None)
