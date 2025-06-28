@@ -17,19 +17,20 @@ enum Piece {
     #[default]
     Empty,
     Rock,
-    Actor,
+    Actor(usize),
 }
 
 pub struct GameStartedState {
     id_counter: usize,
-    actors: VecDeque<Actor>,
+    actors: Vec<Actor>,
+    actor_pointer: usize,
     map: Box<Map>,
     current_turn: Option<Controller>,
     current_id: usize,
 }
 impl GameStartedState {
     pub async fn next_actor(&mut self, host: &mut NetworkHost) -> anyhow::Result<()> {
-        if let Some(actor) = self.actors.pop_front() {
+        if let Some(actor) = self.actors.get(self.actor_pointer) {
             let addr = match actor.controller {
                 Controller::Player(addr) => Some(addr),
             };
@@ -44,17 +45,18 @@ impl GameStartedState {
                         .await?;
                 }
             }
-            self.actors.push_back(actor);
+            self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
         }
         Ok(())
     }
 }
 impl GameStartedState {
     pub fn new<I: IntoIterator<Item = Actor>>(actors: I) -> Box<Self> {
-        let actors = VecDeque::from_iter(actors);
+        let actors = Vec::from_iter(actors);
         Box::new(Self {
             id_counter: actors.len(),
             actors,
+            actor_pointer: 0,
             map: Default::default(),
             current_turn: None,
             current_id: usize::MAX,
