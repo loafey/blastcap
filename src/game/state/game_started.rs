@@ -1,7 +1,9 @@
 use math::Vec2;
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 use super::Arg;
 use crate::{
+    constants::TILES_PER_SECOND,
     game::{
         actor::{Actor, Controller},
         state::{Res, State},
@@ -11,7 +13,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use std::{collections::VecDeque, mem::swap};
+use std::{mem::swap, pin::Pin, time::Duration};
 
 type Map = [[Piece; 16]; 16];
 #[derive(Default)]
@@ -31,13 +33,28 @@ impl std::fmt::Debug for Piece {
     }
 }
 
+type DelayFn = Box<dyn Fn(Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>;
 pub struct GameStartedState {
     actors: Vec<Actor>,
     actor_pointer: usize,
     map: Box<Map>,
     current_turn: Option<Controller>,
+    delayed_sender: Sender<DelayFn>,
+    delayed_recv: Receiver<DelayFn>,
 }
 impl GameStartedState {
+    pub fn new() -> Box<Self> {
+        let (delayed_sender, delayed_recv) = channel(10);
+        Box::new(Self {
+            actors: Vec::new(),
+            actor_pointer: 0,
+            map: Default::default(),
+            delayed_sender,
+            delayed_recv,
+            current_turn: None,
+        })
+    }
+
     pub async fn spawn_actor(
         &mut self,
         host: &mut NetworkHost,
@@ -113,19 +130,31 @@ impl GameStartedState {
             |a| *a == to,
         )
     }
-}
-impl GameStartedState {
-    pub fn new() -> Box<Self> {
-        Box::new(Self {
-            actors: Vec::new(),
-            actor_pointer: 0,
-            map: Default::default(),
-            current_turn: None,
-        })
+
+    async fn delay<
+        F: Fn(Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + 'static,
+    >(
+        &self,
+        delay: Duration,
+        func: F,
+    ) {
+        let send = self.delayed_sender.clone();
+        let pinned: DelayFn = Box::new(func);
+        tokio::task::spawn(async move {
+            tokio::time::sleep(delay).await;
+            send.send(pinned).await.unwrap();
+        });
     }
 }
 #[async_trait::async_trait]
 impl State for GameStartedState {
+    async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
+        //     State::host_poll_tick(self, arg).await?;
+        if let Ok(func) = self.delayed_recv.try_recv() {
+            func(unsafe { std::mem::transmute::<Arg<'_>, Arg<'_>>(arg) }).await
+        }
+        Ok(None)
+    }
     async fn client_req<'l>(
         &mut self,
         addr: std::net::SocketAddr,
@@ -152,6 +181,13 @@ impl State for GameStartedState {
                 let Some((path, _)) = path else {
                     return Ok(None);
                 };
+                let time = path.len() as f32 / TILES_PER_SECOND as f32;
+                arg.host
+                    .broadcast(ServerMessage::ChatMessage(
+                        "server".to_string(),
+                        format!("Should take {time}s"),
+                    ))
+                    .await?;
                 swap(
                     unsafe {
                         std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x])
@@ -172,7 +208,18 @@ impl State for GameStartedState {
                         y: y_list,
                     })
                     .await?;
-                self.next_actor(arg.host).await?;
+                self.delay(Duration::from_secs_f32(time), |arg: Arg| {
+                    Box::pin(async move {
+                        arg.host
+                            .broadcast(ServerMessage::ChatMessage(
+                                "Server".to_string(),
+                                "Timer up!".to_string(),
+                            ))
+                            .await
+                            .unwrap();
+                    })
+                })
+                .await;
                 Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,

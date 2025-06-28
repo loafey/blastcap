@@ -1,4 +1,9 @@
-#![feature(impl_trait_in_bindings, never_type, vec_into_raw_parts)]
+#![feature(
+    impl_trait_in_bindings,
+    never_type,
+    vec_into_raw_parts,
+    async_fn_traits
+)]
 
 use crate::network::{
     ClientPoll, NetworkClient,
@@ -15,7 +20,7 @@ mod network;
 
 sharpify::constants!(
     mod constants {
-        const TILES_PER_SECOND: usize = 4;
+        pub const TILES_PER_SECOND: usize = 4;
     }
 );
 
