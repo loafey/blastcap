@@ -44,29 +44,19 @@ impl State for WaitingState {
                     ]
                     .into_iter()
                     .cycle();
-                    let waiting_actors = self
-                        .players
-                        .iter()
-                        .copied()
-                        .enumerate()
-                        .map(|(id, addr)| Actor {
-                            name: format!("Player {id}"),
-                            id,
-                            controller: Controller::Player(addr),
-                            position: posses.next().unwrap(),
-                        })
-                        .collect::<Vec<_>>();
-                    for wa in &waiting_actors {
-                        arg.host
-                            .broadcast(ServerMessage::SpawnPlayer {
-                                name: wa.name.clone(),
-                                id: wa.id,
-                                x: wa.position.x,
-                                y: wa.position.y,
-                            })
-                            .await?;
+
+                    let mut gs = GameStartedState::new();
+                    for (id, addr) in self.players.iter().copied().enumerate() {
+                        gs.spawn_actor(
+                            arg.host,
+                            Actor {
+                                name: format!("Player {id}"),
+                                controller: Controller::Player(addr),
+                                position: posses.next().unwrap(),
+                            },
+                        )
+                        .await?;
                     }
-                    let mut gs = GameStartedState::new(waiting_actors);
                     gs.next_actor(arg.host).await?;
                     Ok(Some(gs))
                 } else {

@@ -8,7 +8,6 @@ pub enum Controller {
 
 pub struct Actor {
     pub name: String,
-    pub id: usize,
     pub controller: Controller,
     pub position: Vec2,
 }

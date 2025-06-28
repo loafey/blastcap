@@ -1,3 +1,5 @@
+use math::Vec2;
+
 use super::Arg;
 use crate::{
     game::{
@@ -9,7 +11,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use std::collections::VecDeque;
+use std::{collections::VecDeque, mem::swap};
 
 type Map = [[Piece; 16]; 16];
 #[derive(Default)]
@@ -19,30 +21,70 @@ enum Piece {
     Rock,
     Actor(usize),
 }
+impl std::fmt::Debug for Piece {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty => write!(f, "."),
+            Self::Rock => write!(f, "#"),
+            Self::Actor(arg0) => write!(f, "{arg0}"),
+        }
+    }
+}
 
 pub struct GameStartedState {
-    id_counter: usize,
     actors: Vec<Actor>,
     actor_pointer: usize,
     map: Box<Map>,
     current_turn: Option<Controller>,
-    current_id: usize,
 }
 impl GameStartedState {
+    pub async fn spawn_actor(
+        &mut self,
+        host: &mut NetworkHost,
+        actor: Actor,
+    ) -> anyhow::Result<()> {
+        let Vec2 { x, y } = actor.position;
+        let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
+            return Ok(());
+        };
+
+        let id = self.actors.len();
+        self.map[y][x] = Piece::Actor(id);
+        host.broadcast(ServerMessage::SpawnPlayer {
+            name: actor.name.clone(),
+            id,
+            x,
+            y,
+        })
+        .await?;
+        self.actors.push(actor);
+
+        Ok(())
+    }
+
     pub async fn next_actor(&mut self, host: &mut NetworkHost) -> anyhow::Result<()> {
         if let Some(actor) = self.actors.get(self.actor_pointer) {
             let addr = match actor.controller {
                 Controller::Player(addr) => Some(addr),
             };
             self.current_turn = Some(actor.controller);
-            self.current_id = actor.id;
             for cl in host.get_clients() {
                 if Some(cl) == addr {
-                    host.send(cl, ServerMessage::YourTurn { actor: actor.id })
-                        .await?;
+                    host.send(
+                        cl,
+                        ServerMessage::YourTurn {
+                            actor: self.actor_pointer,
+                        },
+                    )
+                    .await?;
                 } else {
-                    host.send(cl, ServerMessage::ActorTurn { actor: actor.id })
-                        .await?;
+                    host.send(
+                        cl,
+                        ServerMessage::ActorTurn {
+                            actor: self.actor_pointer,
+                        },
+                    )
+                    .await?;
                 }
             }
             self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
@@ -51,15 +93,12 @@ impl GameStartedState {
     }
 }
 impl GameStartedState {
-    pub fn new<I: IntoIterator<Item = Actor>>(actors: I) -> Box<Self> {
-        let actors = Vec::from_iter(actors);
+    pub fn new() -> Box<Self> {
         Box::new(Self {
-            id_counter: actors.len(),
-            actors,
+            actors: Vec::new(),
             actor_pointer: 0,
             map: Default::default(),
             current_turn: None,
-            current_id: usize::MAX,
         })
     }
 }
@@ -81,15 +120,45 @@ impl State for GameStartedState {
             ClientRequest::MoveActor(x, y)
                 if Some(Controller::Player(addr)) == self.current_turn =>
             {
-                println!("UPDATE ON SERVER!!! {x} {y}");
+                use std::io::Write as _;
+                let mut dump_file = std::fs::OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open("data.dump")
+                    .unwrap();
+                writeln!(dump_file, "====== before ========").unwrap();
+                for r in &*self.map {
+                    for v in r {
+                        write!(dump_file, "{v:?}").unwrap()
+                    }
+                    writeln!(dump_file).unwrap()
+                }
+                let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
+                    return Ok(None);
+                };
+                let Vec2 { x: old_x, y: old_y } = self.actors[self.actor_pointer].position;
+                swap(
+                    unsafe {
+                        std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x])
+                    },
+                    &mut self.map[old_y][old_x],
+                );
+                self.actors[self.actor_pointer].position = Vec2::new(x, y);
                 arg.host
                     .broadcast(ServerMessage::MoveActor {
-                        actor: self.current_id,
+                        actor: self.actor_pointer,
                         x,
                         y,
                     })
                     .await?;
                 self.next_actor(arg.host).await?;
+                writeln!(dump_file, "====== after ========").unwrap();
+                for r in &*self.map {
+                    for v in r {
+                        write!(dump_file, "{v:?}").unwrap();
+                    }
+                    writeln!(dump_file).unwrap()
+                }
                 Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,
