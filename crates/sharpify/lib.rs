@@ -1,8 +1,9 @@
 extern crate proc_macro;
 use convert_case::Casing;
 use proc_macro::TokenStream as TS1;
+use quote::quote;
 use std::{fmt::Write as _, fs::File, io::Write as _};
-use syn::{ItemEnum, spanned::Spanned};
+use syn::{Item, ItemConst, ItemEnum, ItemMod, spanned::Spanned};
 
 // TODO: This is a bunch of spaghetti!
 // I am going to fix this soon!
@@ -47,23 +48,31 @@ fn csharp_gen_de_conv(name: &str, ty: &str) -> String {
     )
 }
 
-fn csharp_type(ty: &str) -> &str {
+fn csharp_type(ty: &str) -> String {
     match ty {
-        "String" => "string",
-        "i8" => "sbyte",
-        "u8" => "byte",
-        "i16" => "Int16",
-        "u16" => "UInt16",
-        "i32" => "Int32",
-        "u32" => "UInt32",
-        "i64" => "Int64",
-        "u64" => "UInt64",
-        "isize" => "nint",
-        "usize" => "nuint",
-        "bool" => "bool",
-        "f32" => "float",
-        "f64" => "double",
-        "Vec<String>" => "List<string>",
+        "String" => "string".to_string(),
+        "i8" => "sbyte".to_string(),
+        "u8" => "byte".to_string(),
+        "i16" => "Int16".to_string(),
+        "u16" => "UInt16".to_string(),
+        "i32" => "Int32".to_string(),
+        "u32" => "UInt32".to_string(),
+        "i64" => "Int64".to_string(),
+        "u64" => "UInt64".to_string(),
+        #[cfg(target_pointer_width = "64")]
+        "isize" => "Int64".to_string(),
+        #[cfg(not(target_pointer_width = "64"))]
+        "isize" => "Int32".to_string(),
+        #[cfg(target_pointer_width = "64")]
+        "usize" => "UInt64".to_string(),
+        #[cfg(not(target_pointer_width = "64"))]
+        "usize" => "Int64".to_string(),
+        "bool" => "bool".to_string(),
+        "f32" => "float".to_string(),
+        "f64" => "double".to_string(),
+        _ if ty.starts_with("Vec<") && ty.ends_with(">") => {
+            format!("List<{}>", csharp_type(&ty[4..ty.len() - 1]))
+        }
         _ => panic!("unsupported C# type {ty:?}"),
     }
 }
@@ -451,5 +460,39 @@ pub unsafe extern \"C\" fn client_poll(
     let mut f = File::create("src/lib_poll.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
 
+    item_og
+}
+
+#[proc_macro]
+pub fn constants(item_og: TS1) -> TS1 {
+    let item = item_og.clone();
+    let moddy = syn::parse_macro_input!(item as ItemMod);
+    let Some(content) = moddy.content else {
+        panic!("wrong kind of mod!")
+    };
+    let mut constants = vec![];
+    for item in content.1 {
+        let Item::Const(con) = item else {
+            panic!("non-const items are not supported!")
+        };
+        let name = con.ident.span().source_text().unwrap();
+        let ty = con.ty.span().source_text().unwrap();
+        let val = con.expr.span().source_text().unwrap();
+        constants.push((ty, name, val));
+    }
+
+    let mut csharp_code = String::new();
+    for (ty, name, value) in constants {
+        writeln!(
+            csharp_code,
+            "    public const {} {name} = {value};",
+            csharp_type(&ty)
+        )
+        .unwrap();
+    }
+    csharp_code = format!("using System;\nstatic class Constants {{\n{csharp_code}}}");
+
+    let mut f = std::fs::File::create("godot/src/Globals/Constants.cs").unwrap();
+    f.write_all(csharp_code.as_bytes()).unwrap();
     item_og
 }

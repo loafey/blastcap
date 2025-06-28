@@ -30,8 +30,8 @@ pub enum ServerMessage {
     },
     MoveActor {
         actor: usize,
-        x: usize,
-        y: usize,
+        x: Vec<usize>,
+        y: Vec<usize>,
     },
 }
 

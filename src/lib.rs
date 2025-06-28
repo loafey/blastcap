@@ -13,6 +13,12 @@ use tokio::{
 mod game;
 mod network;
 
+sharpify::constants!(
+    mod constants {
+        const TILES_PER_SECOND: usize = 4;
+    }
+);
+
 #[unsafe(no_mangle)]
 pub extern "C" fn start_host_loop(
     port: u16,

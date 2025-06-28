@@ -7,4 +7,10 @@ impl Vec2 {
     pub fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
+
+    pub fn distance(&self, rhs: Self) -> usize {
+        let (px, py) = (self.x as isize, self.y as isize);
+        let (qx, qy) = (rhs.x as isize, rhs.y as isize);
+        ((px - qx).pow(2) + (py - qy).pow(2)).isqrt() as usize
+    }
 }

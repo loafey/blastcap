@@ -11,8 +11,12 @@ material = SubResource("StandardMaterial3D_iwa78")
 [node name="Actor" type="Node3D"]
 script = ExtResource("1_0bejo")
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+[node name="Offset" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Offset"]
 mesh = SubResource("CylinderMesh_iwa78")
+skeleton = NodePath("../..")
 
 [node name="Label3D" type="Label3D" parent="."]
 transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 1, 0, 1.65718, 0)

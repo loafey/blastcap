@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class Game : Node3D
 {
@@ -66,8 +67,6 @@ public partial class Game : Node3D
             var node = _actorScene.Instantiate<Actor>();
             _actorHolder.AddChild(node);
             var pos = node.Position;
-            pos.X = x + 0.5f;
-            pos.Z = y + 0.5f;
             node.Position = pos;
             node.ActorName = name;
             node.Name = id.ToString();
@@ -84,11 +83,17 @@ public partial class Game : Node3D
             _myTurn = false;
         };
 
-        nw.Inner.OnMoveActor += (id, x, y) =>
+        nw.Inner.OnMoveActor += (id, xList, yList) =>
         {
             var actor = _actorHolder.GetNode<Actor>(id.ToString());
-            actor.Position = new Vector3(x + 0.5f, 0, y + 0.5f);
-            GD.Print(x, " ", y);
+            var goals = new List<Vector3I>();
+            for (int i = 0; i < xList.Count; i++)
+            {
+                var x = xList[i];
+                var y = yList[i];
+                goals.Add(new Vector3I((int)x, 0, (int)y));
+            }
+            actor.MoveTo(goals);
         };
 
         setupDebugScene();
