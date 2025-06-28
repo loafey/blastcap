@@ -33,12 +33,16 @@ impl std::fmt::Debug for Piece {
     }
 }
 
-type DelayFn = Box<dyn Fn(Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send>;
+type DelayFn = Box<
+    dyn Fn(&'static mut GameStartedState, Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>>
+        + Send,
+>;
 pub struct GameStartedState {
     actors: Vec<Actor>,
     actor_pointer: usize,
     map: Box<Map>,
     current_turn: Option<Controller>,
+    waiting: bool,
     delayed_sender: Sender<DelayFn>,
     delayed_recv: Receiver<DelayFn>,
 }
@@ -52,6 +56,7 @@ impl GameStartedState {
             delayed_sender,
             delayed_recv,
             current_turn: None,
+            waiting: false,
         })
     }
 
@@ -132,7 +137,9 @@ impl GameStartedState {
     }
 
     async fn delay<
-        F: Fn(Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>> + Send + 'static,
+        F: Fn(&'static mut Self, Arg<'static>) -> Pin<Box<dyn Future<Output = ()> + Send>>
+            + Send
+            + 'static,
     >(
         &self,
         delay: Duration,
@@ -149,9 +156,17 @@ impl GameStartedState {
 #[async_trait::async_trait]
 impl State for GameStartedState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
-        //     State::host_poll_tick(self, arg).await?;
         if let Ok(func) = self.delayed_recv.try_recv() {
-            func(unsafe { std::mem::transmute::<Arg<'_>, Arg<'_>>(arg) }).await
+            // Yes, I know, shoot me with a canon.
+            unsafe {
+                func(
+                    std::mem::transmute::<&mut GameStartedState, &'static mut GameStartedState>(
+                        self,
+                    ),
+                    std::mem::transmute::<Arg<'_>, Arg<'static>>(arg),
+                )
+            }
+            .await
         }
         Ok(None)
     }
@@ -169,7 +184,7 @@ impl State for GameStartedState {
                 Ok(None)
             }
             ClientRequest::MoveActor(x, y)
-                if Some(Controller::Player(addr)) == self.current_turn =>
+                if Some(Controller::Player(addr)) == self.current_turn && !self.waiting =>
             {
                 let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
                     return Ok(None);
@@ -208,8 +223,12 @@ impl State for GameStartedState {
                         y: y_list,
                     })
                     .await?;
-                self.delay(Duration::from_secs_f32(time), |arg: Arg| {
+                self.waiting = true;
+
+                self.delay(Duration::from_secs_f32(time), |state, arg: Arg| {
                     Box::pin(async move {
+                        state.waiting = false;
+                        state.next_actor(arg.host).await.unwrap();
                         arg.host
                             .broadcast(ServerMessage::ChatMessage(
                                 "Server".to_string(),
