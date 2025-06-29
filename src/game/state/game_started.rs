@@ -1,6 +1,3 @@
-use math::Vec2;
-use tokio::sync::mpsc::{Receiver, Sender, channel};
-
 use super::Arg;
 use crate::{
     constants::TILES_PER_SECOND,
@@ -13,7 +10,8 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use std::{mem::swap, pin::Pin, time::Duration};
+use math::Vec2;
+use std::{mem::swap, time::Duration};
 
 type Map = [[Piece; 16]; 16];
 #[derive(Default)]

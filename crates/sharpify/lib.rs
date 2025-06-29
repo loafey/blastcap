@@ -1,9 +1,8 @@
 extern crate proc_macro;
 use convert_case::Casing;
 use proc_macro::TokenStream as TS1;
-use quote::quote;
 use std::{fmt::Write as _, fs::File, io::Write as _};
-use syn::{Item, ItemConst, ItemEnum, ItemMod, spanned::Spanned};
+use syn::{Item, ItemEnum, ItemMod, spanned::Spanned};
 
 // TODO: This is a bunch of spaghetti!
 // I am going to fix this soon!
