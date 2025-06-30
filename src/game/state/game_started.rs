@@ -120,7 +120,7 @@ impl GameStartedState {
                 }
                 neighs
             },
-            |pos| pos.distance(to),
+            |pos| (pos.distance_f32(to) * 10.0) as usize,
             |a| *a == to,
         )
     }
