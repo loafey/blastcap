@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://bo5tvenb8rnc8"]
+[gd_scene load_steps=6 format=3 uid="uid://bo5tvenb8rnc8"]
 
 [ext_resource type="Script" uid="uid://c2biuv8qm1hi8" path="res://scenes/MainMenu.cs" id="1_yqorp"]
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/ChatBox.tscn" id="2_0ykhv"]
@@ -10,6 +10,8 @@ colors = PackedColorArray(0.465402, 0.670186, 0.706926, 1, 0.798942, 0.894868, 0
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_0wfyh"]
 gradient = SubResource("Gradient_o5qli")
 fill_to = Vector2(1, 1)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_0ykhv"]
 
 [node name="Node3D" type="Node3D"]
 script = ExtResource("1_yqorp")
@@ -98,3 +100,8 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+shape = SubResource("BoxShape3D_0ykhv")

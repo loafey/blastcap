@@ -34,7 +34,10 @@ public partial class Game : Node3D
                 var coll = new StaticBody3D();
                 coll.Position = new Vector3(0.5f, 0, 0.5f);
                 var collShape = new CollisionShape3D();
-                collShape.Shape = new BoxShape3D();
+                var shape = new BoxShape3D();
+                shape.Size = new Vector3(1, 0.2f, 1);
+                collShape.Shape = shape;
+
                 coll.AddChild(collShape);
                 floor.AddChild(coll);
                 parent.AddChild(floor);
