@@ -1,5 +1,5 @@
 use crate::{
-    game::ServerData,
+    game::{Arg, ServerData},
     network::{
         HostPoll, NetworkHost, TICK_RATE,
         messages::{ClientRequest, ServerMessage},
@@ -15,35 +15,22 @@ pub use lobby::LobbyState;
 mod waiting;
 pub use waiting::WaitingState;
 
-pub struct Arg<'l> {
-    pub data: &'l mut ServerData,
-    pub host: &'l mut NetworkHost,
-    pub last_tick: &'l mut Instant,
-}
-
 pub type Res = anyhow::Result<Option<Box<dyn State>>>;
 
 #[async_trait::async_trait]
 pub trait State: Send + Sync {
-    async fn host_poll_tick<'l>(
-        &mut self,
-        Arg {
-            data,
-            host,
-            last_tick,
-        }: Arg<'l>,
-    ) -> Res {
-        data.tick = data.tick.wrapping_add(1);
+    async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
+        arg.data.tick = arg.data.tick.wrapping_add(1);
         const TICK_DELAY: usize = 1;
-        if let Some(addr) = data.host_player
-            && data.tick % (TICK_RATE * TICK_DELAY) == 0
+        if let Some(addr) = arg.data.host_player
+            && arg.data.tick % (TICK_RATE * TICK_DELAY) == 0
         {
             let msg = ServerMessage::Status {
-                user_count: host.get_client_count(),
-                tick_diff: last_tick.elapsed().as_secs_f32() - const { TICK_DELAY as f32 },
+                user_count: arg.host.get_client_count(),
+                tick_diff: arg.last_tick.elapsed().as_secs_f32() - const { TICK_DELAY as f32 },
             };
-            host.send(addr, msg).await?;
-            *last_tick = Instant::now();
+            arg.host.send(addr, msg).await?;
+            *arg.last_tick = Instant::now();
         }
         Ok(None)
     }

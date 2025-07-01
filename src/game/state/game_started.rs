@@ -7,11 +7,12 @@ use crate::{
     },
     network::{
         NetworkHost,
+        channel::Channel,
         messages::{ClientRequest, ServerMessage},
     },
 };
 use math::Vec2;
-use std::{mem::swap, time::Duration};
+use std::{mem::swap, pin::Pin, time::Duration};
 
 type Map = [[Piece; 16]; 16];
 #[derive(Default)]
@@ -31,12 +32,20 @@ impl std::fmt::Debug for Piece {
     }
 }
 
+type Callback = Box<
+    dyn FnOnce(
+            &'static mut GameStartedState,
+            Arg<'static>,
+        ) -> Pin<Box<dyn Future<Output = ()> + Send>>
+        + Send,
+>;
 pub struct GameStartedState {
     actors: Vec<Actor>,
     actor_pointer: usize,
     map: Box<Map>,
     current_turn: Option<Controller>,
     waiting: bool,
+    callbacks: Channel<Callback>,
 }
 impl GameStartedState {
     pub fn new() -> Box<Self> {
@@ -46,6 +55,7 @@ impl GameStartedState {
             map: Default::default(),
             current_turn: None,
             waiting: false,
+            callbacks: Channel::new(5),
         })
     }
 
@@ -126,14 +136,23 @@ impl GameStartedState {
         )
     }
 
-    async fn task(&mut self, arg: Arg<'_>, func: impl AsyncFn(&mut GameStartedState, Arg)) {
-        unsafe {
-            func(
-                std::mem::transmute::<&mut GameStartedState, &'static mut GameStartedState>(self),
-                std::mem::transmute::<Arg<'_>, Arg<'static>>(arg),
-            )
-        }
-        .await
+    fn timer<
+        I: FnOnce(&'static mut GameStartedState, Arg<'static>) -> F + Send + 'static,
+        F: Future<Output = ()> + Send,
+    >(
+        &mut self,
+        time: Duration,
+        func: I,
+    ) {
+        let sender = self.callbacks.send.clone();
+        tokio::spawn(async move {
+            tokio::time::sleep(time).await;
+            _ = sender
+                .send(Box::new(move |state, arg| {
+                    Box::pin(async move { func(state, arg).await })
+                }))
+                .await;
+        });
     }
 }
 #[async_trait::async_trait]
@@ -141,6 +160,15 @@ impl State for GameStartedState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
         if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller) {
             self.next_actor(arg.host).await?;
+        }
+        if let Ok(fut) = self.callbacks.recv.try_recv() {
+            unsafe {
+                fut(
+                    std::mem::transmute::<&mut GameStartedState, &mut GameStartedState>(self),
+                    std::mem::transmute::<Arg<'_>, Arg<'_>>(arg),
+                )
+                .await;
+            }
         }
         Ok(None)
     }
@@ -200,8 +228,7 @@ impl State for GameStartedState {
                     .await?;
                 self.waiting = true;
 
-                self.task(arg, async move |state, arg| {
-                    tokio::time::sleep(Duration::from_secs_f32(time)).await;
+                self.timer(Duration::from_secs_f32(time), async move |state, arg| {
                     state.waiting = false;
                     state.next_actor(arg.host).await.unwrap();
                     arg.host
@@ -211,8 +238,7 @@ impl State for GameStartedState {
                         ))
                         .await
                         .unwrap();
-                })
-                .await;
+                });
                 Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,
