@@ -167,12 +167,12 @@ impl GameStartedState {
             return Ok(None);
         };
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
-        arg.host
-            .broadcast(ServerMessage::ChatMessage(
-                "SERVER".to_string(),
-                format!("Should take {time}s"),
-            ))
-            .await?;
+        // arg.host
+        //     .broadcast(ServerMessage::ChatMessage(
+        //         "SERVER".to_string(),
+        //         format!("Should take {time}s"),
+        //     ))
+        //     .await?;
         swap(
             unsafe { std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x]) },
             &mut self.map[old_y][old_x],
@@ -196,13 +196,13 @@ impl GameStartedState {
         self.timer(Duration::from_secs_f32(time), async move |state, arg| {
             state.waiting = false;
             state.next_actor(arg.host).await.unwrap();
-            arg.host
-                .broadcast(ServerMessage::ChatMessage(
-                    "SERVER".to_string(),
-                    "Timer up!".to_string(),
-                ))
-                .await
-                .unwrap();
+            // arg.host
+            //     .broadcast(ServerMessage::ChatMessage(
+            //         "SERVER".to_string(),
+            //         "Timer up!".to_string(),
+            //     ))
+            //     .await
+            //     .unwrap();
         });
         Ok(None)
     }
