@@ -154,12 +154,70 @@ impl GameStartedState {
                 .await;
         });
     }
+
+    async fn move_current_actor(&mut self, arg: Arg<'_>, Vec2 { x, y }: Vec2) -> Res {
+        let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
+            return Ok(None);
+        };
+        let Vec2 { x: old_x, y: old_y } = self.actors[self.actor_pointer].position;
+        let path = self
+            .pathfind(Vec2::new(old_x, old_y), Vec2::new(x, y))
+            .await;
+        let Some((path, _)) = path else {
+            return Ok(None);
+        };
+        let time = path.len() as f32 / TILES_PER_SECOND as f32;
+        arg.host
+            .broadcast(ServerMessage::ChatMessage(
+                "SERVER".to_string(),
+                format!("Should take {time}s"),
+            ))
+            .await?;
+        swap(
+            unsafe { std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x]) },
+            &mut self.map[old_y][old_x],
+        );
+        self.actors[self.actor_pointer].position = Vec2::new(x, y);
+        let mut x_list = Vec::new();
+        let mut y_list = Vec::new();
+        for Vec2 { x, y } in path {
+            x_list.push(x);
+            y_list.push(y);
+        }
+        arg.host
+            .broadcast(ServerMessage::MoveActor {
+                actor: self.actor_pointer,
+                x: x_list,
+                y: y_list,
+            })
+            .await?;
+        self.waiting = true;
+
+        self.timer(Duration::from_secs_f32(time), async move |state, arg| {
+            state.waiting = false;
+            state.next_actor(arg.host).await.unwrap();
+            arg.host
+                .broadcast(ServerMessage::ChatMessage(
+                    "SERVER".to_string(),
+                    "Timer up!".to_string(),
+                ))
+                .await
+                .unwrap();
+        });
+        Ok(None)
+    }
 }
 #[async_trait::async_trait]
 impl State for GameStartedState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
-        if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller) {
-            self.next_actor(arg.host).await?;
+        if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller)
+            && !self.waiting
+        {
+            self.move_current_actor(
+                unsafe { arg.clone() },
+                Vec2::new(rand::random_range(0..=16), rand::random_range(0..=16)),
+            )
+            .await?;
         }
         if let Ok(fut) = self.callbacks.recv.try_recv() {
             unsafe {
@@ -189,57 +247,7 @@ impl State for GameStartedState {
             ClientRequest::MoveActor(x, y)
                 if Some(Controller::Player(addr)) == self.current_turn && !self.waiting =>
             {
-                let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
-                    return Ok(None);
-                };
-                let Vec2 { x: old_x, y: old_y } = self.actors[self.actor_pointer].position;
-                let path = self
-                    .pathfind(Vec2::new(old_x, old_y), Vec2::new(x, y))
-                    .await;
-                let Some((path, _)) = path else {
-                    return Ok(None);
-                };
-                let time = path.len() as f32 / TILES_PER_SECOND as f32;
-                arg.host
-                    .broadcast(ServerMessage::ChatMessage(
-                        "SERVER".to_string(),
-                        format!("Should take {time}s"),
-                    ))
-                    .await?;
-                swap(
-                    unsafe {
-                        std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x])
-                    },
-                    &mut self.map[old_y][old_x],
-                );
-                self.actors[self.actor_pointer].position = Vec2::new(x, y);
-                let mut x_list = Vec::new();
-                let mut y_list = Vec::new();
-                for Vec2 { x, y } in path {
-                    x_list.push(x);
-                    y_list.push(y);
-                }
-                arg.host
-                    .broadcast(ServerMessage::MoveActor {
-                        actor: self.actor_pointer,
-                        x: x_list,
-                        y: y_list,
-                    })
-                    .await?;
-                self.waiting = true;
-
-                self.timer(Duration::from_secs_f32(time), async move |state, arg| {
-                    state.waiting = false;
-                    state.next_actor(arg.host).await.unwrap();
-                    arg.host
-                        .broadcast(ServerMessage::ChatMessage(
-                            "SERVER".to_string(),
-                            "Timer up!".to_string(),
-                        ))
-                        .await
-                        .unwrap();
-                });
-                Ok(None)
+                self.move_current_actor(arg, Vec2::new(x, y)).await
             }
             req => self.default_client_request(addr, req, arg).await,
         }

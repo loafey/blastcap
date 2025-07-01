@@ -19,9 +19,20 @@ struct ServerData {
 }
 
 pub struct Arg<'l> {
-    pub data: &'l mut ServerData,
-    pub host: &'l mut NetworkHost,
-    pub last_tick: &'l mut Instant,
+    data: &'l mut ServerData,
+    host: &'l mut NetworkHost,
+    last_tick: &'l mut Instant,
+}
+impl<'l> Arg<'l> {
+    pub unsafe fn clone(&self) -> Self {
+        unsafe {
+            let new = std::mem::MaybeUninit::uninit();
+            let ptr = new.as_ptr() as *mut Self;
+            std::ptr::copy(self, ptr, 1);
+
+            new.assume_init()
+        }
+    }
 }
 
 pub async fn host_loop(port: u16) -> anyhow::Result<()> {
