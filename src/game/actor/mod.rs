@@ -7,6 +7,7 @@ pub enum Controller {
     Bot,
 }
 
+#[derive(Debug)]
 pub struct Actor {
     pub name: String,
     pub controller: Controller,

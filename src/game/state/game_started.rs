@@ -74,6 +74,7 @@ impl GameStartedState {
     }
 
     pub async fn next_actor(&mut self, host: &mut NetworkHost) -> anyhow::Result<()> {
+        self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
         if let Some(actor) = self.actors.get(self.actor_pointer) {
             let addr = match actor.controller {
                 Controller::Player(addr) => Some(addr),
@@ -99,7 +100,6 @@ impl GameStartedState {
                     .await?;
                 }
             }
-            self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
         }
         Ok(())
     }
@@ -138,11 +138,10 @@ impl GameStartedState {
 }
 #[async_trait::async_trait]
 impl State for GameStartedState {
-    async fn host_poll_tick<'l>(&mut self, _: Arg<'l>) -> Res {
-        println!(
-            "{:?}",
-            self.actors.get(self.actor_pointer).map(|a| a.controller)
-        );
+    async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
+        if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller) {
+            self.next_actor(arg.host).await?;
+        }
         Ok(None)
     }
 
