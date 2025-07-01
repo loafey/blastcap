@@ -29,22 +29,28 @@ public partial class PlayerCamera : Node3D
         _boomArm = GetNode<Node3D>("BoomArm");
         _camera = GetNode<Camera3D>("BoomArm/Camera");
         _tinyPopupScene = GD.Load<PackedScene>("uid://bp7yq4iqifwrh");
+        var rot = _camera.Rotation;
+        rot.X = -0.9f;
+        _camera.Rotation = rot;
+    }
+
+    private void RotateCam(Vector2 rotation)
+    {
+        _boomArm.RotateY(-rotation.X);
+        _camera.RotateX(-rotation.Y);
+        var rot = _camera.Rotation;
+        if (_camera.Projection == Camera3D.ProjectionType.Orthogonal)
+            rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
+        else
+            rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
+        _camera.Rotation = rot;
     }
 
     public override void _Input(InputEvent @event)
     {
         base._Input(@event);
         if (_cameraLock && @event is InputEventMouseMotion ev)
-        {
-            _boomArm.RotateY(-ev.Relative.X * _cameraBoomSpeed);
-            _camera.RotateX(-ev.Relative.Y * _cameraBoomSpeed);
-            var rot = _camera.Rotation;
-            if (_camera.Projection == Camera3D.ProjectionType.Orthogonal)
-                rot.X = Mathf.Clamp(rot.X, -0.9f, -0.9f);
-            else
-                rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
-            _camera.Rotation = rot;
-        }
+            RotateCam(-ev.Relative * _cameraBoomSpeed);
     }
 
     public override void _Process(double delta)
@@ -60,7 +66,7 @@ public partial class PlayerCamera : Node3D
                 _camera.Projection = Camera3D.ProjectionType.Orthogonal;
                 _camera.Size = 20f;
                 var rot = _camera.Rotation;
-                rot.X = Mathf.Clamp(rot.X, -0.9f, -0.9f);
+                rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
                 _camera.Rotation = rot;
             }
             else
@@ -90,6 +96,11 @@ public partial class PlayerCamera : Node3D
             newPos.Z += cos;
             newPos.X += sin;
         }
+        if (Input.IsActionPressed("camera_float_up"))
+            newPos.Y += (float)delta * 5;
+        else if (Input.IsActionPressed("camera_float_down"))
+            newPos.Y -= (float)delta * 5;
+        newPos.Y = Mathf.Clamp(newPos.Y, -3f, 3f);
         Position = newPos;
 
         if (Input.IsActionPressed("camera_rotate_lock"))
@@ -102,6 +113,17 @@ public partial class PlayerCamera : Node3D
             _cameraLock = false;
             Input.MouseMode = Input.MouseModeEnum.Visible;
         }
+
+
+        if (Input.IsActionPressed("camera_rotate_left"))
+            RotateCam(new Vector2(-(float)delta, 0));
+        else if (Input.IsActionPressed("camera_rotate_right"))
+            RotateCam(new Vector2((float)delta, 0));
+
+        if (Input.IsActionPressed("camera_pan_up"))
+            RotateCam(new Vector2(0, -(float)delta));
+        else if (Input.IsActionPressed("camera_pan_down"))
+            RotateCam(new Vector2(0, (float)delta));
     }
 
     public void DisplayTinyPopup(String text)
