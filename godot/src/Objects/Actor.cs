@@ -20,7 +20,6 @@ public partial class Actor : Node3D
     {
         base._Ready();
         GetNode<Label3D>("Label3D").Text = _actorName;
-        GD.Print($"ready!! {_actorName}");
     }
 
     private List<Vector3I> _walkGoals = new List<Vector3I>();
