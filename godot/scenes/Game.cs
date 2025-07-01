@@ -68,7 +68,6 @@ public partial class Game : Node3D
         nw.Inner.OnSpawnPlayer += (name, id, x, y) =>
         {
             var node = _actorScene.Instantiate<Actor>();
-            GD.Print($"spawn {name} at {x}:{y}");
             _actorHolder.AddChild(node);
             node.Position = new Vector3(x, 0, y);
             node.ActorName = name;
