@@ -10,6 +10,17 @@ public partial class PlayerCamera : Node3D
     private Camera3D _camera;
     public Camera3D Camera { get => _camera; }
 
+    private bool _myTurn = false;
+    public bool MyTurn
+    {
+        get => _myTurn;
+        set
+        {
+            _myTurn = value;
+            GD.Print("my turn!");
+        }
+    }
+
     public override void _Ready()
     {
         base._Ready();
