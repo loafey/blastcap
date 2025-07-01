@@ -9,6 +9,8 @@ public partial class PlayerCamera : Node3D
     private Node3D _boomArm;
     private Camera3D _camera;
     public Camera3D Camera { get => _camera; }
+    private Control _tinyPopupHolder;
+    private PackedScene _tinyPopupScene;
 
     private bool _myTurn = false;
     public bool MyTurn
@@ -17,15 +19,16 @@ public partial class PlayerCamera : Node3D
         set
         {
             _myTurn = value;
-            GD.Print("my turn!");
         }
     }
 
     public override void _Ready()
     {
         base._Ready();
+        _tinyPopupHolder = GetNode<Control>("CanvasLayer/TinyPopupHolder");
         _boomArm = GetNode<Node3D>("BoomArm");
         _camera = GetNode<Camera3D>("BoomArm/Camera");
+        _tinyPopupScene = GD.Load<PackedScene>("uid://bp7yq4iqifwrh");
     }
 
     public override void _Input(InputEvent @event)
@@ -99,5 +102,13 @@ public partial class PlayerCamera : Node3D
             _cameraLock = false;
             Input.MouseMode = Input.MouseModeEnum.Visible;
         }
+    }
+
+    public void DisplayTinyPopup(String text)
+    {
+        var scene = _tinyPopupScene.Instantiate<TinyPopup>();
+        scene.Visible = false;
+        scene.Text = text;
+        _tinyPopupHolder.AddChild(scene);
     }
 }

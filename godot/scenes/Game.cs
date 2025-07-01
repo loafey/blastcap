@@ -76,14 +76,14 @@ public partial class Game : Node3D
 
         nw.Inner.OnYourTurn += (id) =>
         {
-            _chatBox.ShowMessage("It is your turn!");
+            _playerCamera.DisplayTinyPopup("YOUR TURN");
             _playerCamera.MyTurn = true;
             _myTurn = true;
         };
         nw.Inner.OnActorTurn += (id) =>
         {
             var actor = _actorHolder.GetNode<Actor>(id.ToString()).ActorName;
-            _chatBox.ShowMessage($"It is {actor}'s turn");
+            _playerCamera.DisplayTinyPopup($"{actor.ToUpperInvariant()}'S TURN");
             _playerCamera.MyTurn = false;
             _myTurn = false;
         };
