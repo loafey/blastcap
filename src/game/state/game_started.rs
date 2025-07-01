@@ -77,6 +77,7 @@ impl GameStartedState {
         if let Some(actor) = self.actors.get(self.actor_pointer) {
             let addr = match actor.controller {
                 Controller::Player(addr) => Some(addr),
+                Controller::Bot => None,
             };
             self.current_turn = Some(actor.controller);
             for cl in host.get_clients() {
@@ -137,6 +138,14 @@ impl GameStartedState {
 }
 #[async_trait::async_trait]
 impl State for GameStartedState {
+    async fn host_poll_tick<'l>(&mut self, _: Arg<'l>) -> Res {
+        println!(
+            "{:?}",
+            self.actors.get(self.actor_pointer).map(|a| a.controller)
+        );
+        Ok(None)
+    }
+
     async fn client_req<'l>(
         &mut self,
         addr: std::net::SocketAddr,

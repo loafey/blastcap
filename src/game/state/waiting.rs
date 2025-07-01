@@ -57,6 +57,15 @@ impl State for WaitingState {
                         )
                         .await?;
                     }
+                    gs.spawn_actor(
+                        arg.host,
+                        Actor {
+                            name: "Bot".to_string(),
+                            controller: Controller::Bot,
+                            position: Vec2::new(8, 8),
+                        },
+                    )
+                    .await?;
                     gs.next_actor(arg.host).await?;
                     Ok(Some(gs))
                 } else {
