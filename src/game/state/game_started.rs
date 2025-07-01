@@ -157,6 +157,8 @@ impl GameStartedState {
 
     async fn move_current_actor(&mut self, arg: Arg<'_>, Vec2 { x, y }: Vec2) -> Res {
         let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
+            self.waiting = false;
+            self.next_actor(arg.host).await?;
             return Ok(None);
         };
         let Vec2 { x: old_x, y: old_y } = self.actors[self.actor_pointer].position;
@@ -164,6 +166,8 @@ impl GameStartedState {
             .pathfind(Vec2::new(old_x, old_y), Vec2::new(x, y))
             .await;
         let Some((path, _)) = path else {
+            self.waiting = false;
+            self.next_actor(arg.host).await?;
             return Ok(None);
         };
         let time = path.len() as f32 / TILES_PER_SECOND as f32;

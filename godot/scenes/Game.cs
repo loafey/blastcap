@@ -76,6 +76,7 @@ public partial class Game : Node3D
 
         nw.Inner.OnYourTurn += (id) =>
         {
+            // _chatBox.ShowMessage("YOUR TURN");
             _playerCamera.DisplayTinyPopup("YOUR TURN");
             _playerCamera.MyTurn = true;
             _myTurn = true;
@@ -84,6 +85,7 @@ public partial class Game : Node3D
         {
             var actor = _actorHolder.GetNode<Actor>(id.ToString()).ActorName;
             _playerCamera.DisplayTinyPopup($"{actor.ToUpperInvariant()}'S TURN");
+            // _chatBox.ShowMessage($"{actor.ToUpperInvariant()}'S TURN");
             _playerCamera.MyTurn = false;
             _myTurn = false;
         };

@@ -2,11 +2,7 @@ use crate::{
     game::state::{LobbyState, State},
     network::NetworkHost,
 };
-use std::{
-    net::SocketAddr,
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::{mem::MaybeUninit, net::SocketAddr};
 use tokio::time::Instant;
 
 mod actor;
@@ -26,7 +22,7 @@ pub struct Arg<'l> {
 impl<'l> Arg<'l> {
     pub unsafe fn clone(&self) -> Self {
         unsafe {
-            let new = std::mem::MaybeUninit::uninit();
+            let new = MaybeUninit::uninit();
             let ptr = new.as_ptr() as *mut Self;
             std::ptr::copy(self, ptr, 1);
 
