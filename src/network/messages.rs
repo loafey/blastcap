@@ -16,7 +16,7 @@ pub enum ServerMessage {
     NotifyHost,
     MapList(Vec<String>),
     StartMap(String),
-    SpawnPlayer {
+    SpawnActor {
         name: String,
         id: usize,
         x: usize,

@@ -71,7 +71,7 @@ impl GameStartedState {
 
         let id = self.actors.len();
         self.map[y][x] = Piece::Actor(id);
-        host.broadcast(ServerMessage::SpawnPlayer {
+        host.broadcast(ServerMessage::SpawnActor {
             name: actor.name.clone(),
             id,
             x,

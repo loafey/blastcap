@@ -65,7 +65,7 @@ public partial class Game : Node3D
             _chatBox.ShowMessage($"{user} left");
         };
 
-        nw.Inner.OnSpawnPlayer += (name, id, x, y) =>
+        nw.Inner.OnSpawnActor += (name, id, x, y) =>
         {
             var node = _actorScene.Instantiate<Actor>();
             _actorHolder.AddChild(node);
