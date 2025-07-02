@@ -57,7 +57,7 @@ impl State for WaitingState {
                         )
                         .await?;
                     }
-                    for i in 0..4 {
+                    for i in 0..1 {
                         gs.spawn_actor(
                             arg.host,
                             Actor {

@@ -106,10 +106,9 @@ public partial class Game : Node3D
         setupDebugScene();
     }
 
-
-    public override void _Process(double delta)
+    public override void _UnhandledInput(InputEvent @event)
     {
-        base._Process(delta);
+        base._UnhandledInput(@event);
         if (_myTurn && Input.IsActionJustPressed("actor_walk"))
         {
             var mp = GetViewport().GetMousePosition();
@@ -128,5 +127,12 @@ public partial class Game : Node3D
             Vector3 pos = (Vector3)result["position"];
             nw.Inner.SendMoveActor((nuint)pos.X, (nuint)pos.Z);
         }
+    }
+
+
+    public override void _Process(double delta)
+    {
+        base._Process(delta);
+
     }
 }
