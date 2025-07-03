@@ -19,17 +19,7 @@ type Map = [[Piece; 16]; 16];
 enum Piece {
     #[default]
     Empty,
-    Rock,
     Actor(usize),
-}
-impl std::fmt::Debug for Piece {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Empty => write!(f, "."),
-            Self::Rock => write!(f, "#"),
-            Self::Actor(arg0) => write!(f, "{arg0}"),
-        }
-    }
 }
 
 type Callback = Box<

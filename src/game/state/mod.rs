@@ -1,7 +1,7 @@
 use crate::{
-    game::{Arg, ServerData},
+    game::Arg,
     network::{
-        HostPoll, NetworkHost, TICK_RATE,
+        HostPoll, TICK_RATE,
         messages::{ClientRequest, ServerMessage},
     },
 };
