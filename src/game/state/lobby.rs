@@ -1,6 +1,9 @@
 use super::Arg;
 use crate::{
-    game::state::{Res, State, WaitingState},
+    game::{
+        actor::Abilities,
+        state::{Res, State, WaitingState},
+    },
     network::messages::{ClientRequest, ServerMessage},
 };
 
@@ -38,6 +41,8 @@ impl State for LobbyState {
             }
             ClientRequest::StartMap(map) if Some(addr) == data.host_player => {
                 host.broadcast(ServerMessage::StartMap(map)).await?;
+                host.broadcast(ServerMessage::AbilityMap(Abilities::get_map().clone()))
+                    .await?;
                 Ok(Some(WaitingState::new(host.get_clients())))
             }
             req => {

@@ -10,7 +10,9 @@ public partial class PlayerCamera : Node3D
     private Camera3D _camera;
     public Camera3D Camera { get => _camera; }
     private Control _tinyPopupHolder;
+    private GridContainer _abilitiesGrid;
     private PackedScene _tinyPopupScene;
+    public Actor MyActor;
 
     private bool _myTurn = false;
     public bool MyTurn
@@ -20,6 +22,15 @@ public partial class PlayerCamera : Node3D
         {
             _myTurn = value;
         }
+    }
+
+    public void AddAbilityButton(string name, string tooltip, Action callback)
+    {
+        var button = new Button();
+        button.Text = name;
+        button.TooltipText = tooltip;
+        button.Pressed += callback;
+        _abilitiesGrid.AddChild(button);
     }
 
     public override void _Ready()
@@ -32,6 +43,7 @@ public partial class PlayerCamera : Node3D
         var rot = _camera.Rotation;
         rot.X = -0.9f;
         _camera.Rotation = rot;
+        _abilitiesGrid = GetNode<GridContainer>("CanvasLayer/Panel/HBoxContainer/AbilitiesGrid");
     }
 
     private void RotateCam(Vector2 rotation)

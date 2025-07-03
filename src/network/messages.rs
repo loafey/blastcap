@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[repr(C, i32)]
@@ -17,10 +19,12 @@ pub enum ServerMessage {
     MapList(Vec<String>),
     StartMap(String),
     SpawnActor {
+        yours: bool,
         name: String,
         id: usize,
         x: usize,
         y: usize,
+        abilities: Vec<String>,
     },
     YourTurn {
         actor: usize,
@@ -33,6 +37,7 @@ pub enum ServerMessage {
         x: Vec<usize>,
         y: Vec<usize>,
     },
+    AbilityMap(HashMap<String, String>),
 }
 
 #[repr(C)]

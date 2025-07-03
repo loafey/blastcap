@@ -4,7 +4,7 @@ use crate::{
         actor::{Actor, Controller},
         state::{GameStartedState, Res, State},
     },
-    network::messages::{ClientRequest, ServerMessage},
+    network::messages::ClientRequest,
 };
 use math::Vec2;
 use std::{collections::HashSet, net::SocketAddr};
@@ -53,6 +53,7 @@ impl State for WaitingState {
                                 name: format!("Player {id}"),
                                 controller: Controller::Player(addr),
                                 position: posses.next().unwrap(),
+                                abilities: Default::default(),
                             },
                         )
                         .await?;
@@ -67,6 +68,7 @@ impl State for WaitingState {
                                     rand::random_range(0..16),
                                     rand::random_range(0..16),
                                 ),
+                                abilities: Default::default(),
                             },
                         )
                         .await?;

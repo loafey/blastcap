@@ -71,13 +71,20 @@ impl GameStartedState {
 
         let id = self.actors.len();
         self.map[y][x] = Piece::Actor(id);
-        host.broadcast(ServerMessage::SpawnActor {
-            name: actor.name.clone(),
-            id,
-            x,
-            y,
-        })
-        .await?;
+        for addr in host.get_clients() {
+            host.send(
+                addr,
+                ServerMessage::SpawnActor {
+                    name: actor.name.clone(),
+                    id,
+                    x,
+                    y,
+                    abilities: actor.abilities.get_keys(),
+                    yours: actor.controller == Controller::Player(addr),
+                },
+            )
+            .await?;
+        }
         self.actors.push(actor);
 
         Ok(())

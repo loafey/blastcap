@@ -16,6 +16,8 @@ public partial class Actor : Node3D
         }
     }
 
+    public List<string> Abilities = new List<string>();
+
     public override void _Ready()
     {
         base._Ready();

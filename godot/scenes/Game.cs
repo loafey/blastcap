@@ -65,13 +65,27 @@ public partial class Game : Node3D
             _chatBox.ShowMessage($"{user} left");
         };
 
-        nw.Inner.OnSpawnActor += (name, id, x, y) =>
+        nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities) =>
         {
             var node = _actorScene.Instantiate<Actor>();
             _actorHolder.AddChild(node);
             node.Position = new Vector3(x, 0, y);
             node.ActorName = name;
             node.Name = id.ToString();
+            node.Abilities = abilities;
+            if (mine)
+            {
+                _playerCamera.MyActor = node;
+                foreach (var item in abilities)
+                {
+                    var tt = Data.Abilities[item];
+                    _playerCamera.AddAbilityButton(item, tt, () =>
+                        {
+                            GD.Print($"Cast {item}: {tt}");
+                        }
+                    );
+                }
+            }
         };
 
         nw.Inner.OnYourTurn += (id) =>
@@ -102,6 +116,8 @@ public partial class Game : Node3D
             }
             actor.MoveTo(goals);
         };
+
+        nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
 
         setupDebugScene();
     }

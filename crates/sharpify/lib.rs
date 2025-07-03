@@ -48,6 +48,7 @@ fn csharp_gen_de_conv(name: &str, ty: &str) -> String {
 }
 
 fn csharp_type(ty: &str) -> String {
+    let ty = ty.trim();
     match ty {
         "String" => "string".to_string(),
         "i8" => "sbyte".to_string(),
@@ -71,6 +72,15 @@ fn csharp_type(ty: &str) -> String {
         "f64" => "double".to_string(),
         _ if ty.starts_with("Vec<") && ty.ends_with(">") => {
             format!("List<{}>", csharp_type(&ty[4..ty.len() - 1]))
+        }
+        _ if ty.starts_with("HashMap<") && ty.ends_with(">") => {
+            format!("Dictionary<{}>", csharp_type(&ty[8..ty.len() - 1]))
+        }
+        _ if ty.split_once(",").is_some() => {
+            let Some((a, b)) = ty.split_once(",") else {
+                unreachable!()
+            };
+            format!("{}, {}", csharp_type(a), csharp_type(b))
         }
         _ => panic!("unsupported C# type {ty:?}"),
     }
