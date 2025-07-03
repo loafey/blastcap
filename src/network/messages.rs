@@ -49,5 +49,5 @@ pub enum ClientRequest {
     RequestMapList,
     StartMap(String),
     NotifyReady,
-    MoveActor(usize, usize),
+    Action(String, usize, usize),
 }

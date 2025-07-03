@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 
+
 public partial class Game : Node3D
 {
     private NetworkManager nw;
@@ -10,6 +11,7 @@ public partial class Game : Node3D
     private ChatBox _chatBox;
     private PlayerCamera _playerCamera;
     private bool _myTurn;
+    private string _currentAbility = null;
 
     private void setupDebugScene()
     {
@@ -79,10 +81,10 @@ public partial class Game : Node3D
                 foreach (var item in abilities)
                 {
                     var tt = Data.Abilities[item];
-                    _playerCamera.AddAbilityButton(item, tt, () =>
-                        {
-                            GD.Print($"Cast {item}: {tt}");
-                        }
+                    _playerCamera.AddAbilityButton(
+                        item,
+                        tt,
+                        () => _currentAbility = item
                     );
                 }
             }
@@ -141,7 +143,11 @@ public partial class Game : Node3D
             if (result.Count == 0) return;
 
             Vector3 pos = (Vector3)result["position"];
-            nw.Inner.SendMoveActor((nuint)pos.X, (nuint)pos.Z);
+            if (_currentAbility != null)
+            {
+                nw.Inner.SendAction(_currentAbility, (nuint)pos.X, (nuint)pos.Z);
+                _currentAbility = null;
+            }
         }
     }
 

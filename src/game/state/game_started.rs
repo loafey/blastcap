@@ -121,6 +121,10 @@ impl GameStartedState {
         Ok(())
     }
 
+    fn current_actor(&self) -> &Actor {
+        &self.actors[self.actor_pointer]
+    }
+
     async fn pathfind(&self, from: Vec2, to: Vec2) -> Option<(Vec<Vec2>, usize)> {
         pathfinding::directed::astar::astar(
             &from,
@@ -255,10 +259,26 @@ impl State for GameStartedState {
                     .await?;
                 Ok(None)
             }
-            ClientRequest::MoveActor(x, y)
-                if Some(Controller::Player(addr)) == self.current_turn && !self.waiting =>
+            ClientRequest::Action(act, x, y)
+                if Some(Controller::Player(addr)) == self.current_turn
+                    && !self.waiting
+                    && self.current_actor().abilities.contains(&act) =>
             {
-                self.move_current_actor(arg, Vec2::new(x, y)).await
+                match &*act {
+                    "Walk" => self.move_current_actor(arg, Vec2::new(x, y)).await,
+                    _ => {
+                        arg.host
+                            .send(
+                                addr,
+                                ServerMessage::ChatMessage(
+                                    "SERVER".to_string(),
+                                    format!("unknown ability: {act:?}"),
+                                ),
+                            )
+                            .await?;
+                        Ok(None)
+                    }
+                }
             }
             req => self.default_client_request(addr, req, arg).await,
         }

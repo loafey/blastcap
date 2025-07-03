@@ -21,6 +21,10 @@ impl Abilities {
     pub fn get_keys(&self) -> Vec<String> {
         self.0.iter().cloned().collect()
     }
+
+    pub fn contains(&self, ability: &str) -> bool {
+        self.0.contains(ability)
+    }
 }
 impl Default for Abilities {
     fn default() -> Self {
