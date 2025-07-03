@@ -21,7 +21,7 @@ public partial class NetworkClient
     {
         _success = true;
         _isHost = true;
-        [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
+        [DllImport("libblastcap.so", SetLastError = true)]
         static extern void start_host_loop(Int16 port, OnFail onFail);
 
         start_host_loop(port, (err) =>
@@ -39,7 +39,7 @@ public partial class NetworkClient
     {
         unsafe
         {
-            [DllImport("../target/debug/libblastcap.so", SetLastError = true)]
+            [DllImport("libblastcap.so", SetLastError = true)]
             static extern void client_drop_handle(void* inner);
 
             client_drop_handle(this.inner);

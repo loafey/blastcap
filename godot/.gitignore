@@ -2,3 +2,4 @@
 src/Globals/Network/Network_ClientCalls.cs
 src/Globals/Network/Network_Polling.cs
 src/Globals/Constants.cs
+libblastcap.so

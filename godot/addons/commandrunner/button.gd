@@ -18,7 +18,7 @@ func _on_press():
     # process = OS.execute_with_pipe("curl", ["https://loafey.se"])
     # processOut = OS.execute_with_pipe("sh", ["-c", "\"sleep 1s && cd .. && ls\""])
     # process = OS.execute_with_pipe("bash", ["-c", "\"sleep 1s && echo yo\""])
-    process = OS.execute_with_pipe("bash", ["-c", "cargo build 2>&1"])
+    process = OS.execute_with_pipe("bash", ["-c", "cd .. && ./build.sh 2>&1"])
 
     processOut_io = process['stdio']
     threadOut = Thread.new()
