@@ -1,6 +1,6 @@
 [gd_scene load_steps=3 format=3 uid="uid://d35nkowtrw54c"]
 
-[ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://src/Objects/PlayerCamera.cs" id="1_11u5k"]
+[ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://objects/PlayerCamera.cs" id="1_11u5k"]
 [ext_resource type="PackedScene" uid="uid://bp7yq4iqifwrh" path="res://objects/GUI/TinyPopup.tscn" id="2_rckdw"]
 
 [node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel")]
