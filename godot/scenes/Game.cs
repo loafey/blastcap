@@ -74,7 +74,10 @@ public partial class Game : Node3D {
                     _playerCamera.AddAbilityButton(
                         item,
                         tt,
-                        () => _currentAbility = item
+                        () => {
+                            _currentAbility = item;
+                            _playerCamera.CurrentAbility = item;
+                        }
                     );
                 }
             }
@@ -132,6 +135,7 @@ public partial class Game : Node3D {
             if (_currentAbility != null) {
                 nw.Inner.SendAction(_currentAbility, (nuint)pos.X, (nuint)pos.Z);
                 _currentAbility = null;
+                _playerCamera.CurrentAbility = null;
             }
         }
     }

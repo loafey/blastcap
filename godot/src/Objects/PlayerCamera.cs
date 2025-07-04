@@ -11,6 +11,8 @@ public partial class PlayerCamera : Node3D {
     private Control _tinyPopupHolder;
     private GridContainer _abilitiesGrid;
     private PackedScene _tinyPopupScene;
+    private Button _endTurnButton;
+    private Label _currentAbilityLabel;
     public Actor MyActor;
 
     private bool _myTurn = false;
@@ -18,25 +20,61 @@ public partial class PlayerCamera : Node3D {
         get => _myTurn;
         set {
             _myTurn = value;
+            if (value) EnableActions();
+            else DisableActions();
         }
     }
 
     public Action EndTurnPressed {
+        set => _endTurnButton.Pressed += () => {
+            _endTurnButton.ReleaseFocus();
+            value();
+        };
+    }
+
+    public string CurrentAbility {
         set {
-            GetNode<Button>("CanvasLayer/Panel/HBoxContainer/EndTurn").Pressed += value;
+            if (value == null) {
+                _currentAbilityLabel.Text = "";
+            } else {
+                _currentAbilityLabel.Text = $"Current ability: {value}";
+            }
         }
+    }
+
+    public void DisableActions() {
+        foreach (Node child in _abilitiesGrid.GetChildren()) {
+            if (child is Button button) {
+                button.Disabled = true;
+            }
+        }
+        _endTurnButton.Disabled = true;
+    }
+    public void EnableActions() {
+        foreach (Node child in _abilitiesGrid.GetChildren()) {
+            if (child is Button button) {
+                button.Disabled = false;
+            }
+        }
+        _endTurnButton.Disabled = false;
     }
 
     public void AddAbilityButton(string name, string tooltip, Action callback) {
         var button = new Button();
         button.Text = name;
         button.TooltipText = tooltip;
-        button.Pressed += callback;
+        button.KeepPressedOutside = false;
+        button.Pressed += () => {
+            button.ReleaseFocus();
+            callback();
+        };
         _abilitiesGrid.AddChild(button);
     }
 
     public override void _Ready() {
         base._Ready();
+        _currentAbilityLabel = GetNode<Label>("CanvasLayer/Panel/HBoxContainer/VBoxContainer/CurrentAbility");
+        _endTurnButton = GetNode<Button>("CanvasLayer/Panel/HBoxContainer/EndTurn");
         _tinyPopupHolder = GetNode<Control>("CanvasLayer/TinyPopupHolder");
         _boomArm = GetNode<Node3D>("BoomArm");
         _camera = GetNode<Camera3D>("BoomArm/Camera");
@@ -44,7 +82,7 @@ public partial class PlayerCamera : Node3D {
         var rot = _camera.Rotation;
         rot.X = -0.9f;
         _camera.Rotation = rot;
-        _abilitiesGrid = GetNode<GridContainer>("CanvasLayer/Panel/HBoxContainer/AbilitiesGrid");
+        _abilitiesGrid = GetNode<GridContainer>("CanvasLayer/Panel/HBoxContainer/VBoxContainer/AbilitiesGrid");
     }
 
     private void RotateCam(Vector2 rotation) {
