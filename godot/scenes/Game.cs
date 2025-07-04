@@ -3,8 +3,7 @@ using System;
 using System.Collections.Generic;
 
 
-public partial class Game : Node3D
-{
+public partial class Game : Node3D {
     private NetworkManager nw;
     private PackedScene _actorScene;
     private Node3D _actorHolder;
@@ -13,14 +12,11 @@ public partial class Game : Node3D
     private bool _myTurn;
     private string _currentAbility = null;
 
-    private void setupDebugScene()
-    {
+    private void setupDebugScene() {
         var parent = GetNode<Node3D>("Debug");
         var rand = new Random();
-        for (int x = 0; x < 16; x++)
-        {
-            for (int y = 0; y < 16; y++)
-            {
+        for (int x = 0; x < 16; x++) {
+            for (int y = 0; y < 16; y++) {
                 var floor = new MeshInstance3D();
                 var mesh = new PlaneMesh();
                 mesh.CenterOffset = new Vector3(0.5f, 0, 0.5f);
@@ -47,8 +43,7 @@ public partial class Game : Node3D
         }
     }
 
-    public override void _Ready()
-    {
+    public override void _Ready() {
         base._Ready();
         _actorScene = GD.Load<PackedScene>("uid://dmad3dtbb46yk");
         _actorHolder = GetNode<Node3D>("Actors");
@@ -58,28 +53,23 @@ public partial class Game : Node3D
         nw.Inner.SendNotifyReady();
 
         nw.Inner.OnChatMessage += (user, msg) => _chatBox.ShowMessage($"{user}: {msg}");
-        nw.Inner.OnNewUser += (user) =>
-        {
+        nw.Inner.OnNewUser += (user) => {
             _chatBox.ShowMessage($"{user} joined");
         };
-        nw.Inner.OnUserLeft += (user) =>
-        {
+        nw.Inner.OnUserLeft += (user) => {
             _chatBox.ShowMessage($"{user} left");
         };
 
-        nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities) =>
-        {
+        nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities) => {
             var node = _actorScene.Instantiate<Actor>();
             _actorHolder.AddChild(node);
             node.Position = new Vector3(x, 0, y);
             node.ActorName = name;
             node.Name = id.ToString();
             node.Abilities = abilities;
-            if (mine)
-            {
+            if (mine) {
                 _playerCamera.MyActor = node;
-                foreach (var item in abilities)
-                {
+                foreach (var item in abilities) {
                     var tt = Data.Abilities[item];
                     _playerCamera.AddAbilityButton(
                         item,
@@ -90,15 +80,13 @@ public partial class Game : Node3D
             }
         };
 
-        nw.Inner.OnYourTurn += (id) =>
-        {
+        nw.Inner.OnYourTurn += (id) => {
             // _chatBox.ShowMessage("YOUR TURN");
             _playerCamera.DisplayTinyPopup("YOUR TURN");
             _playerCamera.MyTurn = true;
             _myTurn = true;
         };
-        nw.Inner.OnActorTurn += (id) =>
-        {
+        nw.Inner.OnActorTurn += (id) => {
             var actor = _actorHolder.GetNode<Actor>(id.ToString()).ActorName;
             _playerCamera.DisplayTinyPopup($"{actor.ToUpperInvariant()}'S TURN");
             // _chatBox.ShowMessage($"{actor.ToUpperInvariant()}'S TURN");
@@ -106,12 +94,10 @@ public partial class Game : Node3D
             _myTurn = false;
         };
 
-        nw.Inner.OnMoveActor += (id, xList, yList) =>
-        {
+        nw.Inner.OnMoveActor += (id, xList, yList) => {
             var actor = _actorHolder.GetNode<Actor>(id.ToString());
             var goals = new List<Vector3I>();
-            for (int i = 0; i < xList.Count; i++)
-            {
+            for (int i = 0; i < xList.Count; i++) {
                 var x = xList[i];
                 var y = yList[i];
                 goals.Add(new Vector3I((int)x, 0, (int)y));
@@ -124,11 +110,9 @@ public partial class Game : Node3D
         setupDebugScene();
     }
 
-    public override void _UnhandledInput(InputEvent @event)
-    {
+    public override void _UnhandledInput(InputEvent @event) {
         base._UnhandledInput(@event);
-        if (_myTurn && Input.IsActionJustPressed("actor_walk"))
-        {
+        if (_myTurn && Input.IsActionJustPressed("actor_walk")) {
             var mp = GetViewport().GetMousePosition();
             var space = GetWorld3D().DirectSpaceState;
             var cam = _playerCamera.Camera;
@@ -143,8 +127,7 @@ public partial class Game : Node3D
             if (result.Count == 0) return;
 
             Vector3 pos = (Vector3)result["position"];
-            if (_currentAbility != null)
-            {
+            if (_currentAbility != null) {
                 nw.Inner.SendAction(_currentAbility, (nuint)pos.X, (nuint)pos.Z);
                 _currentAbility = null;
             }
@@ -152,8 +135,7 @@ public partial class Game : Node3D
     }
 
 
-    public override void _Process(double delta)
-    {
+    public override void _Process(double delta) {
         base._Process(delta);
 
     }
