@@ -1,7 +1,7 @@
 [gd_scene load_steps=6 format=3 uid="uid://bo5tvenb8rnc8"]
 
 [ext_resource type="Script" uid="uid://c2biuv8qm1hi8" path="res://src/Scenes/MainMenu.cs" id="1_yqorp"]
-[ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/ChatBox.tscn" id="2_0ykhv"]
+[ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="2_0ykhv"]
 
 [sub_resource type="Gradient" id="Gradient_o5qli"]
 offsets = PackedFloat32Array(0, 0.438312, 0.746753, 1)

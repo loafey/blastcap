@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://5kl4v2ka7ejj"]
 
-[ext_resource type="Script" uid="uid://dkrw4mlbn7juf" path="res://src/Objects/ChatBox.cs" id="1_iv7i8"]
+[ext_resource type="Script" uid="uid://dkrw4mlbn7juf" path="res://src/Objects/GUI/ChatBox.cs" id="1_iv7i8"]
 
 [node name="ChatBox" type="VBoxContainer"]
 anchors_preset = 1
