@@ -6,7 +6,7 @@
     "files.exclude": {
         "**/*.uid": true,
         // "**/*.tscn": true,
-        "**/*.sln": true,
+        // "**/*.sln": true,
         "**/*.so": true,
         "**/*.lock": true,
         "godot/.godot": true,
@@ -16,4 +16,7 @@
         ".vscode/": true,
     },
     "omnisharp.enableEditorConfigSupport": true,
+    "dotnet.defaultSolution": "blastcap-frontend/Blastcap.sln",
+    "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "fullSolution",
+    "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution"
 }
