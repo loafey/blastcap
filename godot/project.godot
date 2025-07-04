@@ -23,10 +23,6 @@ NetworkManager="*res://src/Globals/NetworkManager.cs"
 
 project/assembly_name="Blastcap"
 
-[editor_plugins]
-
-enabled=PackedStringArray("res://addons/commandrunner/plugin.cfg")
-
 [input]
 
 camera_left={
