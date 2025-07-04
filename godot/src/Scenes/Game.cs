@@ -110,7 +110,10 @@ public partial class Game : Node3D {
 
         nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
 
-        _playerCamera.EndTurnPressed = () => { nw.Inner.SendEndTurn(); };
+        _playerCamera.EndTurnPressed = () => {
+            nw.Inner.SendEndTurn(); _currentAbility = null;
+            _playerCamera.CurrentAbility = null;
+        };
 
         setupDebugScene();
     }
