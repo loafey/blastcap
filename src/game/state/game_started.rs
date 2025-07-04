@@ -156,10 +156,13 @@ impl GameStartedState {
         });
     }
 
-    async fn move_current_actor(&mut self, arg: Arg<'_>, Vec2 { x, y }: Vec2) -> Res {
+    async fn move_current_actor(
+        &mut self,
+        arg: Arg<'_>,
+        Vec2 { x, y }: Vec2,
+    ) -> anyhow::Result<Option<Duration>> {
         let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
             self.waiting = false;
-            self.next_actor(arg.host).await?;
             return Ok(None);
         };
         let Vec2 { x: old_x, y: old_y } = self.actors[self.actor_pointer].position;
@@ -168,16 +171,9 @@ impl GameStartedState {
             .await;
         let Some((path, _)) = path else {
             self.waiting = false;
-            self.next_actor(arg.host).await?;
             return Ok(None);
         };
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
-        // arg.host
-        //     .broadcast(ServerMessage::ChatMessage(
-        //         "SERVER".to_string(),
-        //         format!("Should take {time}s"),
-        //     ))
-        //     .await?;
         swap(
             unsafe { std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x]) },
             &mut self.map[old_y][old_x],
@@ -198,18 +194,7 @@ impl GameStartedState {
             .await?;
         self.waiting = true;
 
-        self.timer(Duration::from_secs_f32(time), async move |state, arg| {
-            state.waiting = false;
-            state.next_actor(arg.host).await.unwrap();
-            // arg.host
-            //     .broadcast(ServerMessage::ChatMessage(
-            //         "SERVER".to_string(),
-            //         "Timer up!".to_string(),
-            //     ))
-            //     .await
-            //     .unwrap();
-        });
-        Ok(None)
+        Ok(Some(Duration::from_secs_f32(time)))
     }
 }
 #[async_trait::async_trait]
@@ -217,13 +202,19 @@ impl State for GameStartedState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
         if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller)
             && !self.waiting
+            && let Some(time) = self
+                .move_current_actor(
+                    unsafe { arg.clone() },
+                    Vec2::new(rand::random_range(0..=16), rand::random_range(0..=16)),
+                )
+                .await?
         {
-            self.move_current_actor(
-                unsafe { arg.clone() },
-                Vec2::new(rand::random_range(0..=16), rand::random_range(0..=16)),
-            )
-            .await?;
+            self.timer(time, async |state, arg| {
+                state.waiting = false;
+                state.next_actor(arg.host).await.unwrap();
+            });
         }
+
         if let Ok(fut) = self.callbacks.recv.try_recv() {
             unsafe {
                 fut(
@@ -255,7 +246,12 @@ impl State for GameStartedState {
                     && self.current_actor().abilities.contains(&act) =>
             {
                 match &*act {
-                    "Walk" => self.move_current_actor(arg, Vec2::new(x, y)).await,
+                    "Walk" => {
+                        if let Some(t) = self.move_current_actor(arg, Vec2::new(x, y)).await? {
+                            self.timer(t, async |s, _| s.waiting = false);
+                        }
+                        Ok(None)
+                    }
                     _ => {
                         arg.host
                             .send(
@@ -269,6 +265,12 @@ impl State for GameStartedState {
                         Ok(None)
                     }
                 }
+            }
+            ClientRequest::EndTurn
+                if Some(Controller::Player(addr)) == self.current_turn && !self.waiting =>
+            {
+                self.next_actor(arg.host).await?;
+                Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,
         }

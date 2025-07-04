@@ -21,6 +21,12 @@ public partial class PlayerCamera : Node3D {
         }
     }
 
+    public Action EndTurnPressed {
+        set {
+            GetNode<Button>("CanvasLayer/Panel/HBoxContainer/EndTurn").Pressed += value;
+        }
+    }
+
     public void AddAbilityButton(string name, string tooltip, Action callback) {
         var button = new Button();
         button.Text = name;
@@ -45,17 +51,19 @@ public partial class PlayerCamera : Node3D {
         _boomArm.RotateY(-rotation.X);
         _camera.RotateX(-rotation.Y);
         var rot = _camera.Rotation;
-        if (_camera.Projection == Camera3D.ProjectionType.Orthogonal)
+        if (_camera.Projection == Camera3D.ProjectionType.Orthogonal) {
             rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
-        else
+        } else {
             rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
+        }
         _camera.Rotation = rot;
     }
 
     public override void _Input(InputEvent @event) {
         base._Input(@event);
-        if (_cameraLock && @event is InputEventMouseMotion ev)
+        if (_cameraLock && @event is InputEventMouseMotion ev) {
             RotateCam(-ev.Relative * _cameraBoomSpeed);
+        }
     }
 
     public override void _Process(double delta) {
@@ -106,15 +114,17 @@ public partial class PlayerCamera : Node3D {
         }
 
 
-        if (Input.IsActionPressed("camera_rotate_left"))
+        if (Input.IsActionPressed("camera_rotate_left")) {
             RotateCam(new Vector2(-(float)delta, 0));
-        else if (Input.IsActionPressed("camera_rotate_right"))
+        } else if (Input.IsActionPressed("camera_rotate_right")) {
             RotateCam(new Vector2((float)delta, 0));
+        }
 
-        if (Input.IsActionPressed("camera_pan_up"))
+        if (Input.IsActionPressed("camera_pan_up")) {
             RotateCam(new Vector2(0, -(float)delta));
-        else if (Input.IsActionPressed("camera_pan_down"))
+        } else if (Input.IsActionPressed("camera_pan_down")) {
             RotateCam(new Vector2(0, (float)delta));
+        }
     }
 
     public void DisplayTinyPopup(String text) {

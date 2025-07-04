@@ -50,4 +50,5 @@ pub enum ClientRequest {
     StartMap(String),
     NotifyReady,
     Action(String, usize, usize),
+    EndTurn,
 }
