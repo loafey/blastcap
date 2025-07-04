@@ -13,8 +13,13 @@ fill_to = Vector2(1, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0ykhv"]
 
-[node name="Node3D" type="Node3D"]
+[node name="Node3D" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "MapList", "HostButton", "ConnectButton")]
 script = ExtResource("1_yqorp")
+ChatBox = NodePath("CanvasLayer/ChatBox")
+PlayerList = NodePath("CanvasLayer/PlayerList/Scroll/List")
+MapList = NodePath("CanvasLayer/MainMenu/MapList")
+HostButton = NodePath("CanvasLayer/MainMenu/Host/Button")
+ConnectButton = NodePath("CanvasLayer/MainMenu/Connect/Button")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 

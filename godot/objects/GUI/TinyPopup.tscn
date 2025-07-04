@@ -68,7 +68,7 @@ _data = {
 &"RESET": SubResource("Animation_0ve78")
 }
 
-[node name="TinyPopup" type="Control"]
+[node name="TinyPopup" type="Control" node_paths=PackedStringArray("Label", "AnimationPlayer")]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -76,6 +76,8 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_0ve78")
+Label = NodePath("Panel/Label")
+AnimationPlayer = NodePath("AnimationPlayer")
 
 [node name="Panel" type="Panel" parent="."]
 custom_minimum_size = Vector2(300, 40)

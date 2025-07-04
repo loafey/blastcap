@@ -1,9 +1,17 @@
-[gd_scene load_steps=2 format=3 uid="uid://d35nkowtrw54c"]
+[gd_scene load_steps=3 format=3 uid="uid://d35nkowtrw54c"]
 
 [ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://src/Objects/PlayerCamera.cs" id="1_11u5k"]
+[ext_resource type="PackedScene" uid="uid://bp7yq4iqifwrh" path="res://objects/GUI/TinyPopup.tscn" id="2_rckdw"]
 
-[node name="PlayerCamera" type="Node3D"]
+[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel")]
 script = ExtResource("1_11u5k")
+BoomArm = NodePath("BoomArm")
+Camera = NodePath("BoomArm/Camera")
+TinyPopupHolder = NodePath("CanvasLayer/TinyPopupHolder")
+AbilitiesGrid = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/AbilitiesGrid")
+TinyPopupScene = ExtResource("2_rckdw")
+EndTurnButton = NodePath("CanvasLayer/Panel/HBoxContainer/EndTurn")
+CurrentAbilityLabel = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/CurrentAbility")
 
 [node name="BoomArm" type="Node3D" parent="."]
 

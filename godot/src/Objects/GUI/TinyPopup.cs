@@ -1,19 +1,18 @@
 using Godot;
 using System;
 
-public partial class TinyPopup : Control
-{
+public partial class TinyPopup : Control {
     [Export]
     public string Text = "Popup";
+    [Export]
+    public Label Label;
+    [Export]
+    public AnimationPlayer AnimationPlayer;
 
-    public override void _Ready()
-    {
-        var node = GetNode<Label>("Panel/Label");
-        node.Text = Text;
-        var player = GetNode<AnimationPlayer>("AnimationPlayer");
-        player.Play("Popup");
-        player.AnimationFinished += (anim) =>
-        {
+    public override void _Ready() {
+        Label.Text = Text;
+        AnimationPlayer.Play("Popup");
+        AnimationPlayer.AnimationFinished += (anim) => {
             if (anim == "Popup") QueueFree();
         };
     }

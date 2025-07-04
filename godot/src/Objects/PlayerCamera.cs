@@ -5,14 +5,20 @@ public partial class PlayerCamera : Node3D {
     private float _cameraSpeed = 5.0f;
     private float _cameraBoomSpeed = 0.005f;
     private bool _cameraLock = false;
-    private Node3D _boomArm;
-    private Camera3D _camera;
-    public Camera3D Camera { get => _camera; }
-    private Control _tinyPopupHolder;
-    private GridContainer _abilitiesGrid;
-    private PackedScene _tinyPopupScene;
-    private Button _endTurnButton;
-    private Label _currentAbilityLabel;
+    [Export]
+    public Node3D BoomArm;
+    [Export]
+    public Camera3D Camera;
+    [Export]
+    public Control TinyPopupHolder;
+    [Export]
+    public GridContainer AbilitiesGrid;
+    [Export]
+    public PackedScene TinyPopupScene;
+    [Export]
+    public Button EndTurnButton;
+    [Export]
+    public Label CurrentAbilityLabel;
     public Actor MyActor;
 
     private bool _myTurn = false;
@@ -26,8 +32,8 @@ public partial class PlayerCamera : Node3D {
     }
 
     public Action EndTurnPressed {
-        set => _endTurnButton.Pressed += () => {
-            _endTurnButton.ReleaseFocus();
+        set => EndTurnButton.Pressed += () => {
+            EndTurnButton.ReleaseFocus();
             value();
         };
     }
@@ -35,28 +41,28 @@ public partial class PlayerCamera : Node3D {
     public string CurrentAbility {
         set {
             if (value == null) {
-                _currentAbilityLabel.Text = "";
+                CurrentAbilityLabel.Text = "";
             } else {
-                _currentAbilityLabel.Text = $"Current ability: {value}";
+                CurrentAbilityLabel.Text = $"Current ability: {value}";
             }
         }
     }
 
     public void DisableActions() {
-        foreach (Node child in _abilitiesGrid.GetChildren()) {
+        foreach (Node child in AbilitiesGrid.GetChildren()) {
             if (child is Button button) {
                 button.Disabled = true;
             }
         }
-        _endTurnButton.Disabled = true;
+        EndTurnButton.Disabled = true;
     }
     public void EnableActions() {
-        foreach (Node child in _abilitiesGrid.GetChildren()) {
+        foreach (Node child in AbilitiesGrid.GetChildren()) {
             if (child is Button button) {
                 button.Disabled = false;
             }
         }
-        _endTurnButton.Disabled = false;
+        EndTurnButton.Disabled = false;
     }
 
     public void AddAbilityButton(string name, string tooltip, Action callback) {
@@ -68,33 +74,26 @@ public partial class PlayerCamera : Node3D {
             button.ReleaseFocus();
             callback();
         };
-        _abilitiesGrid.AddChild(button);
+        AbilitiesGrid.AddChild(button);
     }
 
     public override void _Ready() {
         base._Ready();
-        _currentAbilityLabel = GetNode<Label>("CanvasLayer/Panel/HBoxContainer/VBoxContainer/CurrentAbility");
-        _endTurnButton = GetNode<Button>("CanvasLayer/Panel/HBoxContainer/EndTurn");
-        _tinyPopupHolder = GetNode<Control>("CanvasLayer/TinyPopupHolder");
-        _boomArm = GetNode<Node3D>("BoomArm");
-        _camera = GetNode<Camera3D>("BoomArm/Camera");
-        _tinyPopupScene = GD.Load<PackedScene>("uid://bp7yq4iqifwrh");
-        var rot = _camera.Rotation;
+        var rot = Camera.Rotation;
         rot.X = -0.9f;
-        _camera.Rotation = rot;
-        _abilitiesGrid = GetNode<GridContainer>("CanvasLayer/Panel/HBoxContainer/VBoxContainer/AbilitiesGrid");
+        Camera.Rotation = rot;
     }
 
     private void RotateCam(Vector2 rotation) {
-        _boomArm.RotateY(-rotation.X);
-        _camera.RotateX(-rotation.Y);
-        var rot = _camera.Rotation;
-        if (_camera.Projection == Camera3D.ProjectionType.Orthogonal) {
+        BoomArm.RotateY(-rotation.X);
+        Camera.RotateX(-rotation.Y);
+        var rot = Camera.Rotation;
+        if (Camera.Projection == Camera3D.ProjectionType.Orthogonal) {
             rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
         } else {
             rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
         }
-        _camera.Rotation = rot;
+        Camera.Rotation = rot;
     }
 
     public override void _Input(InputEvent @event) {
@@ -107,18 +106,18 @@ public partial class PlayerCamera : Node3D {
     public override void _Process(double delta) {
         base._Process(@delta);
         var newPos = Position;
-        var sin = (float)delta * _cameraSpeed * Mathf.Sin(_boomArm.Rotation.Y);
-        var cos = (float)delta * _cameraSpeed * Mathf.Cos(_boomArm.Rotation.Y);
+        var sin = (float)delta * _cameraSpeed * Mathf.Sin(BoomArm.Rotation.Y);
+        var cos = (float)delta * _cameraSpeed * Mathf.Cos(BoomArm.Rotation.Y);
         if (Input.IsActionJustPressed("camera_ortho_switch")) {
-            if (_camera.Projection == Camera3D.ProjectionType.Perspective) {
-                _camera.Projection = Camera3D.ProjectionType.Orthogonal;
-                _camera.Size = 20f;
-                var rot = _camera.Rotation;
+            if (Camera.Projection == Camera3D.ProjectionType.Perspective) {
+                Camera.Projection = Camera3D.ProjectionType.Orthogonal;
+                Camera.Size = 20f;
+                var rot = Camera.Rotation;
                 rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
-                _camera.Rotation = rot;
+                Camera.Rotation = rot;
             } else {
-                _camera.Projection = Camera3D.ProjectionType.Perspective;
-                _camera.Size = 20f;
+                Camera.Projection = Camera3D.ProjectionType.Perspective;
+                Camera.Size = 20f;
             }
         }
 
@@ -166,9 +165,9 @@ public partial class PlayerCamera : Node3D {
     }
 
     public void DisplayTinyPopup(String text) {
-        var scene = _tinyPopupScene.Instantiate<TinyPopup>();
+        var scene = TinyPopupScene.Instantiate<TinyPopup>();
         scene.Visible = false;
         scene.Text = text;
-        _tinyPopupHolder.AddChild(scene);
+        TinyPopupHolder.AddChild(scene);
     }
 }
