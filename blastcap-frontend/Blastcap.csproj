@@ -10,10 +10,10 @@
   <!-- <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Debug'"> -->
   <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent">
     <Exec Command="cargo build" WorkingDirectory="$(ProjectDir)/.." />
-    <Exec Command="cp target/debug/libblastcap.so godot/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
+    <Exec Command="cp target/debug/libblastcap.so blastcap-frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
   </Target>
   <Target Name="PreBuildRelease" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Release'">
     <Exec Command="cargo build --release" WorkingDirectory="$(ProjectDir)/.." />
-    <Exec Command="cp target/release/libblastcap.so godot/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
+    <Exec Command="cp target/release/libblastcap.so blastcap-frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
   </Target>
 </Project>

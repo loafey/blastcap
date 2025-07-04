@@ -245,9 +245,10 @@ using System.Runtime.InteropServices;
 public partial class NetworkClient {{{csharp_out}}}"
     );
     let mut f =
-        std::fs::File::create("godot/objects/Globals/Network/Network_ClientCalls.cs").unwrap();
+        std::fs::File::create("blastcap-frontend/objects/Globals/Network/Network_ClientCalls.cs")
+            .unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
-    let mut f = std::fs::File::create("src/lib_gen.rs").unwrap();
+    let mut f = std::fs::File::create("blastcap-core/lib_gen.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
     item_og
 }
@@ -465,9 +466,10 @@ pub unsafe extern \"C\" fn client_poll(
 }}
 "
     );
-    let mut f = File::create("godot/objects/Globals/Network/Network_Polling.cs").unwrap();
+    let mut f =
+        File::create("blastcap-frontend/objects/Globals/Network/Network_Polling.cs").unwrap();
     f.write_all(csharp_out.as_bytes()).unwrap();
-    let mut f = File::create("src/lib_poll.rs").unwrap();
+    let mut f = File::create("blastcap-core/lib_poll.rs").unwrap();
     f.write_all(rust_out.as_bytes()).unwrap();
 
     item_og
@@ -502,7 +504,7 @@ pub fn constants(item_og: TS1) -> TS1 {
     }
     csharp_code = format!("using System;\nstatic class Constants {{\n{csharp_code}}}");
 
-    let mut f = std::fs::File::create("godot/objects/Globals/Constants.cs").unwrap();
+    let mut f = std::fs::File::create("blastcap-frontend/objects/Globals/Constants.cs").unwrap();
     f.write_all(csharp_code.as_bytes()).unwrap();
     item_og
 }
