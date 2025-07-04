@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class ChatBox : VBoxContainer {
     private NetworkManager nw;
@@ -7,21 +6,22 @@ public partial class ChatBox : VBoxContainer {
     public LineEdit LineEdit;
     [Export]
     public VBoxContainer ChatList;
-    public bool IsFocused { get => LineEdit.HasFocus(); }
+    public bool IsFocused => this.LineEdit.HasFocus();
 
     public void ShowMessage(string msg) {
-        var label = new Label();
-        label.Text = msg;
-        ChatList.AddChild(label);
-        ChatList.MoveChild(label, 0);
+        var label = new Label {
+            Text = msg
+        };
+        this.ChatList.AddChild(label);
+        this.ChatList.MoveChild(label, 0);
     }
 
     public override void _Ready() {
         base._Ready();
-        nw = GetNode<NetworkManager>("/root/NetworkManager");
-        LineEdit.TextSubmitted += (text) => {
-            nw.Inner.SendChatMessage(text);
-            LineEdit.Text = "";
+        this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
+        this.LineEdit.TextSubmitted += (text) => {
+            this.nw.Inner.SendChatMessage(text);
+            this.LineEdit.Text = "";
         };
     }
 

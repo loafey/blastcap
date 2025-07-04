@@ -1,14 +1,11 @@
-using System;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Godot;
 
 public partial class NetworkClient {
-    private static bool _isHost;
-    public static bool IsHost { get => _isHost; }
-    unsafe void* inner;
+    public static bool IsHost { get; private set; }
+    private readonly unsafe void* _inner;
     ~NetworkClient() {
-        GD.PrintErr("Ouchi!");
+        GD.PrintErr("Ouch!");
         System.Environment.Exit(1);
     }
 
@@ -17,13 +14,13 @@ public partial class NetworkClient {
     private static bool _success = true;
     public static bool StartHostLoop(short port) {
         _success = true;
-        _isHost = true;
+        IsHost = true;
         [DllImport("libblastcap.so", SetLastError = true)]
-        static extern void start_host_loop(Int16 port, OnFail onFail);
+        static extern void start_host_loop(short port, OnFail onFail);
 
         start_host_loop(port, (err) => {
             _success = false;
-            _isHost = false;
+            IsHost = false;
             GD.PrintErr($"SERVER - {err}");
         });
 
@@ -36,8 +33,8 @@ public partial class NetworkClient {
             [DllImport("libblastcap.so", SetLastError = true)]
             static extern void client_drop_handle(void* inner);
 
-            client_drop_handle(this.inner);
-            _isHost = false;
+            client_drop_handle(this._inner);
+            IsHost = false;
         }
     }
 }

@@ -23,101 +23,99 @@ public partial class PlayerCamera : Node3D {
 
     private bool _myTurn = false;
     public bool MyTurn {
-        get => _myTurn;
+        get => this._myTurn;
         set {
-            _myTurn = value;
-            if (value) EnableActions();
-            else DisableActions();
+            this._myTurn = value;
+            if (value) {
+                this.EnableActions();
+            } else {
+                this.DisableActions();
+            }
         }
     }
 
     public Action EndTurnPressed {
-        set => EndTurnButton.Pressed += () => {
-            EndTurnButton.ReleaseFocus();
+        set => this.EndTurnButton.Pressed += () => {
+            this.EndTurnButton.ReleaseFocus();
             value();
         };
     }
 
     public string CurrentAbility {
-        set {
-            if (value == null) {
-                CurrentAbilityLabel.Text = "";
-            } else {
-                CurrentAbilityLabel.Text = $"Current ability: {value}";
-            }
-        }
+        set => this.CurrentAbilityLabel.Text = value == null
+            ? ""
+            : $"Current ability: {value}";
     }
 
     public void DisableActions() {
-        foreach (Node child in AbilitiesGrid.GetChildren()) {
+        foreach (var child in this.AbilitiesGrid.GetChildren()) {
             if (child is Button button) {
                 button.Disabled = true;
             }
         }
-        EndTurnButton.Disabled = true;
+        this.EndTurnButton.Disabled = true;
     }
     public void EnableActions() {
-        foreach (Node child in AbilitiesGrid.GetChildren()) {
+        foreach (var child in this.AbilitiesGrid.GetChildren()) {
             if (child is Button button) {
                 button.Disabled = false;
             }
         }
-        EndTurnButton.Disabled = false;
+        this.EndTurnButton.Disabled = false;
     }
 
     public void AddAbilityButton(string name, string tooltip, Action callback) {
-        var button = new Button();
-        button.Text = name;
-        button.TooltipText = tooltip;
-        button.KeepPressedOutside = false;
+        var button = new Button {
+            Text = name,
+            TooltipText = tooltip,
+            KeepPressedOutside = false
+        };
         button.Pressed += () => {
             button.ReleaseFocus();
             callback();
         };
-        AbilitiesGrid.AddChild(button);
+        this.AbilitiesGrid.AddChild(button);
     }
 
     public override void _Ready() {
         base._Ready();
-        var rot = Camera.Rotation;
+        var rot = this.Camera.Rotation;
         rot.X = -0.9f;
-        Camera.Rotation = rot;
+        this.Camera.Rotation = rot;
     }
 
     private void RotateCam(Vector2 rotation) {
-        BoomArm.RotateY(-rotation.X);
-        Camera.RotateX(-rotation.Y);
-        var rot = Camera.Rotation;
-        if (Camera.Projection == Camera3D.ProjectionType.Orthogonal) {
-            rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
-        } else {
-            rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
-        }
-        Camera.Rotation = rot;
+        this.BoomArm.RotateY(-rotation.X);
+        this.Camera.RotateX(-rotation.Y);
+        var rot = this.Camera.Rotation;
+        rot.X = this.Camera.Projection == Camera3D.ProjectionType.Orthogonal
+            ? Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f)
+            : Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
+        this.Camera.Rotation = rot;
     }
 
     public override void _Input(InputEvent @event) {
         base._Input(@event);
-        if (_cameraLock && @event is InputEventMouseMotion ev) {
-            RotateCam(-ev.Relative * _cameraBoomSpeed);
+        if (this._cameraLock && @event is InputEventMouseMotion ev) {
+            this.RotateCam(-ev.Relative * this._cameraBoomSpeed);
         }
     }
 
     public override void _Process(double delta) {
         base._Process(@delta);
-        var newPos = Position;
-        var sin = (float)delta * _cameraSpeed * Mathf.Sin(BoomArm.Rotation.Y);
-        var cos = (float)delta * _cameraSpeed * Mathf.Cos(BoomArm.Rotation.Y);
+        var newPos = this.Position;
+        var sin = (float)delta * this._cameraSpeed * Mathf.Sin(this.BoomArm.Rotation.Y);
+        var cos = (float)delta * this._cameraSpeed * Mathf.Cos(this.BoomArm.Rotation.Y);
         if (Input.IsActionJustPressed("camera_ortho_switch")) {
-            if (Camera.Projection == Camera3D.ProjectionType.Perspective) {
-                Camera.Projection = Camera3D.ProjectionType.Orthogonal;
-                Camera.Size = 20f;
-                var rot = Camera.Rotation;
+            if (this.Camera.Projection == Camera3D.ProjectionType.Perspective) {
+                this.Camera.Projection = Camera3D.ProjectionType.Orthogonal;
+                this.Camera.Size = 20f;
+                var rot = this.Camera.Rotation;
                 rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
-                Camera.Rotation = rot;
+                this.Camera.Rotation = rot;
             } else {
-                Camera.Projection = Camera3D.ProjectionType.Perspective;
-                Camera.Size = 20f;
+                this.Camera.Projection = Camera3D.ProjectionType.Perspective;
+                this.Camera.Size = 20f;
             }
         }
 
@@ -135,39 +133,41 @@ public partial class PlayerCamera : Node3D {
             newPos.Z += cos;
             newPos.X += sin;
         }
-        if (Input.IsActionPressed("camera_float_up"))
+        if (Input.IsActionPressed("camera_float_up")) {
             newPos.Y += (float)delta * 5;
-        else if (Input.IsActionPressed("camera_float_down"))
+        } else if (Input.IsActionPressed("camera_float_down")) {
             newPos.Y -= (float)delta * 5;
+        }
+
         newPos.Y = Mathf.Clamp(newPos.Y, -3f, 3f);
-        Position = newPos;
+        this.Position = newPos;
 
         if (Input.IsActionPressed("camera_rotate_lock")) {
-            _cameraLock = true;
+            this._cameraLock = true;
             Input.MouseMode = Input.MouseModeEnum.Captured;
         } else {
-            _cameraLock = false;
+            this._cameraLock = false;
             Input.MouseMode = Input.MouseModeEnum.Visible;
         }
 
 
         if (Input.IsActionPressed("camera_rotate_left")) {
-            RotateCam(new Vector2(-(float)delta, 0));
+            this.RotateCam(new Vector2(-(float)delta, 0));
         } else if (Input.IsActionPressed("camera_rotate_right")) {
-            RotateCam(new Vector2((float)delta, 0));
+            this.RotateCam(new Vector2((float)delta, 0));
         }
 
         if (Input.IsActionPressed("camera_pan_up")) {
-            RotateCam(new Vector2(0, -(float)delta));
+            this.RotateCam(new Vector2(0, -(float)delta));
         } else if (Input.IsActionPressed("camera_pan_down")) {
-            RotateCam(new Vector2(0, (float)delta));
+            this.RotateCam(new Vector2(0, (float)delta));
         }
     }
 
-    public void DisplayTinyPopup(String text) {
-        var scene = TinyPopupScene.Instantiate<TinyPopup>();
+    public void DisplayTinyPopup(string text) {
+        var scene = this.TinyPopupScene.Instantiate<TinyPopup>();
         scene.Visible = false;
         scene.Text = text;
-        TinyPopupHolder.AddChild(scene);
+        this.TinyPopupHolder.AddChild(scene);
     }
 }

@@ -1,5 +1,4 @@
 using Godot;
-using System;
 using System.Collections.Generic;
 
 public partial class Actor : Node3D {
@@ -9,46 +8,46 @@ public partial class Actor : Node3D {
     public Label3D ActorLabel;
 
     public string ActorName {
-        get => _actorName;
+        get => this._actorName;
         set {
-            _actorName = value;
-            ActorLabel.Text = value;
+            this._actorName = value;
+            this.ActorLabel.Text = value;
         }
     }
 
-    public List<string> Abilities = new List<string>();
+    public List<string> Abilities = [];
+    private List<Vector3I> _walkGoals = [];
+    private Vector3 _curPos = new();
+    private int _posCount = 0;
 
     public override void _Ready() {
         base._Ready();
-        ActorLabel.Text = _actorName;
+        this.ActorLabel.Text = this._actorName;
     }
 
-    private List<Vector3I> _walkGoals = new List<Vector3I>();
-    private Vector3 _curPos = new Vector3();
-    private int _posCount = 0;
     public override void _PhysicsProcess(double delta) {
         base._PhysicsProcess(delta);
-        if (_walkGoals.Count != 0) {
-            var movvy = Engine.PhysicsTicksPerSecond / (int)Constants.TILES_PER_SECOND;
-            _posCount += 1;
-            Position = _curPos.Lerp(
-                _walkGoals[0],
-                (float)_posCount / (float)movvy
+        if (this._walkGoals.Count != 0) {
+            var movement = Engine.PhysicsTicksPerSecond / (int)Constants.TILES_PER_SECOND;
+            this._posCount += 1;
+            this.Position = this._curPos.Lerp(
+                this._walkGoals[0],
+                (float)this._posCount / movement
             );
-            if (_posCount > movvy) {
-                _curPos = _walkGoals[0];
-                _walkGoals.RemoveAt(0);
-                _posCount = 0;
+            if (this._posCount > movement) {
+                this._curPos = this._walkGoals[0];
+                this._walkGoals.RemoveAt(0);
+                this._posCount = 0;
             }
         }
     }
 
     public void MoveTo(List<Vector3I> goal) {
         if (goal.Count > 0) {
-            _curPos = goal[0];
+            this._curPos = goal[0];
             goal.RemoveAt(0);
-            _posCount = 0;
-            _walkGoals = goal;
+            this._posCount = 0;
+            this._walkGoals = goal;
         }
     }
 }

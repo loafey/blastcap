@@ -18,90 +18,93 @@ public partial class Game : Node3D {
     private bool _myTurn;
     private string _currentAbility = null;
 
-    private void setupDebugScene() {
+    private void SetupDebugScene() {
         var rand = new Random();
-        for (int x = 0; x < 16; x++) {
-            for (int y = 0; y < 16; y++) {
+        for (var x = 0; x < 16; x++) {
+            for (var y = 0; y < 16; y++) {
                 var floor = new MeshInstance3D();
-                var mesh = new PlaneMesh();
-                mesh.CenterOffset = new Vector3(0.5f, 0, 0.5f);
-                mesh.Size = new Vector2(1f, 1f);
+                var mesh = new PlaneMesh {
+                    CenterOffset = new Vector3(0.5f, 0, 0.5f),
+                    Size = new Vector2(1f, 1f)
+                };
                 floor.Mesh = mesh;
                 var mat = new StandardMaterial3D();
-                var color = (rand.NextInt64() % 256) / 256.0f;
+                var color = rand.NextInt64() % 256 / 256.0f;
                 mat.AlbedoColor = new Color(color, color, color);
                 floor.MaterialOverride = mat;
                 var position = new Vector3(x, 0, y);
                 floor.Position = position;
 
-                var coll = new StaticBody3D();
-                coll.Position = new Vector3(0.5f, 0, 0.5f);
+                var coll = new StaticBody3D {
+                    Position = new Vector3(0.5f, 0, 0.5f)
+                };
                 var collShape = new CollisionShape3D();
-                var shape = new BoxShape3D();
-                shape.Size = new Vector3(1, 0.2f, 1);
+                var shape = new BoxShape3D {
+                    Size = new Vector3(1, 0.2f, 1)
+                };
                 collShape.Shape = shape;
 
                 coll.AddChild(collShape);
                 floor.AddChild(coll);
-                WorldMeshHolder.AddChild(floor);
+                this.WorldMeshHolder.AddChild(floor);
             }
         }
     }
 
     public override void _Ready() {
         base._Ready();
-        nw = GetNode<NetworkManager>("/root/NetworkManager");
-        nw.Inner.SendNotifyReady();
+        this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
+        this.nw.Inner.SendNotifyReady();
 
-        nw.Inner.OnChatMessage += (user, msg) => ChatBox.ShowMessage($"{user}: {msg}");
-        nw.Inner.OnNewUser += (user) => {
-            ChatBox.ShowMessage($"{user} joined");
+        this.nw.Inner.OnChatMessage += (user, msg) => this.ChatBox.ShowMessage($"{user}: {msg}");
+        this.nw.Inner.OnNewUser += (user) => {
+            this.ChatBox.ShowMessage($"{user} joined");
         };
-        nw.Inner.OnUserLeft += (user) => {
-            ChatBox.ShowMessage($"{user} left");
+        this.nw.Inner.OnUserLeft += (user) => {
+            this.ChatBox.ShowMessage($"{user} left");
         };
 
-        nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities) => {
-            var node = ActorScene.Instantiate<Actor>();
-            ActorHolder.AddChild(node);
+        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities) => {
+            var node = this.ActorScene.Instantiate<Actor>();
+            this.ActorHolder.AddChild(node);
             node.Position = new Vector3(x, 0, y);
             node.ActorName = name;
             node.Name = id.ToString();
             node.Abilities = abilities;
             if (mine) {
-                PC.MyActor = node;
+                this.PC.MyActor = node;
                 foreach (var item in abilities) {
                     var tt = Data.Abilities[item];
-                    PC.AddAbilityButton(
+                    this.PC.AddAbilityButton(
                         item,
                         tt,
                         () => {
-                            _currentAbility = item;
-                            PC.CurrentAbility = item;
+                            this._currentAbility = item;
+                            this.PC.CurrentAbility = item;
                         }
                     );
                 }
             }
         };
 
-        nw.Inner.OnYourTurn += (id) => {
+        this.nw.Inner.OnYourTurn += (id) => {
             // _chatBox.ShowMessage("YOUR TURN");
-            PC.DisplayTinyPopup("YOUR TURN");
-            PC.MyTurn = true;
-            _myTurn = true;
+            this.PC.DisplayTinyPopup("YOUR TURN");
+            this.PC.MyTurn = true;
+            this._myTurn = true;
         };
-        nw.Inner.OnActorTurn += (id) => {
-            var actor = ActorHolder.GetNode<Actor>(id.ToString()).ActorName;
-            PC.DisplayTinyPopup($"{actor.ToUpperInvariant()}'S TURN");
+        this.nw.Inner.OnActorTurn += (id) => {
+            var actor = this.ActorHolder.GetNode<Actor>(id.ToString()).ActorName;
+            this.PC.DisplayTinyPopup($"{actor.ToUpperInvariant()}'S TURN");
             // _chatBox.ShowMessage($"{actor.ToUpperInvariant()}'S TURN");
-            PC.MyTurn = false;
-            _myTurn = false;
+            this.PC.MyTurn = false;
+            this._myTurn = false;
         };
 
-        nw.Inner.OnMoveActor += (id, xList, yList) => {
-            var actor = ActorHolder.GetNode<Actor>(id.ToString());
+        this.nw.Inner.OnMoveActor += (id, xList, yList) => {
+            var actor = this.ActorHolder.GetNode<Actor>(id.ToString());
             var goals = new List<Vector3I>();
-            for (int i = 0; i < xList.Count; i++) {
+            for (var i = 0; i < xList.Count; i++) {
                 var x = xList[i];
                 var y = yList[i];
                 goals.Add(new Vector3I((int)x, 0, (int)y));
@@ -109,37 +112,40 @@ public partial class Game : Node3D {
             actor.MoveTo(goals);
         };
 
-        nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
+        this.nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
 
-        PC.EndTurnPressed = () => {
-            nw.Inner.SendEndTurn(); _currentAbility = null;
-            PC.CurrentAbility = null;
+        this.PC.EndTurnPressed = () => {
+            this.nw.Inner.SendEndTurn();
+            this._currentAbility = null;
+            this.PC.CurrentAbility = null;
         };
 
-        setupDebugScene();
+        this.SetupDebugScene();
     }
 
     public override void _UnhandledInput(InputEvent @event) {
         base._UnhandledInput(@event);
-        if (_myTurn && Input.IsActionJustPressed("actor_walk")) {
-            var mp = GetViewport().GetMousePosition();
-            var space = GetWorld3D().DirectSpaceState;
-            var cam = PC.Camera;
+        if (this._myTurn && Input.IsActionJustPressed("actor_walk")) {
+            var mp = this.GetViewport().GetMousePosition();
+            var space = this.GetWorld3D().DirectSpaceState;
+            var cam = this.PC.Camera;
 
             var origin = cam.ProjectRayOrigin(mp);
-            var end = origin + cam.ProjectRayNormal(mp) * 10000;
+            var end = origin + (cam.ProjectRayNormal(mp) * 10000);
             var query = PhysicsRayQueryParameters3D.Create(origin, end);
             query.CollideWithAreas = true;
             query.CollisionMask = 0b00000000_00000000_00000000_00000001;
 
             var result = space.IntersectRay(query);
-            if (result.Count == 0) return;
+            if (result.Count == 0) {
+                return;
+            }
 
-            Vector3 pos = (Vector3)result["position"];
-            if (_currentAbility != null) {
-                nw.Inner.SendAction(_currentAbility, (nuint)pos.X, (nuint)pos.Z);
-                _currentAbility = null;
-                PC.CurrentAbility = null;
+            var pos = (Vector3)result["position"];
+            if (this._currentAbility != null) {
+                this.nw.Inner.SendAction(this._currentAbility, (nuint)pos.X, (nuint)pos.Z);
+                this._currentAbility = null;
+                this.PC.CurrentAbility = null;
             }
         }
     }

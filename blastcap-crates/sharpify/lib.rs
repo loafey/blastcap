@@ -172,7 +172,7 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
         let mut rust_pre_process = String::new();
         let mut rust_args = String::new();
         let mut csharp_conv = String::new();
-        let mut call = "this.inner".to_string();
+        let mut call = "this._inner".to_string();
         let mut r#mod = 0;
         for (i, (n, t)) in args.iter().enumerate() {
             let prefix = if i == 0 { "" } else { ", " };
@@ -428,7 +428,7 @@ public partial class NetworkClient {{
         {{
             [DllImport(\"libblastcap.so\", SetLastError = true)]
             static extern void client_poll(void* ptr{cs_rust_callbacks});
-            client_poll(this.inner{cs_callbacks});
+            client_poll(this._inner{cs_callbacks});
         }}
     }}
     public NetworkClient([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail)
@@ -438,7 +438,7 @@ public partial class NetworkClient {{
         unsafe
         {{
             void* ptr = start_client_loop(addr, onFail);
-            this.inner = ptr;
+            this._inner = ptr;
             {cs_set_cons}
         }}
     }}

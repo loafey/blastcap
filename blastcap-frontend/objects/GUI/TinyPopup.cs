@@ -1,5 +1,4 @@
 using Godot;
-using System;
 
 public partial class TinyPopup : Control {
     [Export]
@@ -10,10 +9,12 @@ public partial class TinyPopup : Control {
     public AnimationPlayer AnimationPlayer;
 
     public override void _Ready() {
-        Label.Text = Text;
-        AnimationPlayer.Play("Popup");
-        AnimationPlayer.AnimationFinished += (anim) => {
-            if (anim == "Popup") QueueFree();
+        this.Label.Text = this.Text;
+        this.AnimationPlayer.Play("Popup");
+        this.AnimationPlayer.AnimationFinished += (anim) => {
+            if (anim == "Popup") {
+                this.QueueFree();
+            }
         };
     }
 }

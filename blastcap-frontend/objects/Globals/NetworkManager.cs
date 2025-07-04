@@ -1,29 +1,27 @@
 using Godot;
-using System;
-using System.Collections.Generic;
 
 public partial class NetworkManager : Node {
-    private NetworkClient _inner;
-    public NetworkClient Inner {
-        get => _inner;
-    }
+    public NetworkClient Inner { get; private set; }
 
-    public bool IsHost { get => NetworkClient.IsHost; }
+    public bool IsHost => NetworkClient.IsHost;
 
-    public void Connect(String addr) {
-        if (this.Inner != null) return;
-        this._inner = new NetworkClient(
+    public void Connect(string addr) {
+        if (this.Inner != null) {
+            return;
+        }
+
+        this.Inner = new NetworkClient(
             addr,
             onFail: (err) => {
                 GD.PrintErr(err);
-                this._inner.Drop();
-                this._inner = null;
+                this.Inner.Drop();
+                this.Inner = null;
             }
         );
     }
 
     public override void _Process(double delta) {
         base._Process(delta);
-        if (_inner != null) _inner.Poll();
+        this.Inner?.Poll();
     }
 }

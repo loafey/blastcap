@@ -1,11 +1,10 @@
-using System;
 using System.Collections.Generic;
 using Godot;
 
 public partial class MainMenu : Node3D {
     private NetworkManager nw;
 
-    private HashSet<String> players = new HashSet<string>();
+    private readonly HashSet<string> players = [];
 
     [Export]
     public ChatBox ChatBox;
@@ -22,65 +21,73 @@ public partial class MainMenu : Node3D {
     [Export]
     public Button ConnectButton;
 
-    private void drawPlayerList() {
-        foreach (var child in PlayerList.GetChildren()) child.QueueFree();
-        foreach (var player in players) {
-            var lab = new Label();
-            lab.Text = player;
-            PlayerList.AddChild(lab);
+    private void DrawPlayerList() {
+        foreach (var child in this.PlayerList.GetChildren()) {
+            child.QueueFree();
+        }
+
+        foreach (var player in this.players) {
+            var lab = new Label {
+                Text = player
+            };
+            this.PlayerList.AddChild(lab);
         }
     }
 
-    private void onConnect() {
-        nw.Inner.OnChatMessage += (user, msg) => ChatBox.ShowMessage($"{user}: {msg}");
-        nw.Inner.OnNewUser += (user) => {
-            ChatBox.ShowMessage($"{user} joined");
-            players.Add(user);
-            drawPlayerList();
+    private void OnConnect() {
+        this.nw.Inner.OnChatMessage += (user, msg) => this.ChatBox.ShowMessage($"{user}: {msg}");
+        this.nw.Inner.OnNewUser += (user) => {
+            this.ChatBox.ShowMessage($"{user} joined");
+            this.players.Add(user);
+            this.DrawPlayerList();
         };
-        nw.Inner.OnUserLeft += (user) => {
-            ChatBox.ShowMessage($"{user} left");
-            players.Remove(user);
-            drawPlayerList();
+        this.nw.Inner.OnUserLeft += (user) => {
+            this.ChatBox.ShowMessage($"{user} left");
+            this.players.Remove(user);
+            this.DrawPlayerList();
         };
-        nw.Inner.OnStatus += (count, diff) => { };
-        nw.Inner.OnPlayerList += (playerList) => {
-            players.Clear();
-            foreach (var player in playerList) players.Add(player);
-            drawPlayerList();
+        this.nw.Inner.OnStatus += (count, diff) => { };
+        this.nw.Inner.OnPlayerList += (playerList) => {
+            this.players.Clear();
+            foreach (var player in playerList) {
+                this.players.Add(player);
+            }
+
+            this.DrawPlayerList();
         };
-        nw.Inner.OnNotifyHost += () => nw.Inner.SendRequestMapList();
-        nw.Inner.OnMapList += (list) => {
-            MapList.Visible = true;
+        this.nw.Inner.OnNotifyHost += this.nw.Inner.SendRequestMapList;
+        this.nw.Inner.OnMapList += (list) => {
+            this.MapList.Visible = true;
             foreach (var map in list) {
-                var button = new Button();
-                button.Text = map;
-                button.Pressed += () => {
-                    nw.Inner.SendStartMap(map);
+                var button = new Button {
+                    Text = map
                 };
-                MapList.AddChild(button);
+                button.Pressed += () => {
+                    this.nw.Inner.SendStartMap(map);
+                };
+                this.MapList.AddChild(button);
             }
         };
-        nw.Inner.OnStartMap += (map) => {
+        this.nw.Inner.OnStartMap += (map) => {
             GD.Print($"Starting map: {map}");
-            GetTree().ChangeSceneToFile("res://scenes/Game.tscn");
+            this.GetTree().ChangeSceneToFile("res://scenes/Game.tscn");
         };
     }
 
     public override void _Ready() {
         GD.Print("==================================");
-        nw = GetNode<NetworkManager>("/root/NetworkManager");
+        this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
 
-        HostButton.Pressed += () => {
+        this.HostButton.Pressed += () => {
             if (NetworkClient.StartHostLoop(4000)) {
-                nw.Connect("localhost:4000");
-                onConnect();
+                this.nw.Connect("localhost:4000");
+                this.OnConnect();
             }
         };
 
-        ConnectButton.Pressed += () => {
-            nw.Connect("localhost:4000");
-            onConnect();
+        this.ConnectButton.Pressed += () => {
+            this.nw.Connect("localhost:4000");
+            this.OnConnect();
         };
     }
 
