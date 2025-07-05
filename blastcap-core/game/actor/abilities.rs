@@ -3,6 +3,8 @@ use std::{
     sync::LazyLock,
 };
 
+use serde::Deserialize;
+
 static ABILITY_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     HashMap::from_iter(
         [("Walk", "Walk dummy!"), ("Jump", "Jump dummy!")]
@@ -11,7 +13,7 @@ static ABILITY_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     )
 });
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct Abilities(HashSet<String>);
 impl Abilities {
     pub fn get_map() -> &'static HashMap<String, String> {

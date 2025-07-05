@@ -1,0 +1,7 @@
+name = "DND - S:e"
+
+[testing-character]
+name = "Chandara Testnnyl"
+health = 10
+base_movement = 6
+abilities = ["Walk", "Jump"]

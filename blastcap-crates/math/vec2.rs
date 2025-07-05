@@ -1,4 +1,8 @@
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash)]
+use serde::{Deserialize, Serialize};
+
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash, Deserialize, Serialize,
+)]
 pub struct Vec2 {
     pub x: usize,
     pub y: usize,

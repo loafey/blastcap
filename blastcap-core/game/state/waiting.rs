@@ -54,6 +54,8 @@ impl State for WaitingState {
                                 controller: Controller::Player(addr),
                                 position: posses.next().unwrap(),
                                 abilities: Default::default(),
+                                health: 10,
+                                base_movement: 6,
                             },
                         )
                         .await?;
@@ -69,6 +71,8 @@ impl State for WaitingState {
                                     rand::random_range(0..16),
                                 ),
                                 abilities: Default::default(),
+                                health: 15,
+                                base_movement: 8,
                             },
                         )
                         .await?;
