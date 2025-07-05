@@ -39,6 +39,8 @@ public partial class Actor : Node3D {
                 this._walkGoals.RemoveAt(0);
                 this._posCount = 0;
             }
+        } else {
+            this.Position = this.Position.Round();
         }
     }
 
