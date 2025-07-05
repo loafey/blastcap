@@ -222,6 +222,9 @@ impl GameStartedState {
         let actor_pos = self.current_actor().position;
         let distance = actor_pos.distance(Vec2::new(x, y));
         let hit = self.map_get(x, y);
+        if distance > 1 {
+            return Ok(None);
+        }
         let Some(Piece::Actor(hit_ptr)) = hit else {
             return Ok(None);
         };
