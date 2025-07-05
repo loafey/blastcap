@@ -38,6 +38,12 @@ pub enum ServerMessage {
         y: Vec<usize>,
     },
     AbilityMap(HashMap<String, String>),
+    Action {
+        action: String,
+        actor: usize,
+        target: usize,
+        time: f32,
+    },
 }
 
 #[repr(C)]

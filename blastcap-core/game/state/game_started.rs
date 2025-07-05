@@ -156,12 +156,16 @@ impl GameStartedState {
         });
     }
 
+    fn map_get(&self, x: usize, y: usize) -> Option<&Piece> {
+        self.map.get(y).and_then(|r| r.get(x))
+    }
+
     async fn move_current_actor(
         &mut self,
         arg: Arg<'_>,
         Vec2 { x, y }: Vec2,
     ) -> anyhow::Result<Option<Duration>> {
-        let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
+        let Some(Piece::Empty) = self.map_get(x, y) else {
             self.waiting = false;
             return Ok(None);
         };
@@ -245,6 +249,8 @@ impl State for GameStartedState {
                     && !self.waiting
                     && self.current_actor().abilities.contains(&act) =>
             {
+                let actor_pos = self.current_actor().position;
+                let distance = actor_pos.distance(Vec2::new(x, y));
                 match &*act {
                     "Walk" => {
                         if let Some(t) = self.move_current_actor(arg, Vec2::new(x, y)).await? {
@@ -253,17 +259,33 @@ impl State for GameStartedState {
                         Ok(None)
                     }
                     "Punch" => {
-                        let pos = self.current_actor().position;
+                        let hit = self.map_get(x, y);
+                        let Some(Piece::Actor(hit_ptr)) = hit else {
+                            return Ok(None);
+                        };
+                        let Some(hit) = self.actors.get(*hit_ptr) else {
+                            return Ok(None);
+                        };
+
                         arg.host
                             .broadcast(ServerMessage::ChatMessage(
-                                "Omph".to_string(),
-                                format!(
-                                    "attack: {pos}, ({x}, {y}) - dist: {}\n  hit = {:?}",
-                                    pos.distance(Vec2 { x, y }),
-                                    &self.map[y][x]
-                                ),
+                                self.current_actor().name.clone(),
+                                format!("punched {:?} at {distance}B", hit.name),
                             ))
                             .await?;
+                        arg.host
+                            .broadcast(ServerMessage::Action {
+                                action: act,
+                                actor: self.actor_pointer,
+                                target: *hit_ptr,
+                                time: 0.5,
+                            })
+                            .await?;
+                        self.waiting = true;
+                        self.timer(Duration::from_secs_f32(0.5), async |s, a| {
+                            s.waiting = false;
+                            s.next_actor(a.host).await.unwrap();
+                        });
                         Ok(None)
                     }
                     _ => {
