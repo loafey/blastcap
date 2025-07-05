@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -22,5 +24,10 @@ impl Vec2 {
         let (px, py) = (self.x as f32, self.y as f32);
         let (qx, qy) = (rhs.x as f32, rhs.y as f32);
         ((px - qx).powf(2.0) + (py - qy).powf(2.0)).sqrt()
+    }
+}
+impl Display for Vec2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({}, {})", self.x, self.y)
     }
 }

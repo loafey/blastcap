@@ -15,7 +15,7 @@ use math::Vec2;
 use std::{mem::swap, pin::Pin, time::Duration};
 
 type Map = [[Piece; 16]; 16];
-#[derive(Default)]
+#[derive(Default, Debug)]
 enum Piece {
     #[default]
     Empty,
@@ -250,6 +250,20 @@ impl State for GameStartedState {
                         if let Some(t) = self.move_current_actor(arg, Vec2::new(x, y)).await? {
                             self.timer(t, async |s, _| s.waiting = false);
                         }
+                        Ok(None)
+                    }
+                    "Punch" => {
+                        let pos = self.current_actor().position;
+                        arg.host
+                            .broadcast(ServerMessage::ChatMessage(
+                                "Omph".to_string(),
+                                format!(
+                                    "attack: {pos}, ({x}, {y}) - dist: {}\n  hit = {:?}",
+                                    pos.distance(Vec2 { x, y }),
+                                    &self.map[y][x]
+                                ),
+                            ))
+                            .await?;
                         Ok(None)
                     }
                     _ => {
