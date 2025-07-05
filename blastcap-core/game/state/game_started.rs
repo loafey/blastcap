@@ -71,6 +71,8 @@ impl GameStartedState {
                     y,
                     abilities: actor.abilities.get_keys(),
                     yours: actor.controller == Controller::Player(addr),
+                    health: actor.health,
+                    max_health: actor.health,
                 },
             )
             .await?;
@@ -228,10 +230,12 @@ impl GameStartedState {
         let Some(Piece::Actor(hit_ptr)) = hit else {
             return Ok(None);
         };
-        let Some(hit) = self.actors.get(*hit_ptr) else {
+        let hit_ptr = *hit_ptr;
+        let Some(hit) = self.actors.get(hit_ptr) else {
             return Ok(None);
         };
 
+        let dmg = 2;
         arg.host
             .broadcast(ServerMessage::ChatMessage(
                 self.current_actor().name.clone(),
@@ -242,10 +246,14 @@ impl GameStartedState {
             .broadcast(ServerMessage::Action {
                 action: "Punch".to_string(),
                 actor: self.actor_pointer,
-                target: *hit_ptr,
+                target: hit_ptr,
+                target_damage: dmg,
                 time: 0.5,
             })
             .await?;
+        if let Some(hit) = self.actors.get_mut(hit_ptr) {
+            hit.health -= dmg;
+        };
         self.waiting = true;
         Ok(Some(Duration::from_secs_f32(0.5)))
     }

@@ -25,6 +25,8 @@ pub enum ServerMessage {
         x: usize,
         y: usize,
         abilities: Vec<String>,
+        health: i32,
+        max_health: i32,
     },
     YourTurn {
         actor: usize,
@@ -42,6 +44,7 @@ pub enum ServerMessage {
         action: String,
         actor: usize,
         target: usize,
+        target_damage: i32,
         time: f32,
     },
 }

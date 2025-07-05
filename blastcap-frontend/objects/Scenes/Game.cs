@@ -70,13 +70,15 @@ public partial class Game : Node3D {
             this.ChatBox.ShowMessage($"{user} left");
         };
 
-        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities) => {
+        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities, health, maxHealth) => {
             var node = this.ActorScene.Instantiate<Actor>();
-            this.ActorHolder.AddChild(node);
             node.Position = new Vector3(x, 0, y);
             node.ActorName = name;
             node.Name = id.ToString();
             node.Abilities = abilities;
+            node.MaxHealth = maxHealth;
+            node.Health = health;
+            this.ActorHolder.AddChild(node);
             if (mine) {
                 this.PC.MyActor = node;
                 foreach (var item in abilities) {
@@ -120,7 +122,7 @@ public partial class Game : Node3D {
 
         this.nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
 
-        this.nw.Inner.OnAction += (action, actorIndex, targetIndex, time) => {
+        this.nw.Inner.OnAction += (action, actorIndex, targetIndex, targetDamage, time) => {
             var children = this.ActorHolder.GetChildren();
             var actor = (Actor)children[(int)actorIndex];
             var target = (Actor)children[(int)targetIndex];
@@ -133,6 +135,7 @@ public partial class Game : Node3D {
             var sound = this.SoundEffect.Instantiate<Node3D>();
             sound.Position = middle;
             this.Temporaries.AddChild(sound);
+            GD.Print(targetDamage);
         };
 
         this.PC.EndTurnPressed = () => {

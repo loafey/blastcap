@@ -3,17 +3,36 @@ using System.Collections.Generic;
 
 public partial class Actor : Node3D {
     private string _actorName;
+    private int _maxHealth;
+    private int _health;
+    public int MaxHealth {
+        get => this._maxHealth; set {
+            this._maxHealth = value;
+            this.UpdateLabel();
+        }
+    }
+    public int Health {
+        get => this._health; set {
+            this._health = value;
+            this.UpdateLabel();
+        }
+    }
 
     [Export]
     public Label3D ActorLabel;
+
+    private void UpdateLabel() {
+        this.ActorLabel.Text = $"{this._actorName}\n{this._health}/{this._maxHealth}";
+    }
 
     public string ActorName {
         get => this._actorName;
         set {
             this._actorName = value;
-            this.ActorLabel.Text = value;
+            this.UpdateLabel();
         }
     }
+
 
     public List<string> Abilities = [];
     private List<Vector3I> _walkGoals = [];
@@ -22,7 +41,7 @@ public partial class Actor : Node3D {
 
     public override void _Ready() {
         base._Ready();
-        this.ActorLabel.Text = this._actorName;
+        this.UpdateLabel();
     }
 
     public override void _PhysicsProcess(double delta) {
