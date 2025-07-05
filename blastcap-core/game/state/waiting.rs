@@ -46,21 +46,21 @@ impl State for WaitingState {
                     .cycle();
 
                     let mut gs = GameStartedState::new();
-                    for (id, addr) in self.players.iter().copied().enumerate() {
-                        gs.spawn_actor(
-                            arg.host,
-                            Actor {
-                                name: format!("Player {id}"),
-                                controller: Controller::Player(addr),
-                                position: posses.next().unwrap(),
-                                abilities: Default::default(),
-                                health: 10,
-                                base_movement: 6,
-                            },
-                        )
-                        .await?;
-                    }
-                    for i in 0..1 {
+                    // for (id, addr) in self.players.iter().copied().enumerate() {
+                    //     gs.spawn_actor(
+                    //         arg.host,
+                    //         Actor {
+                    //             name: format!("Player {id}"),
+                    //             controller: Controller::Player(addr),
+                    //             position: posses.next().unwrap(),
+                    //             abilities: Default::default(),
+                    //             health: 10,
+                    //             base_movement: 6,
+                    //         },
+                    //     )
+                    //     .await?;
+                    // }
+                    for i in 0..200 {
                         gs.spawn_actor(
                             arg.host,
                             Actor {

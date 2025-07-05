@@ -83,31 +83,40 @@ impl GameStartedState {
     }
 
     pub async fn next_actor(&mut self, host: &mut NetworkHost) -> anyhow::Result<()> {
-        self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
-        if let Some(actor) = self.actors.get(self.actor_pointer) {
-            let addr = match actor.controller {
-                Controller::Player(addr) => Some(addr),
-                Controller::Bot => None,
-            };
-            self.current_turn = Some(actor.controller);
-            for cl in host.get_clients() {
-                if Some(cl) == addr {
-                    host.send(
-                        cl,
-                        ServerMessage::YourTurn {
-                            actor: self.actor_pointer,
-                        },
-                    )
-                    .await?;
-                } else {
-                    host.send(
-                        cl,
-                        ServerMessage::ActorTurn {
-                            actor: self.actor_pointer,
-                        },
-                    )
-                    .await?;
+        let start = self.actor_pointer;
+        let mut first = true;
+        while self.actor_pointer != start || first {
+            first = false;
+            self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
+            if let Some(actor) = self.actors.get(self.actor_pointer) {
+                if actor.health <= 0 {
+                    continue;
                 }
+                let addr = match actor.controller {
+                    Controller::Player(addr) => Some(addr),
+                    Controller::Bot => None,
+                };
+                self.current_turn = Some(actor.controller);
+                for cl in host.get_clients() {
+                    if Some(cl) == addr {
+                        host.send(
+                            cl,
+                            ServerMessage::YourTurn {
+                                actor: self.actor_pointer,
+                            },
+                        )
+                        .await?;
+                    } else {
+                        host.send(
+                            cl,
+                            ServerMessage::ActorTurn {
+                                actor: self.actor_pointer,
+                            },
+                        )
+                        .await?;
+                    }
+                }
+                break;
             }
         }
         Ok(())
@@ -235,7 +244,7 @@ impl GameStartedState {
             return Ok(None);
         };
 
-        let dmg = 2;
+        let dmg = 3;
         arg.host
             .broadcast(ServerMessage::ChatMessage(
                 self.current_actor().name.clone(),
@@ -267,10 +276,13 @@ impl State for GameStartedState {
             let neighs = self
                 .get_neighbors(self.current_actor().position)
                 .into_iter()
-                .filter(|(f, _)| matches!(f, Piece::Actor(_)))
+                .filter_map(|(f, p)| match f {
+                    Piece::Actor(i) if self.actors[i].health > 0 => Some(p),
+                    _ => None,
+                })
                 .collect::<Vec<_>>();
             let time = if !neighs.is_empty() && rand::random_range(0..=1) == 0 {
-                let (_, pos) = neighs[rand::random_range(0..neighs.len())];
+                let pos = neighs[rand::random_range(0..neighs.len())];
                 self.current_punch_actor(unsafe { arg.clone() }, pos)
                     .await?
             } else {
