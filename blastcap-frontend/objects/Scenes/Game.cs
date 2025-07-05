@@ -135,7 +135,7 @@ public partial class Game : Node3D {
             var sound = this.SoundEffect.Instantiate<Node3D>();
             sound.Position = middle;
             this.Temporaries.AddChild(sound);
-            GD.Print(targetDamage);
+            target.Health -= targetDamage;
         };
 
         this.PC.EndTurnPressed = () => {
