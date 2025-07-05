@@ -70,7 +70,7 @@ public partial class MainMenu : Node3D {
         };
         this.nw.Inner.OnStartMap += (map) => {
             GD.Print($"Starting map: {map}");
-            this.GetTree().ChangeSceneToFile("res://scenes/Game.tscn");
+            this.GetTree().ChangeSceneToFile("uid://bjmfx6nsekf58");
         };
     }
 
