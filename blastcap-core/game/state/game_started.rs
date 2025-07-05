@@ -26,7 +26,7 @@ type Callback = Box<
     dyn FnOnce(
             &'static mut GameStartedState,
             Arg<'static>,
-        ) -> Pin<Box<dyn Future<Output = ()> + Send>>
+        ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>
         + Send,
 >;
 pub struct GameStartedState {
@@ -139,7 +139,7 @@ impl GameStartedState {
 
     fn timer<
         I: FnOnce(&'static mut GameStartedState, Arg<'static>) -> F + Send + 'static,
-        F: Future<Output = ()> + Send,
+        F: Future<Output = anyhow::Result<()>> + Send,
     >(
         &mut self,
         time: Duration,
@@ -215,7 +215,8 @@ impl State for GameStartedState {
         {
             self.timer(time, async |state, arg| {
                 state.waiting = false;
-                state.next_actor(arg.host).await.unwrap();
+                state.next_actor(arg.host).await?;
+                Ok(())
             });
         }
 
@@ -225,7 +226,7 @@ impl State for GameStartedState {
                     std::mem::transmute::<&mut GameStartedState, &mut GameStartedState>(self),
                     std::mem::transmute::<Arg<'_>, Arg<'_>>(arg),
                 )
-                .await;
+                .await?;
             }
         }
         Ok(None)
@@ -254,7 +255,10 @@ impl State for GameStartedState {
                 match &*act {
                     "Walk" => {
                         if let Some(t) = self.move_current_actor(arg, Vec2::new(x, y)).await? {
-                            self.timer(t, async |s, _| s.waiting = false);
+                            self.timer(t, async |s, _| {
+                                s.waiting = false;
+                                Ok(())
+                            });
                         }
                         Ok(None)
                     }
@@ -284,7 +288,8 @@ impl State for GameStartedState {
                         self.waiting = true;
                         self.timer(Duration::from_secs_f32(0.5), async |s, a| {
                             s.waiting = false;
-                            s.next_actor(a.host).await.unwrap();
+                            s.next_actor(a.host).await?;
+                            Ok(())
                         });
                         Ok(None)
                     }
