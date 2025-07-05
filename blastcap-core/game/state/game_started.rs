@@ -15,7 +15,7 @@ use math::Vec2;
 use std::{mem::swap, pin::Pin, time::Duration};
 
 type Map = [[Piece; 16]; 16];
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 enum Piece {
     #[default]
     Empty,
@@ -115,22 +115,35 @@ impl GameStartedState {
         &self.actors[self.actor_pointer]
     }
 
+    fn get_neighbors(&self, Vec2 { x, y }: Vec2) -> Vec<(Piece, Vec2)> {
+        let (nx, ny) = (x as isize, y as isize);
+        let mut neighs = Vec::with_capacity(9);
+        for y in -1..=1 {
+            for x in -1..=1 {
+                if x == 0 && y == 0 {
+                    continue;
+                }
+                let y = (ny + y) as usize;
+                let x = (nx + x) as usize;
+                if let Some(piece) = self.map.get(y).and_then(|r| r.get(x)) {
+                    neighs.push((*piece, Vec2::new(x, y)));
+                }
+            }
+        }
+        neighs
+    }
+
     async fn pathfind(&self, from: Vec2, to: Vec2) -> Option<(Vec<Vec2>, usize)> {
         pathfinding::directed::astar::astar(
             &from,
-            |Vec2 { x, y }| {
-                let (nx, ny) = (*x as isize, *y as isize);
-                let mut neighs = Vec::with_capacity(9);
-                for y in -1..=1 {
-                    for x in -1..=1 {
-                        let y = (ny + y) as usize;
-                        let x = (nx + x) as usize;
-                        if let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) {
-                            neighs.push((Vec2::new(x, y), 1));
-                        }
+            |p| {
+                self.get_neighbors(*p).into_iter().filter_map(|(p, v)| {
+                    if let Piece::Empty = p {
+                        Some((v, 1))
+                    } else {
+                        None
                     }
-                }
-                neighs
+                })
             },
             |pos| (pos.distance_f32(to) * 10.0) as usize,
             |a| *a == to,
@@ -200,24 +213,69 @@ impl GameStartedState {
 
         Ok(Some(Duration::from_secs_f32(time)))
     }
+
+    async fn current_punch_actor(
+        &mut self,
+        arg: Arg<'_>,
+        Vec2 { x, y }: Vec2,
+    ) -> anyhow::Result<Option<Duration>> {
+        let actor_pos = self.current_actor().position;
+        let distance = actor_pos.distance(Vec2::new(x, y));
+        let hit = self.map_get(x, y);
+        let Some(Piece::Actor(hit_ptr)) = hit else {
+            return Ok(None);
+        };
+        let Some(hit) = self.actors.get(*hit_ptr) else {
+            return Ok(None);
+        };
+
+        arg.host
+            .broadcast(ServerMessage::ChatMessage(
+                self.current_actor().name.clone(),
+                format!("punched {:?} at {distance}B", hit.name),
+            ))
+            .await?;
+        arg.host
+            .broadcast(ServerMessage::Action {
+                action: "Punch".to_string(),
+                actor: self.actor_pointer,
+                target: *hit_ptr,
+                time: 0.5,
+            })
+            .await?;
+        self.waiting = true;
+        Ok(Some(Duration::from_secs_f32(0.5)))
+    }
 }
 #[async_trait::async_trait]
 impl State for GameStartedState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
         if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller)
             && !self.waiting
-            && let Some(time) = self
-                .move_current_actor(
+        {
+            let neighs = self
+                .get_neighbors(self.current_actor().position)
+                .into_iter()
+                .filter(|(f, _)| matches!(f, Piece::Actor(_)))
+                .collect::<Vec<_>>();
+            let time = if !neighs.is_empty() && rand::random_range(0..=1) == 0 {
+                let (_, pos) = neighs[rand::random_range(0..neighs.len())];
+                self.current_punch_actor(unsafe { arg.clone() }, pos)
+                    .await?
+            } else {
+                self.move_current_actor(
                     unsafe { arg.clone() },
                     Vec2::new(rand::random_range(0..=16), rand::random_range(0..=16)),
                 )
                 .await?
-        {
-            self.timer(time, async |state, arg| {
-                state.waiting = false;
-                state.next_actor(arg.host).await?;
-                Ok(())
-            });
+            };
+            if let Some(time) = time {
+                self.timer(time, async |state, arg| {
+                    state.waiting = false;
+                    state.next_actor(arg.host).await?;
+                    Ok(())
+                });
+            }
         }
 
         if let Ok(fut) = self.callbacks.recv.try_recv() {
@@ -250,8 +308,6 @@ impl State for GameStartedState {
                     && !self.waiting
                     && self.current_actor().abilities.contains(&act) =>
             {
-                let actor_pos = self.current_actor().position;
-                let distance = actor_pos.distance(Vec2::new(x, y));
                 match &*act {
                     "Walk" => {
                         if let Some(t) = self.move_current_actor(arg, Vec2::new(x, y)).await? {
@@ -263,34 +319,12 @@ impl State for GameStartedState {
                         Ok(None)
                     }
                     "Punch" => {
-                        let hit = self.map_get(x, y);
-                        let Some(Piece::Actor(hit_ptr)) = hit else {
-                            return Ok(None);
-                        };
-                        let Some(hit) = self.actors.get(*hit_ptr) else {
-                            return Ok(None);
-                        };
-
-                        arg.host
-                            .broadcast(ServerMessage::ChatMessage(
-                                self.current_actor().name.clone(),
-                                format!("punched {:?} at {distance}B", hit.name),
-                            ))
-                            .await?;
-                        arg.host
-                            .broadcast(ServerMessage::Action {
-                                action: act,
-                                actor: self.actor_pointer,
-                                target: *hit_ptr,
-                                time: 0.5,
-                            })
-                            .await?;
-                        self.waiting = true;
-                        self.timer(Duration::from_secs_f32(0.5), async |s, a| {
-                            s.waiting = false;
-                            s.next_actor(a.host).await?;
-                            Ok(())
-                        });
+                        if let Some(t) = self.current_punch_actor(arg, Vec2::new(x, y)).await? {
+                            self.timer(t, async |s, _| {
+                                s.waiting = false;
+                                Ok(())
+                            });
+                        }
                         Ok(None)
                     }
                     _ => {
