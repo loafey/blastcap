@@ -97,7 +97,7 @@ public partial class PlayerCamera : Node3D {
     public override void _Input(InputEvent @event) {
         base._Input(@event);
         if (this._cameraLock && @event is InputEventMouseMotion ev) {
-            this.RotateCam(-ev.Relative * this._cameraBoomSpeed);
+            this.RotateCam(ev.Relative * this._cameraBoomSpeed);
         }
     }
 
