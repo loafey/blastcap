@@ -1,17 +1,20 @@
-[gd_scene load_steps=5 format=3 uid="uid://bjmfx6nsekf58"]
+[gd_scene load_steps=6 format=3 uid="uid://bjmfx6nsekf58"]
 
 [ext_resource type="PackedScene" uid="uid://d35nkowtrw54c" path="res://objects/PlayerCamera.tscn" id="1_ibkli"]
 [ext_resource type="Script" uid="uid://ow2rlu86ladi" path="res://objects/Scenes/Game.cs" id="1_qbsmt"]
 [ext_resource type="PackedScene" uid="uid://dmad3dtbb46yk" path="res://objects/Actor.tscn" id="2_78awf"]
+[ext_resource type="PackedScene" uid="uid://0et8vkoetkb7" path="res://objects/Effects/Explosion.tscn" id="3_bfu7n"]
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="3_cpr0p"]
 
-[node name="Game" type="Node3D" node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder")]
+[node name="Game" type="Node3D" node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder", "Temporaries")]
 script = ExtResource("1_qbsmt")
 ActorScene = ExtResource("2_78awf")
 ActorHolder = NodePath("Actors")
 ChatBox = NodePath("CanvasLayer/ChatBox")
 PC = NodePath("PlayerCamera")
 WorldMeshHolder = NodePath("WorldMesh")
+ExplosionScene = ExtResource("3_bfu7n")
+Temporaries = NodePath("Temporaries")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
@@ -27,3 +30,5 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
 [node name="ChatBox" parent="CanvasLayer" instance=ExtResource("3_cpr0p")]
 
 [node name="WorldMesh" type="Node3D" parent="."]
+
+[node name="Temporaries" type="Node3D" parent="."]

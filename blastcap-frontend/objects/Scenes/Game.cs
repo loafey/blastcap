@@ -15,6 +15,10 @@ public partial class Game : Node3D {
     public PlayerCamera PC;
     [Export]
     public Node3D WorldMeshHolder;
+    [Export]
+    public PackedScene ExplosionScene;
+    [Export]
+    public Node3D Temporaries;
     private bool _myTurn;
     private string _currentAbility = null;
 
@@ -114,11 +118,23 @@ public partial class Game : Node3D {
 
         this.nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
 
+        this.nw.Inner.OnAction += (action, actorIndex, targetIndex, time) => {
+            var children = this.ActorHolder.GetChildren();
+            var actor = (Actor)children[(int)actorIndex];
+            var target = (Actor)children[(int)targetIndex];
+            var middle = (actor.Position + target.Position) / 2;
+            GD.Print(middle);
+            var node = this.ExplosionScene.Instantiate<Explosion>();
+            node.Position = middle;
+            this.Temporaries.AddChild(node);
+        };
+
         this.PC.EndTurnPressed = () => {
             this.nw.Inner.SendEndTurn();
             this._currentAbility = null;
             this.PC.CurrentAbility = null;
         };
+
 
         this.SetupDebugScene();
     }
