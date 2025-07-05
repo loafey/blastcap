@@ -1,0 +1,8 @@
+[gd_scene load_steps=3 format=3 uid="uid://brortooqkibdb"]
+
+[ext_resource type="AudioStream" uid="uid://buh1hx1t5uj2i" path="res://blastcap-data/DnDSE/Sound/SimplePunch.ogg" id="1_wi7fp"]
+[ext_resource type="Script" uid="uid://cqu2nu07msrpd" path="res://objects/Effects/Sound.cs" id="2_0c4rt"]
+
+[node name="Sound" type="AudioStreamPlayer3D"]
+stream = ExtResource("1_wi7fp")
+script = ExtResource("2_0c4rt")

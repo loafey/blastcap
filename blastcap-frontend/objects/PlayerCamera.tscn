@@ -19,6 +19,9 @@ CurrentAbilityLabel = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/Cu
 transform = Transform3D(1, 0, 0, 0, 0.258819, 0.965926, 0, -0.965926, 0.258819, 0, 9, 0)
 current = true
 
+[node name="AudioListener3D" type="AudioListener3D" parent="BoomArm/Camera"]
+transform = Transform3D(1, 0, 0, 0, 0.258819, -0.965926, 0, 0.965926, 0.258819, 0, -2.32937, -8.69333)
+
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="Panel" type="Panel" parent="CanvasLayer"]

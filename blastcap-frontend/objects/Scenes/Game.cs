@@ -18,6 +18,8 @@ public partial class Game : Node3D {
     [Export]
     public PackedScene ExplosionScene;
     [Export]
+    public PackedScene SoundEffect;
+    [Export]
     public Node3D Temporaries;
     private bool _myTurn;
     private string _currentAbility = null;
@@ -123,10 +125,14 @@ public partial class Game : Node3D {
             var actor = (Actor)children[(int)actorIndex];
             var target = (Actor)children[(int)targetIndex];
             var middle = (actor.Position + target.Position) / 2;
-            GD.Print(middle);
+
             var node = this.ExplosionScene.Instantiate<Explosion>();
             node.Position = middle;
             this.Temporaries.AddChild(node);
+
+            var sound = this.SoundEffect.Instantiate<Node3D>();
+            sound.Position = middle;
+            this.Temporaries.AddChild(sound);
         };
 
         this.PC.EndTurnPressed = () => {

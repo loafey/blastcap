@@ -1,10 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://bjmfx6nsekf58"]
+[gd_scene load_steps=7 format=3 uid="uid://bjmfx6nsekf58"]
 
 [ext_resource type="PackedScene" uid="uid://d35nkowtrw54c" path="res://objects/PlayerCamera.tscn" id="1_ibkli"]
 [ext_resource type="Script" uid="uid://ow2rlu86ladi" path="res://objects/Scenes/Game.cs" id="1_qbsmt"]
 [ext_resource type="PackedScene" uid="uid://dmad3dtbb46yk" path="res://objects/Actor.tscn" id="2_78awf"]
 [ext_resource type="PackedScene" uid="uid://0et8vkoetkb7" path="res://objects/Effects/Explosion.tscn" id="3_bfu7n"]
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="3_cpr0p"]
+[ext_resource type="PackedScene" uid="uid://brortooqkibdb" path="res://objects/Effects/Sound.tscn" id="4_t1gdw"]
 
 [node name="Game" type="Node3D" node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder", "Temporaries")]
 script = ExtResource("1_qbsmt")
@@ -14,6 +15,7 @@ ChatBox = NodePath("CanvasLayer/ChatBox")
 PC = NodePath("PlayerCamera")
 WorldMeshHolder = NodePath("WorldMesh")
 ExplosionScene = ExtResource("3_bfu7n")
+SoundEffect = ExtResource("4_t1gdw")
 Temporaries = NodePath("Temporaries")
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]

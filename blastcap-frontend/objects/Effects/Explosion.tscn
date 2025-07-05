@@ -10,8 +10,8 @@ albedo_color = Color(1, 0.945214, 0.93864, 0.407843)
 material = SubResource("StandardMaterial3D_6ivwd")
 
 [sub_resource type="Curve" id="Curve_6ivwd"]
-_data = [Vector2(0, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
-point_count = 2
+_data = [Vector2(0, 0.0788217), 0.0, 0.0, 0, 0, Vector2(0.509506, 0.68949), 2.39807, 2.39807, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
 
 [node name="Explosion" type="Node3D"]
 script = ExtResource("1_yl753")
@@ -25,8 +25,10 @@ one_shot = true
 explosiveness = 1.0
 mesh = SubResource("SphereMesh_6ivwd")
 gravity = Vector3(0, 0, 0)
-initial_velocity_min = 1.0
-initial_velocity_max = 1.0
+initial_velocity_min = 5.0
+initial_velocity_max = 5.0
 angular_velocity_min = -1.0
 angular_velocity_max = 1.0
+scale_amount_min = 4.0
+scale_amount_max = 4.0
 scale_amount_curve = SubResource("Curve_6ivwd")
