@@ -12,9 +12,38 @@ use crate::{
     },
 };
 use math::Vec2;
-use std::{mem::swap, pin::Pin, time::Duration};
+use std::{pin::Pin, time::Duration};
 
-type Map = [[Piece; 16]; 16];
+#[derive(Default)]
+struct Map {
+    alive: [[Piece; 16]; 16],
+    dead: [[Option<usize>; 16]; 16],
+}
+impl Map {
+    pub fn get(&self, Vec2 { x, y }: Vec2) -> Option<Piece> {
+        self.alive.get(y).and_then(|r| r.get(x).copied())
+    }
+
+    pub fn set(&mut self, Vec2 { x, y }: Vec2, value: Piece) {
+        let Some(piece) = self.alive.get_mut(y).and_then(|r| r.get_mut(x)) else {
+            return;
+        };
+        *piece = value;
+    }
+
+    pub fn dead_get(&self, Vec2 { x, y }: Vec2) -> Option<usize> {
+        self.dead
+            .get(y)
+            .and_then(|r| r.get(x).copied().and_then(|r| r))
+    }
+
+    pub fn dead_set(&mut self, Vec2 { x, y }: Vec2, value: Option<usize>) {
+        let Some(piece) = self.dead.get_mut(y).and_then(|r| r.get_mut(x)) else {
+            return;
+        };
+        *piece = value;
+    }
+}
 #[derive(Default, Debug, Clone, Copy)]
 enum Piece {
     #[default]
@@ -54,21 +83,20 @@ impl GameStartedState {
         host: &mut NetworkHost,
         actor: Actor,
     ) -> anyhow::Result<()> {
-        let Vec2 { x, y } = actor.position;
-        let Some(Piece::Empty) = self.map.get(y).and_then(|r| r.get(x)) else {
+        let Some(Piece::Empty) = self.map.get(actor.position) else {
             return Ok(());
         };
 
         let id = self.actors.len();
-        self.map[y][x] = Piece::Actor(id);
+        self.map.set(actor.position, Piece::Actor(id));
         for addr in host.get_clients() {
             host.send(
                 addr,
                 ServerMessage::SpawnActor {
                     name: actor.name.clone(),
                     id,
-                    x,
-                    y,
+                    x: actor.position.x,
+                    y: actor.position.y,
                     abilities: actor.abilities.get_keys(),
                     yours: actor.controller == Controller::Player(addr),
                     health: actor.health,
@@ -136,8 +164,8 @@ impl GameStartedState {
                 }
                 let y = (ny + y) as usize;
                 let x = (nx + x) as usize;
-                if let Some(piece) = self.map.get(y).and_then(|r| r.get(x)) {
-                    neighs.push((*piece, Vec2::new(x, y)));
+                if let Some(piece) = self.map.get(Vec2::new(x, y)) {
+                    neighs.push((piece, Vec2::new(x, y)));
                 }
             }
         }
@@ -180,33 +208,29 @@ impl GameStartedState {
         });
     }
 
-    fn map_get(&self, x: usize, y: usize) -> Option<&Piece> {
-        self.map.get(y).and_then(|r| r.get(x))
-    }
-
     async fn move_current_actor(
         &mut self,
         arg: Arg<'_>,
-        Vec2 { x, y }: Vec2,
+        pos: Vec2,
     ) -> anyhow::Result<Option<Duration>> {
-        let Some(Piece::Empty) = self.map_get(x, y) else {
+        let Some(Piece::Empty) = self.map.get(pos) else {
             self.waiting = false;
             return Ok(None);
         };
-        let Vec2 { x: old_x, y: old_y } = self.actors[self.actor_pointer].position;
-        let path = self
-            .pathfind(Vec2::new(old_x, old_y), Vec2::new(x, y))
-            .await;
+        let old = self.actors[self.actor_pointer].position;
+        let path = self.pathfind(old, pos).await;
         let Some((path, _)) = path else {
             self.waiting = false;
             return Ok(None);
         };
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
-        swap(
-            unsafe { std::mem::transmute::<&mut Piece, &'static mut Piece>(&mut self.map[y][x]) },
-            &mut self.map[old_y][old_x],
-        );
-        self.actors[self.actor_pointer].position = Vec2::new(x, y);
+        {
+            let a = self.map.get(pos).unwrap();
+            let b = self.map.get(old).unwrap();
+            self.map.set(pos, b);
+            self.map.set(old, a);
+        }
+        self.actors[self.actor_pointer].position = pos;
         let mut x_list = Vec::new();
         let mut y_list = Vec::new();
         for Vec2 { x, y } in path {
@@ -228,23 +252,22 @@ impl GameStartedState {
     async fn current_punch_actor(
         &mut self,
         arg: Arg<'_>,
-        Vec2 { x, y }: Vec2,
+        pos: Vec2,
     ) -> anyhow::Result<Option<Duration>> {
         let actor_pos = self.current_actor().position;
-        let distance = actor_pos.distance(Vec2::new(x, y));
-        let hit = self.map_get(x, y);
+        let distance = actor_pos.distance(pos);
+        let hit = self.map.get(pos);
         if distance > 1 {
             return Ok(None);
         }
         let Some(Piece::Actor(hit_ptr)) = hit else {
             return Ok(None);
         };
-        let hit_ptr = *hit_ptr;
         let Some(hit) = self.actors.get(hit_ptr) else {
             return Ok(None);
         };
 
-        let dmg = 3;
+        let dmg = 15;
         arg.host
             .broadcast(ServerMessage::ChatMessage(
                 self.current_actor().name.clone(),
@@ -262,6 +285,13 @@ impl GameStartedState {
             .await?;
         if let Some(hit) = self.actors.get_mut(hit_ptr) {
             hit.health -= dmg;
+            if hit.health <= 0 {
+                let Some(Piece::Actor(id)) = self.map.get(hit.position) else {
+                    unreachable!()
+                };
+                self.map.set(hit.position, Piece::Empty);
+                self.map.dead_set(hit.position, Some(id));
+            }
         };
         self.waiting = true;
         Ok(Some(Duration::from_secs_f32(0.5)))
