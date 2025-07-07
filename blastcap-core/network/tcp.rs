@@ -4,7 +4,7 @@ use crate::network::{
 };
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
-use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
+use std::{collections::HashMap, net::SocketAddr};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, WriteHalf, split},
     net::{TcpListener, TcpStream, ToSocketAddrs},

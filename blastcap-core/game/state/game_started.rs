@@ -15,7 +15,7 @@ use math::Vec2;
 use std::{pin::Pin, time::Duration};
 
 #[derive(Default)]
-struct Map {
+pub struct Map {
     alive: [[Piece; 16]; 16],
     dead: [[Option<usize>; 16]; 16],
 }
