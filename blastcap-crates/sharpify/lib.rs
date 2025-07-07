@@ -1,6 +1,7 @@
 extern crate proc_macro;
 use convert_case::Casing;
 use proc_macro::TokenStream as TS1;
+use quote::ToTokens;
 use std::{fmt::Write as _, fs::File, io::Write as _};
 use syn::{Item, ItemEnum, ItemMod, spanned::Spanned};
 
@@ -70,11 +71,11 @@ fn csharp_type(ty: &str) -> String {
         "bool" => "bool".to_string(),
         "f32" => "float".to_string(),
         "f64" => "double".to_string(),
-        _ if ty.starts_with("Vec<") && ty.ends_with(">") => {
-            format!("List<{}>", csharp_type(&ty[4..ty.len() - 1]))
+        _ if ty.starts_with("Vec < ") && ty.ends_with(" >") => {
+            format!("List<{}>", csharp_type(&ty[6..ty.len() - 2]))
         }
-        _ if ty.starts_with("HashMap<") && ty.ends_with(">") => {
-            format!("Dictionary<{}>", csharp_type(&ty[8..ty.len() - 1]))
+        _ if ty.starts_with("HashMap < ") && ty.ends_with(" >") => {
+            format!("Dictionary<{}>", csharp_type(&ty[10..ty.len() - 2]))
         }
         _ if ty.split_once(",").is_some() => {
             let Some((a, b)) = ty.split_once(",") else {
@@ -147,21 +148,19 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
     let mut csharp_out = String::new();
     let mut rust_out = String::new();
     for em in em.variants {
-        let name = em.ident.span().source_text().unwrap();
+        let name = em.ident.to_string();
         let mut args = Vec::new();
         match em.fields {
             syn::Fields::Named(f) => {
                 for f in f.named {
-                    let ident = f.ident.unwrap();
-                    args.push((
-                        ident.span().source_text().unwrap(),
-                        f.ty.span().source_text().unwrap(),
-                    ))
+                    let ident = f.ident.unwrap().to_string();
+                    let ty = f.ty.to_token_stream().to_string();
+                    args.push((ident, ty))
                 }
             }
             syn::Fields::Unnamed(f) => {
                 for (i, f) in f.unnamed.into_iter().enumerate() {
-                    args.push((format!("arg{i}"), f.ty.span().source_text().unwrap()));
+                    args.push((format!("arg{i}"), f.ty.to_token_stream().to_string()));
                 }
             }
             syn::Fields::Unit => {}
@@ -269,7 +268,7 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
     let mut rust_fn_args = String::new();
     for em in em.variants {
         let mut named = false;
-        let name = em.ident.span().source_text().unwrap();
+        let name = em.ident.to_string();
         let mut args = Vec::new();
         cs_signals.push_str(&format!("    private event {name}Callback _on{name};\n"));
         cs_signals.push_str(&format!(
@@ -291,21 +290,18 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
             syn::Fields::Named(f) => {
                 named = true;
                 for f in f.named {
-                    let ident = f.ident.unwrap();
-                    args.push((
-                        format!("{name}_{}", ident.span().source_text().unwrap()),
-                        ident.span().source_text().unwrap(),
-                        f.ty.span().source_text().unwrap(),
-                    ))
+                    let ident = f
+                        .ident
+                        .unwrap_or_else(|| panic!("field name missing"))
+                        .to_string();
+                    let ty = f.ty.to_token_stream().to_string();
+                    args.push((format!("{name}_{ident}"), ident, ty));
                 }
             }
             syn::Fields::Unnamed(f) => {
                 for (i, f) in f.unnamed.into_iter().enumerate() {
-                    args.push((
-                        format!("{name}_arg{i}"),
-                        format!("arg{i}"),
-                        f.ty.span().source_text().unwrap(),
-                    ));
+                    let ty = f.ty.to_token_stream().to_string();
+                    args.push((format!("{name}_arg{i}"), format!("arg{i}"), ty));
                 }
             }
             syn::Fields::Unit => {}
