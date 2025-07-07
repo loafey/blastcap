@@ -9,7 +9,7 @@ use std::{any::type_name, net::SocketAddr};
 use tokio::time::Instant;
 
 mod game_started;
-pub use game_started::GameStartedState;
+pub use game_started::{GameStartedState, Piece};
 mod lobby;
 pub use lobby::LobbyState;
 mod waiting;

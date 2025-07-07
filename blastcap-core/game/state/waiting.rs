@@ -61,21 +61,20 @@ impl State for WaitingState {
                     //     .await?;
                     // }
                     for i in 0..200 {
-                        gs.spawn_actor(
-                            arg.host,
-                            Actor {
-                                name: format!("Bot {i}"),
-                                controller: Controller::Bot,
-                                position: Vec2::new(
-                                    rand::random_range(0..16),
-                                    rand::random_range(0..16),
-                                ),
-                                abilities: Default::default(),
-                                health: 15,
-                                base_movement: 8,
-                            },
-                        )
-                        .await?;
+                        let mut actor = Actor {
+                            name: format!("Bot {i}"),
+                            controller: Controller::Bot,
+                            position: Vec2::new(
+                                rand::random_range(0..16),
+                                rand::random_range(0..16),
+                            ),
+                            health: 15,
+                            base_movement: 8,
+                            abilities: Default::default(),
+                            resources: Default::default(),
+                        };
+                        actor.reset_turn_resources();
+                        gs.spawn_actor(arg.host, actor).await?;
                     }
                     gs.next_actor(arg.host).await?;
                     Ok(Some(gs))

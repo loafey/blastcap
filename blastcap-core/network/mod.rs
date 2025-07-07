@@ -1,6 +1,10 @@
 pub mod channel;
 pub mod messages;
+mod socket_addr_ext;
 mod tcp;
+pub use socket_addr_ext::*;
+
+static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
 
 use crate::network::{
     messages::{ClientRequest, ServerMessage},
@@ -10,6 +14,7 @@ use async_trait::async_trait;
 use std::{
     net::SocketAddr,
     ops::{Deref, DerefMut},
+    sync::LazyLock,
 };
 use tokio::net::ToSocketAddrs;
 

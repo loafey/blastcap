@@ -6,7 +6,7 @@ use crate::{
         state::{Res, State},
     },
     network::{
-        NetworkHost,
+        NetworkHost, SocketAddrExt,
         channel::Channel,
         messages::{ClientRequest, ServerMessage},
     },
@@ -45,7 +45,7 @@ impl Map {
     }
 }
 #[derive(Default, Debug, Clone, Copy)]
-enum Piece {
+pub enum Piece {
     #[default]
     Empty,
     Actor(usize),
@@ -59,9 +59,9 @@ type Callback = Box<
         + Send,
 >;
 pub struct GameStartedState {
-    actors: Vec<Actor>,
-    actor_pointer: usize,
-    map: Box<Map>,
+    pub actors: Vec<Actor>,
+    pub actor_pointer: usize,
+    pub map: Box<Map>,
     current_turn: Option<Controller>,
     waiting: bool,
     callbacks: Channel<Callback>,
@@ -150,11 +150,14 @@ impl GameStartedState {
         Ok(())
     }
 
-    fn current_actor(&self) -> &Actor {
+    pub fn current_actor(&self) -> &Actor {
         &self.actors[self.actor_pointer]
     }
+    pub fn current_actor_mut(&mut self) -> &mut Actor {
+        &mut self.actors[self.actor_pointer]
+    }
 
-    fn get_neighbors(&self, Vec2 { x, y }: Vec2) -> Vec<(Piece, Vec2)> {
+    pub fn get_neighbors(&self, Vec2 { x, y }: Vec2) -> Vec<(Piece, Vec2)> {
         let (nx, ny) = (x as isize, y as isize);
         let mut neighs = Vec::with_capacity(9);
         for y in -1..=1 {
@@ -172,7 +175,7 @@ impl GameStartedState {
         neighs
     }
 
-    async fn pathfind(&self, from: Vec2, to: Vec2) -> Option<(Vec<Vec2>, usize)> {
+    pub fn pathfind(&self, from: Vec2, to: Vec2) -> Option<(Vec<Vec2>, usize)> {
         pathfinding::directed::astar::astar(
             &from,
             |p| {
@@ -218,7 +221,7 @@ impl GameStartedState {
             return Ok(None);
         };
         let old = self.actors[self.actor_pointer].position;
-        let path = self.pathfind(old, pos).await;
+        let path = self.pathfind(old, pos);
         let Some((path, _)) = path else {
             self.waiting = false;
             return Ok(None);
@@ -254,12 +257,16 @@ impl GameStartedState {
         arg: Arg<'_>,
         pos: Vec2,
     ) -> anyhow::Result<Option<Duration>> {
-        let actor_pos = self.current_actor().position;
+        let cur_act = self.current_actor();
+        if cur_act.resources.abilities == 0 {
+            return Ok(None);
+        }
+        let actor_pos = cur_act.position;
         let distance = actor_pos.distance(pos);
-        let hit = self.map.get(pos);
         if distance > 1 {
             return Ok(None);
         }
+        let hit = self.map.get(pos);
         let Some(Piece::Actor(hit_ptr)) = hit else {
             return Ok(None);
         };
@@ -293,6 +300,7 @@ impl GameStartedState {
                 self.map.dead_set(hit.position, Some(id));
             }
         };
+        self.current_actor_mut().resources.abilities -= 1;
         self.waiting = true;
         Ok(Some(Duration::from_secs_f32(0.5)))
     }
@@ -300,35 +308,12 @@ impl GameStartedState {
 #[async_trait::async_trait]
 impl State for GameStartedState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
-        if let Some(Controller::Bot) = self.actors.get(self.actor_pointer).map(|a| a.controller)
+        let curr_act = self.actors.get(self.actor_pointer);
+        if let Some(actor) = curr_act
+            && matches!(actor.controller, Controller::Bot)
             && !self.waiting
         {
-            let neighs = self
-                .get_neighbors(self.current_actor().position)
-                .into_iter()
-                .filter_map(|(f, p)| match f {
-                    Piece::Actor(i) if self.actors[i].health > 0 => Some(p),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
-            let time = if !neighs.is_empty() && rand::random_range(0..=1) == 0 {
-                let pos = neighs[rand::random_range(0..neighs.len())];
-                self.current_punch_actor(unsafe { arg.clone() }, pos)
-                    .await?
-            } else {
-                self.move_current_actor(
-                    unsafe { arg.clone() },
-                    Vec2::new(rand::random_range(0..=16), rand::random_range(0..=16)),
-                )
-                .await?
-            };
-            if let Some(time) = time {
-                self.timer(time, async |state, arg| {
-                    state.waiting = false;
-                    state.next_actor(arg.host).await?;
-                    Ok(())
-                });
-            }
+            actor.bot_act(self, unsafe { arg.clone() }).await?;
         }
 
         if let Ok(fut) = self.callbacks.recv.try_recv() {
@@ -357,7 +342,7 @@ impl State for GameStartedState {
                 Ok(None)
             }
             ClientRequest::Action(act, x, y)
-                if Some(Controller::Player(addr)) == self.current_turn
+                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_host())
                     && !self.waiting
                     && self.current_actor().abilities.contains(&act) =>
             {
@@ -395,9 +380,11 @@ impl State for GameStartedState {
                 }
             }
             ClientRequest::EndTurn
-                if Some(Controller::Player(addr)) == self.current_turn && !self.waiting =>
+                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_host())
+                    && !self.waiting =>
             {
                 self.next_actor(arg.host).await?;
+                self.current_actor_mut().reset_turn_resources();
                 Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,

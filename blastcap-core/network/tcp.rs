@@ -1,6 +1,6 @@
 use crate::network::{
-    ClientPoll, ClientRequest, HostPoll, NetworkClientExt, NetworkHostExt, ServerMessage,
-    TICK_RATE, channel::Channel,
+    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, NetworkClientExt, NetworkHostExt,
+    ServerMessage, TICK_RATE, channel::Channel,
 };
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
@@ -121,7 +121,6 @@ impl NetworkHostExt for TcpHost {
         Ok(())
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
-        static LOCAL: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
         tokio::select! {
             acc = self.listener.accept() => {
                 let (stream, addr) = acc?;
@@ -134,7 +133,7 @@ impl NetworkHostExt for TcpHost {
             },
             mocked = self.mock.recv.recv() => {
                 let Some(req) = mocked else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: LOCAL.clone(), req })
+                Ok(HostPoll::ClientRequest { addr: *LOCAL_ADDR, req })
             }
             msg = self.recv.recv() => {
                 let Some((addr, req)) = msg else { unreachable!() };
