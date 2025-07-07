@@ -36,31 +36,31 @@ impl State for WaitingState {
                         self.players
                     );
                     //
-                    let mut posses = [
-                        Vec2::new(0, 0),
-                        Vec2::new(0, 15),
-                        Vec2::new(15, 0),
-                        Vec2::new(15, 15),
-                    ]
-                    .into_iter()
-                    .cycle();
 
                     let mut gs = GameStartedState::new();
-                    for (id, addr) in self.players.iter().copied().enumerate() {
-                        gs.spawn_actor(
-                            arg.host,
-                            Actor {
-                                name: format!("Player {id}"),
-                                controller: Controller::Player(addr),
-                                position: posses.next().unwrap(),
-                                abilities: Default::default(),
-                                health: 10,
-                                base_movement: 6,
-                                resources: Default::default(),
-                            },
-                        )
-                        .await?;
-                    }
+                    // let mut posses = [
+                    //     Vec2::new(0, 0),
+                    //     Vec2::new(0, 15),
+                    //     Vec2::new(15, 0),
+                    //     Vec2::new(15, 15),
+                    // ]
+                    // .into_iter()
+                    // .cycle();
+                    // for (id, addr) in self.players.iter().copied().enumerate() {
+                    //     gs.spawn_actor(
+                    //         arg.host,
+                    //         Actor {
+                    //             name: format!("Player {id}"),
+                    //             controller: Controller::Player(addr),
+                    //             position: posses.next().unwrap(),
+                    //             abilities: Default::default(),
+                    //             health: 10,
+                    //             base_movement: 6,
+                    //             resources: Default::default(),
+                    //         },
+                    //     )
+                    //     .await?;
+                    // }
                     for i in 0..200 {
                         let mut actor = Actor {
                             name: format!("Bot {i}"),
