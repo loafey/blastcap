@@ -87,6 +87,7 @@ pub enum HostPoll {
 #[async_trait]
 pub trait NetworkHostExt {
     async fn poll(&mut self) -> anyhow::Result<HostPoll>;
+    async fn mock(&mut self, msg: ClientRequest) -> anyhow::Result<()>;
     async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()>;
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()>;
     fn remove_client(&mut self, addr: SocketAddr);

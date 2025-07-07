@@ -1,9 +1,10 @@
 use crate::network::{
-    ClientPoll, ClientRequest, HostPoll, NetworkClientExt, NetworkHostExt, ServerMessage, TICK_RATE,
+    ClientPoll, ClientRequest, HostPoll, NetworkClientExt, NetworkHostExt, ServerMessage,
+    TICK_RATE, channel::Channel,
 };
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
-use std::{collections::HashMap, net::SocketAddr};
+use std::{collections::HashMap, net::SocketAddr, sync::LazyLock};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, WriteHalf, split},
     net::{TcpListener, TcpStream, ToSocketAddrs},
@@ -70,6 +71,7 @@ pub(super) struct TcpHost {
     send: Sender<(SocketAddr, ClientRequest)>,
     kill_recv: Receiver<SocketAddr>,
     kill_send: Sender<SocketAddr>,
+    mock: Channel<ClientRequest>,
 }
 impl TcpHost {
     pub async fn new(port: u16) -> anyhow::Result<Self> {
@@ -82,6 +84,7 @@ impl TcpHost {
             kill_send,
             kill_recv,
             clients: Default::default(),
+            mock: Channel::new(10),
         })
     }
 
@@ -113,7 +116,12 @@ impl TcpHost {
 
 #[async_trait]
 impl NetworkHostExt for TcpHost {
+    async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
+        self.mock.send.send(req).await?;
+        Ok(())
+    }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
+        static LOCAL: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
         tokio::select! {
             acc = self.listener.accept() => {
                 let (stream, addr) = acc?;
@@ -124,6 +132,10 @@ impl NetworkHostExt for TcpHost {
                 let Some(addr) = remove else { unreachable!() };
                 Ok(HostPoll::RemoveClient(addr))
             },
+            mocked = self.mock.recv.recv() => {
+                let Some(req) = mocked else { unreachable!() };
+                Ok(HostPoll::ClientRequest { addr: LOCAL.clone(), req })
+            }
             msg = self.recv.recv() => {
                 let Some((addr, req)) = msg else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr, req })
@@ -158,15 +170,15 @@ impl NetworkHostExt for TcpHost {
         Ok(())
     }
 
+    fn remove_client(&mut self, addr: SocketAddr) {
+        self.clients.remove(&addr);
+    }
+
     fn get_clients(&self) -> Vec<SocketAddr> {
         self.clients.keys().copied().collect()
     }
 
     fn get_client_count(&self) -> u32 {
         self.clients.len() as u32
-    }
-
-    fn remove_client(&mut self, addr: SocketAddr) {
-        self.clients.remove(&addr);
     }
 }
