@@ -10,18 +10,18 @@ material = SubResource("StandardMaterial3D_iwa78")
 
 [node name="Actor" type="Node3D" node_paths=PackedStringArray("ActorLabel")]
 script = ExtResource("1_0bejo")
-ActorLabel = NodePath("Label3D")
+ActorLabel = NodePath("Offset/Label3D")
 
 [node name="Offset" type="Node3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0, 0.5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1, 0.5)
 
-[node name="MeshInstance3D" type="MeshInstance3D" parent="Offset"]
-mesh = SubResource("CylinderMesh_iwa78")
-skeleton = NodePath("../..")
-
-[node name="Label3D" type="Label3D" parent="."]
-transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 1, 0.5, 1.657, 0.5)
+[node name="Label3D" type="Label3D" parent="Offset"]
+transform = Transform3D(0.7, 0, 0, 0, 0.7, 0, 0, 0, 1, 0, 1.657, 0)
 pixel_size = 0.001
 billboard = 1
 fixed_size = true
 text = "Yoo"
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Offset"]
+mesh = SubResource("CylinderMesh_iwa78")
+skeleton = NodePath("../..")
