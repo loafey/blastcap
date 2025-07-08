@@ -129,19 +129,30 @@ impl GameStartedState {
         &mut self.actors[self.actor_pointer]
     }
 
-    pub fn get_neighbors(&self, Vec3 { x, y, z }: Vec3) -> Vec<(Piece, Vec3)> {
-        let (nx, nz) = (x as isize, z as isize);
+    pub fn get_neighbors(&self, air: bool, Vec3 { x, y, z }: Vec3) -> Vec<(Piece, Vec3)> {
+        let (nx, ny, nz) = (x as isize, y as isize, z as isize);
         let mut neighs = Vec::with_capacity(9);
         for z in -1..=1 {
-            for x in -1..=1 {
-                if x == 0 && y == 0 {
-                    continue;
-                }
-                let z = (nz + z) as usize;
-                let x = (nx + x) as usize;
-                let v = Vec3::new(x, y, z);
-                if let Some(piece) = self.map.get(v) {
-                    neighs.push((piece, v));
+            for y in -1..=1 {
+                for x in -1..=1 {
+                    if x == 0 && y == 0 && z == 0 {
+                        continue;
+                    }
+                    let z = (nz + z) as usize;
+                    let y = (ny + y) as usize;
+                    let x = (nx + x) as usize;
+                    let v = Vec3::new(x, y, z);
+                    if let Some(piece) = self.map.get(v) {
+                        if air {
+                            neighs.push((piece, v));
+                        } else if let Some(Piece::Ground) = self.map.get(Vec3 {
+                            x,
+                            y: y.wrapping_sub(1),
+                            z,
+                        }) {
+                            neighs.push((piece, v));
+                        }
+                    }
                 }
             }
         }
@@ -152,13 +163,15 @@ impl GameStartedState {
         pathfinding::directed::astar::astar(
             &from,
             |p| {
-                self.get_neighbors(*p).into_iter().filter_map(|(p, v)| {
-                    if let Piece::Empty = p {
-                        Some((v, 1))
-                    } else {
-                        None
-                    }
-                })
+                self.get_neighbors(false, *p)
+                    .into_iter()
+                    .filter_map(|(p, v)| {
+                        if let Piece::Empty = p {
+                            Some((v, 1))
+                        } else {
+                            None
+                        }
+                    })
             },
             |pos| (pos.distance_f32(to) * 10.0) as usize,
             |a| *a == to,
@@ -195,6 +208,7 @@ impl GameStartedState {
         };
         let old = self.actors[self.actor_pointer].position;
         let path = self.pathfind(old, pos);
+        println!("{}", path.is_some());
         let Some((path, _)) = path else {
             self.waiting = false;
             return Ok(None);

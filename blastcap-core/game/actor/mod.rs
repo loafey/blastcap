@@ -35,7 +35,7 @@ pub struct Actor {
 impl Actor {
     pub async fn bot_act<'l>(&self, state: &GameStartedState, arg: Arg<'l>) -> anyhow::Result<()> {
         let neighs = state
-            .get_neighbors(self.position)
+            .get_neighbors(false, self.position)
             .into_iter()
             .filter_map(|(f, p)| match f {
                 Piece::Actor(i) if state.actors[i].health > 0 => Some(p),
