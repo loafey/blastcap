@@ -6,6 +6,7 @@ use std::{mem::MaybeUninit, net::SocketAddr};
 use tokio::time::Instant;
 
 mod actor;
+mod map;
 mod state;
 
 #[derive(Default)]

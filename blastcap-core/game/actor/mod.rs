@@ -9,10 +9,7 @@ mod abilities;
 pub use abilities::*;
 
 use crate::{
-    game::{
-        Arg,
-        state::{GameStartedState, Piece},
-    },
+    game::{Arg, map::Piece, state::GameStartedState},
     network::messages::ClientRequest,
 };
 
