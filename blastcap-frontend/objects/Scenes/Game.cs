@@ -27,13 +27,7 @@ public partial class Game : Node3D {
     private readonly Random _random = new();
     private Stopwatch _rtt = new();
 
-    private void SetupDebugScene() {
-        for (var x = 0; x < 16; x++) {
-            for (var z = 0; z < 16; z++) {
-                this.SpawnCube(new Vector3(x, 0, z));
-            }
-        }
-    }
+
 
     private void SpawnCube(Vector3 pos) {
         var floor = new MeshInstance3D();
@@ -47,15 +41,13 @@ public partial class Game : Node3D {
         mat.AlbedoColor = new Color(color, color, color);
         floor.MaterialOverride = mat;
         var position = new Vector3(pos.X, pos.Y, pos.Z);
-        floor.Position = position + new Vector3(1.5f, -0.5f, 1.5f);
+        floor.Position = position + new Vector3(0.5f, 0.5f, 0.5f);
 
         var coll = new StaticBody3D {
-            Position = new Vector3(1.5f, -0.5f, 1.5f)
+            // Position = new Vector3(0.5f, -0.5f, 0.5f)
         };
         var collShape = new CollisionShape3D();
-        var shape = new BoxShape3D {
-            Size = new Vector3(1, 0.2f, 1)
-        };
+        var shape = new BoxShape3D();
         collShape.Shape = shape;
 
         coll.AddChild(collShape);
@@ -170,13 +162,11 @@ public partial class Game : Node3D {
                 this.nw.Inner.SendPing();
             };
         };
-
-        this.SetupDebugScene();
     }
 
     public override void _UnhandledInput(InputEvent @event) {
         base._UnhandledInput(@event);
-        if (this._myTurn && Input.IsActionJustPressed("actor_walk")) {
+        if (Input.IsActionJustPressed("actor_walk")) {
             var mp = this.GetViewport().GetMousePosition();
             var space = this.GetWorld3D().DirectSpaceState;
             var cam = this.PC.Camera;
@@ -193,7 +183,9 @@ public partial class Game : Node3D {
             }
 
             var pos = (Vector3)result["position"];
-            if (this._currentAbility != null) {
+            // pos.Y += 1;
+            // GD.Print($"{(nuint)pos.X}, {(nuint)pos.Y}, {(nuint)pos.Z}");
+            if (this._myTurn && this._currentAbility != null) {
                 this.nw.Inner.SendAction(this._currentAbility, (nuint)pos.X, (nuint)pos.Y, (nuint)pos.Z);
                 this._currentAbility = null;
                 this.PC.CurrentAbility = null;
