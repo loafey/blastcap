@@ -60,7 +60,6 @@ impl Actor {
                 rand::random_range(0..16),
                 rand::random_range(0..16),
             );
-            println!("{} -> {v}", self.position);
             arg.host
                 .mock(ClientRequest::Action("Walk".to_string(), x, y, z))
                 .await?
