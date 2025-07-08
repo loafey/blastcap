@@ -77,14 +77,18 @@ pub trait State: Send + Sync {
     }
     async fn default_client_request<'l>(
         &mut self,
-        _addr: SocketAddr,
+        addr: SocketAddr,
         req: ClientRequest,
-        _arg: Arg<'l>,
+        arg: Arg<'l>,
     ) -> Res {
-        eprintln!(
-            "SERVER - please implement \"{req:?}\" for {}",
-            type_name::<Self>()
-        );
+        if let ClientRequest::Ping = req {
+            arg.host.send(addr, ServerMessage::Pong).await?;
+        } else {
+            eprintln!(
+                "SERVER - please implement \"{req:?}\" for {}",
+                type_name::<Self>()
+            );
+        }
         Ok(None)
     }
 

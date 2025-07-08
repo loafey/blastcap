@@ -1,6 +1,7 @@
 using Godot;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 
 public partial class Game : Node3D {
@@ -24,6 +25,7 @@ public partial class Game : Node3D {
     private bool _myTurn;
     private string _currentAbility = null;
     private readonly Random _random = new();
+    private Stopwatch _rtt = new();
 
     private void SetupDebugScene() {
         for (var x = 0; x < 16; x++) {
@@ -158,6 +160,17 @@ public partial class Game : Node3D {
             }
         };
 
+        this.nw.Inner.SendPing();
+        this._rtt = new Stopwatch();
+        this.nw.Inner.OnPong += () => {
+            this.PC.RTT = this._rtt.Elapsed.Milliseconds;
+            var timer = this.GetTree().CreateTimer(1);
+            timer.Timeout += () => {
+                this._rtt = new Stopwatch();
+                this._rtt.Start();
+                this.nw.Inner.SendPing();
+            };
+        };
 
         this.SetupDebugScene();
     }

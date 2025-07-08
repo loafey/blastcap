@@ -19,7 +19,13 @@ public partial class PlayerCamera : Node3D {
     public Button EndTurnButton;
     [Export]
     public Label CurrentAbilityLabel;
+    [Export]
+    public Label RTTLabel;
     public Actor MyActor;
+
+    public int RTT {
+        set => this.RTTLabel.Text = $"RTT: {value}ms";
+    }
 
     private bool _myTurn = false;
     public bool MyTurn {

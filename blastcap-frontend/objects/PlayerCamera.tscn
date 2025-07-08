@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://objects/PlayerCamera.cs" id="1_11u5k"]
 [ext_resource type="PackedScene" uid="uid://bp7yq4iqifwrh" path="res://objects/GUI/TinyPopup.tscn" id="2_rckdw"]
 
-[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel")]
+[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel")]
 script = ExtResource("1_11u5k")
 BoomArm = NodePath("BoomArm")
 Camera = NodePath("BoomArm/Camera")
@@ -12,6 +12,7 @@ AbilitiesGrid = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/Abilitie
 TinyPopupScene = ExtResource("2_rckdw")
 EndTurnButton = NodePath("CanvasLayer/Panel/HBoxContainer/EndTurn")
 CurrentAbilityLabel = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/CurrentAbility")
+RTTLabel = NodePath("CanvasLayer/RTT")
 
 [node name="BoomArm" type="Node3D" parent="."]
 
@@ -76,4 +77,15 @@ anchor_bottom = 1.0
 offset_top = -190.0
 offset_bottom = -140.0
 grow_horizontal = 2
+grow_vertical = 0
+
+[node name="RTT" type="Label" parent="CanvasLayer"]
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -40.0
+offset_top = -23.0
+grow_horizontal = 0
 grow_vertical = 0
