@@ -239,6 +239,9 @@ impl GameStartedState {
         let Some(Piece::Actor(hit_ptr)) = hit else {
             return Ok(None);
         };
+        if hit_ptr == self.actor_pointer {
+            return Ok(None);
+        }
         let Some(hit) = self.actors.get(hit_ptr) else {
             return Ok(None);
         };

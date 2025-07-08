@@ -61,7 +61,7 @@ impl State for WaitingState {
                     //     )
                     //     .await?;
                     // }
-                    for i in 0..2 {
+                    for i in 0..1 {
                         let mut actor = Actor {
                             name: format!("Bot {i}"),
                             controller: Controller::Bot,
