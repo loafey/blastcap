@@ -101,7 +101,7 @@ impl State for WaitingState {
                         actor.reset_turn_resources();
                         if gs.spawn_actor(arg.host, actor).await? {
                             i += 1;
-                            if i > 1 {
+                            if i > 16 {
                                 break;
                             }
                         }
