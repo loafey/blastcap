@@ -66,46 +66,46 @@ impl State for WaitingState {
                     // ]
                     // .into_iter()
                     // .cycle();
-                    for (id, addr) in self.players.iter().copied().enumerate() {
-                        gs.spawn_actor(
-                            arg.host,
-                            Actor {
-                                name: format!("Player {id}"),
-                                controller: Controller::Player(addr),
-                                position: Vec3::new(15, 1, 15),
-                                abilities: Default::default(),
-                                health: 10,
-                                base_movement: 6,
-                                resources: Default::default(),
-                            },
-                        )
-                        .await?;
-                    }
-                    // let mut i = 0;
-                    // loop {
-                    //     let position = Vec3::new(
-                    //         rand::random_range(0..16),
-                    //         rand::random_range(0..16),
-                    //         rand::random_range(0..16),
-                    //     );
-
-                    //     let mut actor = Actor {
-                    //         name: format!("Bot {i}"),
-                    //         controller: Controller::Bot,
-                    //         position,
-                    //         health: 15,
-                    //         base_movement: 8,
-                    //         abilities: Default::default(),
-                    //         resources: Default::default(),
-                    //     };
-                    //     actor.reset_turn_resources();
-                    //     if gs.spawn_actor(arg.host, actor).await? {
-                    //         i += 1;
-                    //         if i > 64 {
-                    //             break;
-                    //         }
-                    //     }
+                    // for (id, addr) in self.players.iter().copied().enumerate() {
+                    //     gs.spawn_actor(
+                    //         arg.host,
+                    //         Actor {
+                    //             name: format!("Player {id}"),
+                    //             controller: Controller::Player(addr),
+                    //             position: Vec3::new(15, 1, 15),
+                    //             abilities: Default::default(),
+                    //             health: 10,
+                    //             base_movement: 6,
+                    //             resources: Default::default(),
+                    //         },
+                    //     )
+                    //     .await?;
                     // }
+                    let mut i = 0;
+                    loop {
+                        let position = Vec3::new(
+                            rand::random_range(0..16),
+                            rand::random_range(0..16),
+                            rand::random_range(0..16),
+                        );
+
+                        let mut actor = Actor {
+                            name: format!("Bot {i}"),
+                            controller: Controller::Bot,
+                            position,
+                            health: 15,
+                            base_movement: 8,
+                            abilities: Default::default(),
+                            resources: Default::default(),
+                        };
+                        actor.reset_turn_resources();
+                        if gs.spawn_actor(arg.host, actor).await? {
+                            i += 1;
+                            if i > 64 {
+                                break;
+                            }
+                        }
+                    }
                     gs.next_actor(arg.host).await?;
                     Ok(Some(gs))
                 } else {
