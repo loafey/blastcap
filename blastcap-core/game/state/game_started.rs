@@ -12,7 +12,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use math::{Vec2, Vec3};
+use math::Vec3;
 use std::{pin::Pin, time::Duration};
 
 type Callback = Box<
@@ -46,9 +46,16 @@ impl GameStartedState {
         &mut self,
         host: &mut NetworkHost,
         actor: Actor,
-    ) -> anyhow::Result<()> {
+    ) -> anyhow::Result<bool> {
         let Some(Piece::Empty) = self.map.get(actor.position) else {
-            return Ok(());
+            return Ok(false);
+        };
+        let Some(Piece::Ground) = self.map.get(Vec3 {
+            x: actor.position.x,
+            y: actor.position.y - 1,
+            z: actor.position.z,
+        }) else {
+            return Ok(false);
         };
 
         let id = self.actors.len();
@@ -72,13 +79,13 @@ impl GameStartedState {
         }
         self.actors.push(actor);
 
-        Ok(())
+        Ok(true)
     }
 
     pub async fn next_actor(&mut self, host: &mut NetworkHost) -> anyhow::Result<()> {
         let start = self.actor_pointer;
         let mut first = true;
-        while self.actor_pointer != start || first {
+        while !self.actors.is_empty() && (self.actor_pointer != start || first) {
             first = false;
             self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
             if let Some(actor) = self.actors.get(self.actor_pointer) {

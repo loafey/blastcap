@@ -2,11 +2,12 @@ use super::Arg;
 use crate::{
     game::{
         actor::{Actor, Controller},
+        map::Piece,
         state::{GameStartedState, Res, State},
     },
-    network::messages::ClientRequest,
+    network::messages::{ClientRequest, ServerMessage},
 };
-use math::{Vec2, Vec3};
+use math::Vec3;
 use std::{collections::HashSet, net::SocketAddr};
 
 pub struct WaitingState {
@@ -38,6 +39,25 @@ impl State for WaitingState {
                     //
 
                     let mut gs = GameStartedState::new();
+                    let (mut x_list, mut y_list, mut z_list) = (Vec::new(), Vec::new(), Vec::new());
+                    for y in 0..16 {
+                        for x in 0..(16 - y) {
+                            for z in 0..(16 - y) {
+                                gs.map.set(Vec3::new(x, y, z), Piece::Ground);
+                                x_list.push(x);
+                                y_list.push(y);
+                                z_list.push(z);
+                            }
+                        }
+                    }
+
+                    arg.host
+                        .broadcast(ServerMessage::SpawnMap {
+                            x: x_list,
+                            y: y_list,
+                            z: z_list,
+                        })
+                        .await?;
                     // let mut posses = [
                     //     Vec2::new(0, 0),
                     //     Vec2::new(0, 15),
@@ -61,22 +81,30 @@ impl State for WaitingState {
                     //     )
                     //     .await?;
                     // }
-                    for i in 0..1 {
+                    let mut i = 0;
+                    loop {
+                        let position = Vec3::new(
+                            rand::random_range(0..16),
+                            rand::random_range(0..16),
+                            rand::random_range(0..16),
+                        );
+
                         let mut actor = Actor {
                             name: format!("Bot {i}"),
                             controller: Controller::Bot,
-                            position: Vec3::new(
-                                rand::random_range(0..16),
-                                rand::random_range(0..16),
-                                rand::random_range(0..16),
-                            ),
+                            position,
                             health: 15,
                             base_movement: 8,
                             abilities: Default::default(),
                             resources: Default::default(),
                         };
                         actor.reset_turn_resources();
-                        gs.spawn_actor(arg.host, actor).await?;
+                        if gs.spawn_actor(arg.host, actor).await? {
+                            i += 1;
+                            if i > 1 {
+                                break;
+                            }
+                        }
                     }
                     gs.next_actor(arg.host).await?;
                     Ok(Some(gs))

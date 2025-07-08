@@ -46,4 +46,5 @@ pub enum Piece {
     #[default]
     Empty,
     Actor(usize),
+    Ground,
 }

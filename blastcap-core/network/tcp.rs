@@ -23,10 +23,6 @@ impl TcpClient {
         let closure: impl Future<Output = anyhow::Result<()>> = async move {
             loop {
                 let len = read.read_u32().await? as usize;
-                if len > 10000 {
-                    eprintln!("large message!");
-                    continue;
-                }
                 let mut buf = vec![0; len];
                 let _ = read.read(&mut buf).await?;
                 let msg = rkyv::from_bytes::<ServerMessage, rkyv::rancor::Error>(&buf)?;

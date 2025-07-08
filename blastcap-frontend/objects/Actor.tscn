@@ -26,3 +26,5 @@ text = "Yoo"
 [node name="MeshInstance3D" type="MeshInstance3D" parent="Offset"]
 mesh = SubResource("CylinderMesh_iwa78")
 skeleton = NodePath("../..")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]

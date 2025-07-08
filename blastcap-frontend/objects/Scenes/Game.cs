@@ -23,38 +23,42 @@ public partial class Game : Node3D {
     public Node3D Temporaries;
     private bool _myTurn;
     private string _currentAbility = null;
+    private readonly Random _random = new();
 
     private void SetupDebugScene() {
-        var rand = new Random();
         for (var x = 0; x < 16; x++) {
-            for (var y = 0; y < 16; y++) {
-                var floor = new MeshInstance3D();
-                var mesh = new PlaneMesh {
-                    CenterOffset = new Vector3(0.5f, 0, 0.5f),
-                    Size = new Vector2(1f, 1f)
-                };
-                floor.Mesh = mesh;
-                var mat = new StandardMaterial3D();
-                var color = rand.NextInt64() % 256 / 256.0f;
-                mat.AlbedoColor = new Color(color, color, color);
-                floor.MaterialOverride = mat;
-                var position = new Vector3(x, 0, y);
-                floor.Position = position;
-
-                var coll = new StaticBody3D {
-                    Position = new Vector3(0.5f, 0, 0.5f)
-                };
-                var collShape = new CollisionShape3D();
-                var shape = new BoxShape3D {
-                    Size = new Vector3(1, 0.2f, 1)
-                };
-                collShape.Shape = shape;
-
-                coll.AddChild(collShape);
-                floor.AddChild(coll);
-                this.WorldMeshHolder.AddChild(floor);
+            for (var z = 0; z < 16; z++) {
+                this.SpawnCube(new Vector3(x, 0, z));
             }
         }
+    }
+
+    private void SpawnCube(Vector3 pos) {
+        var floor = new MeshInstance3D();
+        var mesh = new BoxMesh {
+            // CenterOffset = new Vector3(0.5f, 0, 0.5f),
+            Size = new Vector3(1f, 1f, 1f)
+        };
+        floor.Mesh = mesh;
+        var mat = new StandardMaterial3D();
+        var color = this._random.NextInt64() % 256 / 256.0f;
+        mat.AlbedoColor = new Color(color, color, color);
+        floor.MaterialOverride = mat;
+        var position = new Vector3(pos.X, pos.Y, pos.Z);
+        floor.Position = position + new Vector3(1.5f, -0.5f, 1.5f);
+
+        var coll = new StaticBody3D {
+            Position = new Vector3(1.5f, -0.5f, 1.5f)
+        };
+        var collShape = new CollisionShape3D();
+        var shape = new BoxShape3D {
+            Size = new Vector3(1, 0.2f, 1)
+        };
+        collShape.Shape = shape;
+
+        coll.AddChild(collShape);
+        floor.AddChild(coll);
+        this.WorldMeshHolder.AddChild(floor);
     }
 
     public override void _Ready() {
@@ -73,6 +77,7 @@ public partial class Game : Node3D {
         this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, z, abilities, health, maxHealth) => {
             var node = this.ActorScene.Instantiate<Actor>();
             node.Position = new Vector3(x, y, z);
+            GD.Print($"GD: {node.Position}");
             node.ActorName = name;
             node.Name = id.ToString();
             node.Abilities = abilities;
@@ -144,6 +149,13 @@ public partial class Game : Node3D {
             this.nw.Inner.SendEndTurn();
             this._currentAbility = null;
             this.PC.CurrentAbility = null;
+        };
+
+        this.nw.Inner.OnSpawnMap += (xList, yList, zList) => {
+            for (var i = 0; i < xList.Count; i++) {
+                var pos = new Vector3(xList[i], yList[i], zList[i]);
+                this.SpawnCube(pos);
+            }
         };
 
 

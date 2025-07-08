@@ -49,6 +49,11 @@ pub enum ServerMessage {
         target_damage: i32,
         time: f32,
     },
+    SpawnMap {
+        x: Vec<usize>,
+        y: Vec<usize>,
+        z: Vec<usize>,
+    },
 }
 
 #[repr(C)]
