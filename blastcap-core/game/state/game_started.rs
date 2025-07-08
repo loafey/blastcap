@@ -208,7 +208,6 @@ impl GameStartedState {
         };
         let old = self.actors[self.actor_pointer].position;
         let path = self.pathfind(old, pos);
-        println!("{}", path.is_some());
         let Some((path, _)) = path else {
             self.waiting = false;
             return Ok(None);
