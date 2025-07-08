@@ -24,6 +24,7 @@ pub enum ServerMessage {
         id: usize,
         x: usize,
         y: usize,
+        z: usize,
         abilities: Vec<String>,
         health: i32,
         max_health: i32,
@@ -38,6 +39,7 @@ pub enum ServerMessage {
         actor: usize,
         x: Vec<usize>,
         y: Vec<usize>,
+        z: Vec<usize>,
     },
     AbilityMap(HashMap<String, String>),
     Action {
@@ -58,6 +60,6 @@ pub enum ClientRequest {
     RequestMapList,
     StartMap(String),
     NotifyReady,
-    Action(String, usize, usize),
+    Action(String, usize, usize, usize),
     EndTurn,
 }

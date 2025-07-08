@@ -70,9 +70,9 @@ public partial class Game : Node3D {
             this.ChatBox.ShowMessage($"{user} left");
         };
 
-        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, abilities, health, maxHealth) => {
+        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, z, abilities, health, maxHealth) => {
             var node = this.ActorScene.Instantiate<Actor>();
-            node.Position = new Vector3(x, 0, y);
+            node.Position = new Vector3(x, y, z);
             node.ActorName = name;
             node.Name = id.ToString();
             node.Abilities = abilities;
@@ -109,13 +109,14 @@ public partial class Game : Node3D {
             this._myTurn = false;
         };
 
-        this.nw.Inner.OnMoveActor += (id, xList, yList) => {
+        this.nw.Inner.OnMoveActor += (id, xList, yList, zList) => {
             var actor = this.ActorHolder.GetNode<Actor>(id.ToString());
             var goals = new List<Vector3I>();
             for (var i = 0; i < xList.Count; i++) {
                 var x = xList[i];
                 var y = yList[i];
-                goals.Add(new Vector3I((int)x, 0, (int)y));
+                var z = zList[i];
+                goals.Add(new Vector3I((int)x, (int)y, (int)z));
             }
             actor.MoveTo(goals);
         };
@@ -169,7 +170,7 @@ public partial class Game : Node3D {
 
             var pos = (Vector3)result["position"];
             if (this._currentAbility != null) {
-                this.nw.Inner.SendAction(this._currentAbility, (nuint)pos.X, (nuint)pos.Z);
+                this.nw.Inner.SendAction(this._currentAbility, (nuint)pos.X, (nuint)pos.Y, (nuint)pos.Z);
                 this._currentAbility = null;
                 this.PC.CurrentAbility = null;
             }

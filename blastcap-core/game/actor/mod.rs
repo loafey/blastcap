@@ -1,4 +1,4 @@
-use math::Vec2;
+use math::Vec3;
 use serde::Deserialize;
 use std::net::SocketAddr;
 
@@ -26,7 +26,7 @@ pub struct Actor {
     #[serde(skip)]
     pub controller: Controller,
     #[serde(skip)]
-    pub position: Vec2,
+    pub position: Vec3,
     pub health: i32,
     pub base_movement: usize,
     pub abilities: Abilities,
@@ -47,15 +47,22 @@ impl Actor {
         } else if !neighs.is_empty() && rand::random_range(0..=1) == 0 {
             let pos = neighs[rand::random_range(0..neighs.len())];
             arg.host
-                .mock(ClientRequest::Action("Punch".to_string(), pos.x, pos.y))
+                .mock(ClientRequest::Action(
+                    "Punch".to_string(),
+                    pos.x,
+                    pos.y,
+                    pos.z,
+                ))
                 .await?
         } else {
+            let v @ Vec3 { x, y, z } = Vec3::new(
+                rand::random_range(0..16),
+                rand::random_range(0..16),
+                rand::random_range(0..16),
+            );
+            println!("{} -> {v}", self.position);
             arg.host
-                .mock(ClientRequest::Action(
-                    "Walk".to_string(),
-                    rand::random_range(0..=16),
-                    rand::random_range(0..=16),
-                ))
+                .mock(ClientRequest::Action("Walk".to_string(), x, y, z))
                 .await?
         };
         Ok(())

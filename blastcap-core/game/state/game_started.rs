@@ -12,7 +12,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use math::Vec2;
+use math::{Vec2, Vec3};
 use std::{pin::Pin, time::Duration};
 
 type Callback = Box<
@@ -61,6 +61,7 @@ impl GameStartedState {
                     id,
                     x: actor.position.x,
                     y: actor.position.y,
+                    z: actor.position.z,
                     abilities: actor.abilities.get_keys(),
                     yours: actor.controller == Controller::Player(addr),
                     health: actor.health,
@@ -121,25 +122,26 @@ impl GameStartedState {
         &mut self.actors[self.actor_pointer]
     }
 
-    pub fn get_neighbors(&self, Vec2 { x, y }: Vec2) -> Vec<(Piece, Vec2)> {
-        let (nx, ny) = (x as isize, y as isize);
+    pub fn get_neighbors(&self, Vec3 { x, y, z }: Vec3) -> Vec<(Piece, Vec3)> {
+        let (nx, nz) = (x as isize, z as isize);
         let mut neighs = Vec::with_capacity(9);
-        for y in -1..=1 {
+        for z in -1..=1 {
             for x in -1..=1 {
                 if x == 0 && y == 0 {
                     continue;
                 }
-                let y = (ny + y) as usize;
+                let z = (nz + z) as usize;
                 let x = (nx + x) as usize;
-                if let Some(piece) = self.map.get(Vec2::new(x, y)) {
-                    neighs.push((piece, Vec2::new(x, y)));
+                let v = Vec3::new(x, y, z);
+                if let Some(piece) = self.map.get(v) {
+                    neighs.push((piece, v));
                 }
             }
         }
         neighs
     }
 
-    pub fn pathfind(&self, from: Vec2, to: Vec2) -> Option<(Vec<Vec2>, usize)> {
+    pub fn pathfind(&self, from: Vec3, to: Vec3) -> Option<(Vec<Vec3>, usize)> {
         pathfinding::directed::astar::astar(
             &from,
             |p| {
@@ -178,7 +180,7 @@ impl GameStartedState {
     async fn move_current_actor(
         &mut self,
         arg: Arg<'_>,
-        pos: Vec2,
+        pos: Vec3,
     ) -> anyhow::Result<Option<Duration>> {
         let Some(Piece::Empty) = self.map.get(pos) else {
             self.waiting = false;
@@ -200,15 +202,18 @@ impl GameStartedState {
         self.actors[self.actor_pointer].position = pos;
         let mut x_list = Vec::new();
         let mut y_list = Vec::new();
-        for Vec2 { x, y } in path {
+        let mut z_list = Vec::new();
+        for Vec3 { x, y, z } in path {
             x_list.push(x);
             y_list.push(y);
+            z_list.push(z);
         }
         arg.host
             .broadcast(ServerMessage::MoveActor {
                 actor: self.actor_pointer,
                 x: x_list,
                 y: y_list,
+                z: z_list,
             })
             .await?;
         self.waiting = true;
@@ -219,7 +224,7 @@ impl GameStartedState {
     async fn current_punch_actor(
         &mut self,
         arg: Arg<'_>,
-        pos: Vec2,
+        pos: Vec3,
     ) -> anyhow::Result<Option<Duration>> {
         let cur_act = self.current_actor();
         if cur_act.resources.abilities == 0 {
@@ -305,14 +310,14 @@ impl State for GameStartedState {
                     .await?;
                 Ok(None)
             }
-            ClientRequest::Action(act, x, y)
+            ClientRequest::Action(act, x, y, z)
                 if (Some(Controller::Player(addr)) == self.current_turn || addr.is_host())
                     && !self.waiting
                     && self.current_actor().abilities.contains(&act) =>
             {
                 match &*act {
                     "Walk" => {
-                        if let Some(t) = self.move_current_actor(arg, Vec2::new(x, y)).await? {
+                        if let Some(t) = self.move_current_actor(arg, Vec3::new(x, y, z)).await? {
                             self.timer(t, async |s, _| {
                                 s.waiting = false;
                                 Ok(())
@@ -321,7 +326,7 @@ impl State for GameStartedState {
                         Ok(None)
                     }
                     "Punch" => {
-                        if let Some(t) = self.current_punch_actor(arg, Vec2::new(x, y)).await? {
+                        if let Some(t) = self.current_punch_actor(arg, Vec3::new(x, y, z)).await? {
                             self.timer(t, async |s, _| {
                                 s.waiting = false;
                                 Ok(())

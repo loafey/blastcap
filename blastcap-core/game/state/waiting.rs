@@ -6,7 +6,7 @@ use crate::{
     },
     network::messages::ClientRequest,
 };
-use math::Vec2;
+use math::{Vec2, Vec3};
 use std::{collections::HashSet, net::SocketAddr};
 
 pub struct WaitingState {
@@ -65,7 +65,8 @@ impl State for WaitingState {
                         let mut actor = Actor {
                             name: format!("Bot {i}"),
                             controller: Controller::Bot,
-                            position: Vec2::new(
+                            position: Vec3::new(
+                                rand::random_range(0..16),
                                 rand::random_range(0..16),
                                 rand::random_range(0..16),
                             ),
