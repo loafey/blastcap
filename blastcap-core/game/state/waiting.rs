@@ -39,17 +39,7 @@ impl State for WaitingState {
                     //
 
                     let mut gs = GameStartedState::new();
-                    let (mut x_list, mut y_list, mut z_list) = (Vec::new(), Vec::new(), Vec::new());
-                    for y in 0..16 {
-                        for x in 0..(16 - y) {
-                            for z in 0..(16 - y) {
-                                gs.map.set(Vec3::new(x, y, z), Piece::Ground);
-                                x_list.push(x);
-                                y_list.push(y);
-                                z_list.push(z);
-                            }
-                        }
-                    }
+                    let (x_list, y_list, z_list) = gs.map.get_ground_data();
 
                     arg.host
                         .broadcast(ServerMessage::SpawnMap {
