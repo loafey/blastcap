@@ -16,6 +16,19 @@ fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     z_vec
 }
 
+#[derive(Copy, Clone)]
+struct Box {
+    x1: usize,
+    x2: usize,
+    z1: usize,
+    z2: usize,
+}
+impl Box {
+    fn intersect(&self, rhs: Self) -> bool {
+        self.x1 <= rhs.x2 && self.x2 >= rhs.x1 && self.z1 <= rhs.z2 && self.z2 >= rhs.z1
+    }
+}
+
 pub struct Map {
     alive: Vec<Vec<Vec<Piece>>>,
     dead: Vec<Vec<Vec<Option<usize>>>>,
@@ -24,18 +37,38 @@ pub struct Map {
 impl Default for Map {
     fn default() -> Self {
         let size = Vec3 { x: 40, y: 2, z: 40 };
+
         let mut map = Map {
             alive: matrix3d(size),
             dead: matrix3d(size),
             size,
         };
-        for _ in 0..20 {
+        let mut boxes: Vec<Box> = Vec::new();
+        for _ in 0..100 {
             let x_size = rand::random_range(4..=8);
             let z_size = rand::random_range(4..=8);
             let x = rand::random_range(0..=map.size.x - x_size);
             let z = rand::random_range(0..=map.size.z - z_size);
-            for x in x..x + x_size {
-                for z in z..z + z_size {
+            let b = Box {
+                x1: x,
+                x2: x + x_size,
+                z1: z,
+                z2: z + z_size,
+            };
+            let mut clean = true;
+            for a in &boxes {
+                if a.intersect(b) {
+                    clean = false;
+                    break;
+                }
+            }
+            if clean {
+                boxes.push(b);
+            }
+        }
+        for b in boxes {
+            for x in b.x1..b.x2 {
+                for z in b.z1..b.z2 {
                     map.set(Vec3::new(x, 0, z), Piece::Ground);
                 }
             }
