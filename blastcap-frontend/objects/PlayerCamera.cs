@@ -23,8 +23,8 @@ public partial class PlayerCamera : Node3D {
     public Label RTTLabel;
     public Actor MyActor;
 
-    public int RTT {
-        set => this.RTTLabel.Text = $"RTT: {value}ms";
+    public (int, ulong) RTT {
+        set => this.RTTLabel.Text = $"RTT: {value.Item1}ms ({value.Item2})";
     }
 
     private bool _myTurn = false;

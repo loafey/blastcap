@@ -26,6 +26,7 @@ public partial class Game : Node3D {
     private string _currentAbility = null;
     private readonly Random _random = new();
     private Stopwatch _rtt = new();
+    private ulong _tickCount = 0;
 
 
 
@@ -153,11 +154,13 @@ public partial class Game : Node3D {
 
         this.nw.Inner.SendPing();
         this._rtt = new Stopwatch();
+        this._tickCount = 0;
         this.nw.Inner.OnPong += () => {
-            this.PC.RTT = this._rtt.Elapsed.Milliseconds;
+            this.PC.RTT = (this._rtt.Elapsed.Milliseconds, this._tickCount);
             var timer = this.GetTree().CreateTimer(1);
             timer.Timeout += () => {
                 this._rtt = new Stopwatch();
+                this._tickCount = 0;
                 this._rtt.Start();
                 this.nw.Inner.SendPing();
             };
@@ -196,6 +199,6 @@ public partial class Game : Node3D {
 
     public override void _Process(double delta) {
         base._Process(delta);
-
+        this._tickCount += 1;
     }
 }
