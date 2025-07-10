@@ -40,6 +40,15 @@ impl Default for Map {
                 }
             }
         }
+        // for y in 0..size.y {
+        //     for x in 0..size.x {
+        //         for z in 0..size.z {
+        //             if rand::random_bool(0.5) {
+        //                 map.set(Vec3::new(x, y, z), Piece::Ground);
+        //             }
+        //         }
+        //     }
+        // }
         map
     }
 }
