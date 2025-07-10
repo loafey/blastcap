@@ -1,4 +1,5 @@
 use math::{Vec2, Vec3};
+use rand::random_bool;
 
 fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     let mut z_vec = Vec::with_capacity(size.z);
@@ -80,12 +81,27 @@ impl Default for Map {
                 }
                 let a_middle = Vec2::new(((a.x2 - a.x1) / 2) + a.x1, ((a.z2 - a.z1) / 2) + a.z1);
                 let b_middle = Vec2::new(((b.x2 - b.x1) / 2) + b.x1, ((b.z2 - b.z1) / 2) + b.z1);
-                let mut i = 0.0;
-                while i < 1.0 {
-                    let lerp = a_middle.lerp(b_middle, i);
-                    map.set(Vec3::new(lerp.x, 0, lerp.y), Piece::Ground);
-                    i += 0.01;
+                // map.set(Vec3::new(a_middle.x, 0, a_middle.y), Piece::Empty);
+                // map.set(Vec3::new(b_middle.x, 0, b_middle.y), Piece::Empty);
+
+                let middle = if rand::random_bool(0.5) {
+                    Vec2::new(a_middle.x, b_middle.y)
+                } else {
+                    Vec2::new(b_middle.x, a_middle.y)
+                };
+                map.set(Vec3::new(middle.x, 0, middle.y), Piece::Ground);
+                for p in a_middle.y.min(b_middle.y)..a_middle.y.max(b_middle.y) {
+                    map.set(Vec3::new(middle.x, 0, p), Piece::Ground);
                 }
+                for p in a_middle.x.min(b_middle.x)..a_middle.x.max(b_middle.x) {
+                    map.set(Vec3::new(p, 0, middle.y), Piece::Ground);
+                }
+                // let mut i = 0.0;
+                // while i < 1.0 {
+                //     let lerp = a_middle.lerp(b_middle, i);
+                //     map.set(Vec3::new(lerp.x, 0, lerp.y), Piece::Ground);
+                //     i += 0.01;
+                // }
             }
         }
         // for x in 0..size.x {

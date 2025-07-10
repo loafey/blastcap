@@ -73,7 +73,7 @@ impl State for WaitingState {
                     // }
                     let mut i = 0;
                     let map_size = gs.map.get_size();
-                    loop {
+                    while i < 4 {
                         let position = Vec3::new(
                             rand::random_range(0..map_size.x),
                             rand::random_range(0..map_size.y),
@@ -92,9 +92,6 @@ impl State for WaitingState {
                         actor.reset_turn_resources();
                         if gs.spawn_actor(arg.host, actor).await? {
                             i += 1;
-                            if i > 64 {
-                                break;
-                            }
                         }
                     }
                     gs.next_actor(arg.host).await?;
