@@ -1,4 +1,4 @@
-use math::Vec3;
+use math::{Vec2, Vec3};
 
 fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     let mut z_vec = Vec::with_capacity(size.z);
@@ -16,7 +16,7 @@ fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     z_vec
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 struct Box {
     x1: usize,
     x2: usize,
@@ -44,7 +44,7 @@ impl Default for Map {
             size,
         };
         let mut boxes: Vec<Box> = Vec::new();
-        for _ in 0..100 {
+        for _ in 0..5 {
             let x_size = rand::random_range(4..=8);
             let z_size = rand::random_range(4..=8);
             let x = rand::random_range(0..=map.size.x - x_size);
@@ -66,10 +66,36 @@ impl Default for Map {
                 boxes.push(b);
             }
         }
-        for b in boxes {
+        for b in &boxes {
             for x in b.x1..b.x2 {
                 for z in b.z1..b.z2 {
                     map.set(Vec3::new(x, 0, z), Piece::Ground);
+                }
+            }
+        }
+        for a in &boxes {
+            for b in &boxes {
+                if a == b {
+                    continue;
+                }
+                let a_middle = (
+                    ((a.x2 - a.x1) / 2) as isize + a.x1 as isize,
+                    ((a.z2 - a.z1) / 2) as isize + a.z1 as isize,
+                );
+                let b_middle = (
+                    ((b.x2 - b.x1) / 2) as isize + b.x1 as isize,
+                    ((b.z2 - b.z1) / 2) as isize + b.z1 as isize,
+                );
+                let top = b_middle.1 - a_middle.1;
+                let bottom = b_middle.0 - a_middle.0;
+                if bottom == 0 {
+                    continue;
+                }
+                let m = top / bottom;
+                let mut z = a_middle.1;
+                for x in a_middle.0..b_middle.0 {
+                    map.set(Vec3::new(x as usize, 0, z as usize), Piece::Ground);
+                    z += m;
                 }
             }
         }
