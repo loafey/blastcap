@@ -37,7 +37,7 @@ pub struct Map {
 }
 impl Default for Map {
     fn default() -> Self {
-        let size = Vec3 { x: 40, y: 2, z: 40 };
+        let size = Vec3 { x: 80, y: 2, z: 80 };
 
         let mut map = Map {
             alive: matrix3d(size),
@@ -45,9 +45,9 @@ impl Default for Map {
             size,
         };
         let mut boxes: Vec<Box> = Vec::new();
-        for _ in 0..5 {
-            let x_size = rand::random_range(4..=8);
-            let z_size = rand::random_range(4..=8);
+        for _ in 0..6 {
+            let x_size = rand::random_range(4..=16);
+            let z_size = rand::random_range(4..=16);
             let x = rand::random_range(0..=map.size.x - x_size);
             let z = rand::random_range(0..=map.size.z - z_size);
             let b = Box {
