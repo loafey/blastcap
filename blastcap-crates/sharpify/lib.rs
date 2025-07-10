@@ -451,14 +451,13 @@ pub unsafe extern \"C\" fn client_poll(
     {rust_fn_args}
 ) {{
     let client = unsafe {{ &mut *client }} as &mut ClientHandle;
-    let Ok(msg) = client.recv.try_recv() else {{
-        return;
-    }};
-    unsafe {{
-        match msg {{
-{rust_matches}
+    while let Ok(msg) = client.recv.try_recv() {{
+        unsafe {{
+            match msg {{
+    {rust_matches}
+            }}
         }}
-    }}
+    }};
 }}
 "
     );
