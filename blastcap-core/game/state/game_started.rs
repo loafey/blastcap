@@ -308,11 +308,11 @@ impl State for GameStartedState {
             actor.bot_act(self, unsafe { arg.clone() }).await?;
         }
 
-        if let Ok(fut) = self.callbacks.recv.try_recv() {
+        while let Ok(fut) = self.callbacks.recv.try_recv() {
             unsafe {
                 fut(
                     std::mem::transmute::<&mut GameStartedState, &mut GameStartedState>(self),
-                    std::mem::transmute::<Arg<'_>, Arg<'_>>(arg),
+                    std::mem::transmute::<Arg<'_>, Arg<'_>>(arg.clone()),
                 )
                 .await?;
             }

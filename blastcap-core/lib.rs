@@ -77,7 +77,7 @@ pub unsafe extern "C" fn start_client_loop(
                 ClientPoll::Message(client_message) => server_send.send(client_message).await?,
                 ClientPoll::Tick => {
                     tick_counter = tick_counter.wrapping_add(1);
-                    if let Ok(msg) = client_req_recv.try_recv() {
+                    while let Ok(msg) = client_req_recv.try_recv() {
                         client.send(msg).await?;
                     }
                 }
@@ -88,8 +88,8 @@ pub unsafe extern "C" fn start_client_loop(
     let addr = unsafe { CStr::from_ptr(addr) }
         .to_string_lossy()
         .to_string();
-    let (send, recv) = tokio::sync::mpsc::channel(100);
-    let (client_send, client_recv) = tokio::sync::mpsc::channel(100);
+    let (send, recv) = tokio::sync::mpsc::channel(1000);
+    let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Unable to create Runtime");
         let _enter = rt.enter();
