@@ -78,24 +78,13 @@ impl Default for Map {
                 if a == b {
                     continue;
                 }
-                let a_middle = (
-                    ((a.x2 - a.x1) / 2) as isize + a.x1 as isize,
-                    ((a.z2 - a.z1) / 2) as isize + a.z1 as isize,
-                );
-                let b_middle = (
-                    ((b.x2 - b.x1) / 2) as isize + b.x1 as isize,
-                    ((b.z2 - b.z1) / 2) as isize + b.z1 as isize,
-                );
-                let top = b_middle.1 - a_middle.1;
-                let bottom = b_middle.0 - a_middle.0;
-                if bottom == 0 {
-                    continue;
-                }
-                let m = top / bottom;
-                let mut z = a_middle.1;
-                for x in a_middle.0..b_middle.0 {
-                    map.set(Vec3::new(x as usize, 0, z as usize), Piece::Ground);
-                    z += m;
+                let a_middle = Vec2::new(((a.x2 - a.x1) / 2) + a.x1, ((a.z2 - a.z1) / 2) + a.z1);
+                let b_middle = Vec2::new(((b.x2 - b.x1) / 2) + b.x1, ((b.z2 - b.z1) / 2) + b.z1);
+                let mut i = 0.0;
+                while i < 1.0 {
+                    let lerp = a_middle.lerp(b_middle, i);
+                    map.set(Vec3::new(lerp.x, 0, lerp.y), Piece::Ground);
+                    i += 0.01;
                 }
             }
         }

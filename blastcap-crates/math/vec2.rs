@@ -25,6 +25,15 @@ impl Vec2 {
         let (qx, qy) = (rhs.x as f32, rhs.y as f32);
         ((px - qx).powf(2.0) + (py - qy).powf(2.0)).sqrt()
     }
+
+    pub fn lerp(&self, rhs: Self, t: f32) -> Self {
+        let x = (t - 1.0) * self.x as f32 + t * rhs.x as f32;
+        let y = (t - 1.0) * self.y as f32 + t * rhs.y as f32;
+        Self {
+            x: x as usize,
+            y: y as usize,
+        }
+    }
 }
 impl Display for Vec2 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
