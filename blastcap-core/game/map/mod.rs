@@ -23,23 +23,35 @@ pub struct Map {
 }
 impl Default for Map {
     fn default() -> Self {
-        let size = Vec3 {
-            x: 16,
-            y: 16,
-            z: 16,
-        };
+        let size = Vec3 { x: 40, y: 2, z: 40 };
         let mut map = Map {
             alive: matrix3d(size),
             dead: matrix3d(size),
             size,
         };
-        for y in 0..size.y {
-            for x in 0..(size.x - y) {
-                for z in 0..(size.z - y) {
-                    map.set(Vec3::new(x, y, z), Piece::Ground);
+        for _ in 0..20 {
+            let x_size = rand::random_range(4..=8);
+            let z_size = rand::random_range(4..=8);
+            let x = rand::random_range(0..=map.size.x - x_size);
+            let z = rand::random_range(0..=map.size.z - z_size);
+            for x in x..x + x_size {
+                for z in z..z + z_size {
+                    map.set(Vec3::new(x, 0, z), Piece::Ground);
                 }
             }
         }
+        // for x in 0..size.x {
+        //     for z in 0..size.z {
+        //         map.set(Vec3::new(x, 0, z), Piece::Ground);
+        //     }
+        // }
+        // for y in 0..size.y {
+        //     for x in 0..(size.x - y) {
+        //         for z in 0..(size.z - y) {
+        //             map.set(Vec3::new(x, y, z), Piece::Ground);
+        //         }
+        //     }
+        // }
         // for y in 0..size.y {
         //     for x in 0..size.x {
         //         for z in 0..size.z {
@@ -53,6 +65,9 @@ impl Default for Map {
     }
 }
 impl Map {
+    pub fn get_size(&self) -> Vec3 {
+        self.size
+    }
     pub fn get_ground_data(&self) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
         let (mut x_list, mut y_list, mut z_list) = (Vec::new(), Vec::new(), Vec::new());
         for z in 0..self.size.z {

@@ -50,6 +50,9 @@ impl GameStartedState {
         let Some(Piece::Empty) = self.map.get(actor.position) else {
             return Ok(false);
         };
+        if actor.position.y == 0 {
+            return Ok(false);
+        }
         let Some(Piece::Ground) = self.map.get(Vec3 {
             x: actor.position.x,
             y: actor.position.y - 1,

@@ -72,11 +72,12 @@ impl State for WaitingState {
                     //     .await?;
                     // }
                     let mut i = 0;
+                    let map_size = gs.map.get_size();
                     loop {
                         let position = Vec3::new(
-                            rand::random_range(0..16),
-                            rand::random_range(0..16),
-                            rand::random_range(0..16),
+                            rand::random_range(0..map_size.x),
+                            rand::random_range(0..map_size.y),
+                            rand::random_range(0..map_size.z),
                         );
 
                         let mut actor = Actor {
