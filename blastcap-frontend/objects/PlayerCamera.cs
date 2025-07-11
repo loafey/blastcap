@@ -96,7 +96,7 @@ public partial class PlayerCamera : Node3D {
         this.Camera.RotateX(-rotation.Y);
         var rot = this.Camera.Rotation;
         rot.X = this.Camera.Projection == Camera3D.ProjectionType.Orthogonal
-            ? Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f)
+            ? Mathf.Clamp(rot.X, -Mathf.Pi / 2, MathF.PI / 4)
             : Mathf.Clamp(rot.X, -Mathf.Pi / 2, Mathf.Pi / 4);
         this.Camera.Rotation = rot;
     }
@@ -118,7 +118,7 @@ public partial class PlayerCamera : Node3D {
                 this.Camera.Projection = Camera3D.ProjectionType.Orthogonal;
                 this.Camera.Size = 20f;
                 var rot = this.Camera.Rotation;
-                rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
+                // rot.X = Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f);
                 this.Camera.Rotation = rot;
             } else {
                 this.Camera.Projection = Camera3D.ProjectionType.Perspective;
