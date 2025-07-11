@@ -73,10 +73,10 @@ impl State for WaitingState {
                     // }
                     let mut i = 0;
                     let map_size = gs.map.get_size();
-                    while i < 4 {
+                    while i < 16 {
                         let position = Vec3::new(
                             rand::random_range(0..map_size.x),
-                            rand::random_range(0..map_size.y),
+                            1,
                             rand::random_range(0..map_size.z),
                         );
 

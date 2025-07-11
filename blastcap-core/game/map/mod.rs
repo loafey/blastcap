@@ -38,19 +38,33 @@ pub struct Map {
 }
 impl Default for Map {
     fn default() -> Self {
-        let size = Vec3 { x: 80, y: 2, z: 80 };
+        let size = Vec3 {
+            x: 80,
+            y: 40,
+            z: 80,
+        };
 
         let mut map = Map {
             alive: matrix3d(size),
             dead: matrix3d(size),
             size,
         };
+
+        map.sparse_floor(0);
+        map.sparse_floor(10);
+        map.sparse_floor(20);
+
+        map
+    }
+}
+impl Map {
+    fn sparse_floor(&mut self, y: usize) {
         let mut boxes: HashMap<usize, (Box, Vec<usize>)> = Default::default();
         for i in 0..6 {
             let x_size = rand::random_range(4..=16);
             let z_size = rand::random_range(4..=16);
-            let x = rand::random_range(0..=map.size.x - x_size);
-            let z = rand::random_range(0..=map.size.z - z_size);
+            let x = rand::random_range(0..=self.size.x - x_size);
+            let z = rand::random_range(0..=self.size.z - z_size);
             let b = Box {
                 x1: x,
                 x2: x + x_size,
@@ -71,7 +85,7 @@ impl Default for Map {
         for (b, _) in boxes.values() {
             for x in b.x1..b.x2 {
                 for z in b.z1..b.z2 {
-                    map.set(Vec3::new(x, 0, z), Piece::Ground);
+                    self.set(Vec3::new(x, y, z), Piece::Ground);
                 }
             }
         }
@@ -88,20 +102,17 @@ impl Default for Map {
                 } else {
                     Vec2::new(b_middle.x, a_middle.y)
                 };
-                map.set(Vec3::new(middle.x, 0, middle.y), Piece::Ground);
+                self.set(Vec3::new(middle.x, y, middle.y), Piece::Ground);
                 for p in a_middle.y.min(b_middle.y)..a_middle.y.max(b_middle.y) {
-                    map.set(Vec3::new(middle.x, 0, p), Piece::Ground);
+                    self.set(Vec3::new(middle.x, y, p), Piece::Ground);
                 }
                 for p in a_middle.x.min(b_middle.x)..a_middle.x.max(b_middle.x) {
-                    map.set(Vec3::new(p, 0, middle.y), Piece::Ground);
+                    self.set(Vec3::new(p, y, middle.y), Piece::Ground);
                 }
             }
         }
-
-        map
     }
-}
-impl Map {
+
     pub fn get_size(&self) -> Vec3 {
         self.size
     }
