@@ -1,5 +1,6 @@
+use std::collections::HashMap;
+
 use math::{Vec2, Vec3};
-use rand::random_bool;
 
 fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     let mut z_vec = Vec::with_capacity(size.z);
@@ -44,8 +45,8 @@ impl Default for Map {
             dead: matrix3d(size),
             size,
         };
-        let mut boxes: Vec<Box> = Vec::new();
-        for _ in 0..6 {
+        let mut boxes: HashMap<usize, (Box, Vec<usize>)> = Default::default();
+        for i in 0..6 {
             let x_size = rand::random_range(4..=16);
             let z_size = rand::random_range(4..=16);
             let x = rand::random_range(0..=map.size.x - x_size);
@@ -57,32 +58,30 @@ impl Default for Map {
                 z2: z + z_size,
             };
             let mut clean = true;
-            for a in &boxes {
+            for (a, _) in boxes.values() {
                 if a.intersect(b) {
                     clean = false;
                     break;
                 }
             }
             if clean {
-                boxes.push(b);
+                boxes.insert(i, (b, Vec::new()));
             }
         }
-        for b in &boxes {
+        for (b, _) in boxes.values() {
             for x in b.x1..b.x2 {
                 for z in b.z1..b.z2 {
                     map.set(Vec3::new(x, 0, z), Piece::Ground);
                 }
             }
         }
-        for a in &boxes {
-            for b in &boxes {
+        for (a, _) in boxes.values() {
+            for (b, _) in boxes.values() {
                 if a == b {
                     continue;
                 }
                 let a_middle = Vec2::new(((a.x2 - a.x1) / 2) + a.x1, ((a.z2 - a.z1) / 2) + a.z1);
                 let b_middle = Vec2::new(((b.x2 - b.x1) / 2) + b.x1, ((b.z2 - b.z1) / 2) + b.z1);
-                // map.set(Vec3::new(a_middle.x, 0, a_middle.y), Piece::Empty);
-                // map.set(Vec3::new(b_middle.x, 0, b_middle.y), Piece::Empty);
 
                 let middle = if rand::random_bool(0.5) {
                     Vec2::new(a_middle.x, b_middle.y)
@@ -96,35 +95,9 @@ impl Default for Map {
                 for p in a_middle.x.min(b_middle.x)..a_middle.x.max(b_middle.x) {
                     map.set(Vec3::new(p, 0, middle.y), Piece::Ground);
                 }
-                // let mut i = 0.0;
-                // while i < 1.0 {
-                //     let lerp = a_middle.lerp(b_middle, i);
-                //     map.set(Vec3::new(lerp.x, 0, lerp.y), Piece::Ground);
-                //     i += 0.01;
-                // }
             }
         }
-        // for x in 0..size.x {
-        //     for z in 0..size.z {
-        //         map.set(Vec3::new(x, 0, z), Piece::Ground);
-        //     }
-        // }
-        // for y in 0..size.y {
-        //     for x in 0..(size.x - y) {
-        //         for z in 0..(size.z - y) {
-        //             map.set(Vec3::new(x, y, z), Piece::Ground);
-        //         }
-        //     }
-        // }
-        // for y in 0..size.y {
-        //     for x in 0..size.x {
-        //         for z in 0..size.z {
-        //             if rand::random_bool(0.5) {
-        //                 map.set(Vec3::new(x, y, z), Piece::Ground);
-        //             }
-        //         }
-        //     }
-        // }
+
         map
     }
 }
