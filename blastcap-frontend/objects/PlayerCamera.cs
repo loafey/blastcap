@@ -3,6 +3,7 @@ using System;
 
 public partial class PlayerCamera : Node3D {
     private float _cameraSpeed = 5.0f;
+    private float _cameraRotationSpeed = 1.4f;
     private float _cameraBoomSpeed = 0.005f;
     private bool _cameraLock = false;
     [Export]
@@ -96,7 +97,7 @@ public partial class PlayerCamera : Node3D {
         var rot = this.Camera.Rotation;
         rot.X = this.Camera.Projection == Camera3D.ProjectionType.Orthogonal
             ? Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.9f)
-            : Mathf.Clamp(rot.X, -Mathf.Pi / 2, -0.1f);
+            : Mathf.Clamp(rot.X, -Mathf.Pi / 2, Mathf.Pi / 4);
         this.Camera.Rotation = rot;
     }
 
@@ -140,12 +141,12 @@ public partial class PlayerCamera : Node3D {
             newPos.X += sin;
         }
         if (Input.IsActionPressed("camera_float_up")) {
-            newPos.Y += (float)delta * 5;
+            newPos.Y += (float)delta * this._cameraSpeed;
         } else if (Input.IsActionPressed("camera_float_down")) {
-            newPos.Y -= (float)delta * 5;
+            newPos.Y -= (float)delta * this._cameraSpeed;
         }
 
-        newPos.Y = Mathf.Clamp(newPos.Y, -3f, 3f);
+        newPos.Y = Mathf.Clamp(newPos.Y, -3f, 40f);
         this.Position = newPos;
 
         if (Input.IsActionPressed("camera_rotate_lock")) {
@@ -158,15 +159,15 @@ public partial class PlayerCamera : Node3D {
 
 
         if (Input.IsActionPressed("camera_rotate_left")) {
-            this.RotateCam(new Vector2(-(float)delta, 0));
+            this.RotateCam(new Vector2(-(float)delta * this._cameraRotationSpeed, 0));
         } else if (Input.IsActionPressed("camera_rotate_right")) {
-            this.RotateCam(new Vector2((float)delta, 0));
+            this.RotateCam(new Vector2((float)delta * this._cameraRotationSpeed, 0));
         }
 
         if (Input.IsActionPressed("camera_pan_up")) {
-            this.RotateCam(new Vector2(0, -(float)delta));
+            this.RotateCam(new Vector2(0, -(float)delta * this._cameraRotationSpeed));
         } else if (Input.IsActionPressed("camera_pan_down")) {
-            this.RotateCam(new Vector2(0, (float)delta));
+            this.RotateCam(new Vector2(0, (float)delta * this._cameraRotationSpeed));
         }
     }
 
