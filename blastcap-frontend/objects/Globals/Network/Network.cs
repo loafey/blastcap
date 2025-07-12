@@ -28,6 +28,19 @@ public partial class NetworkClient {
         return _success;
     }
 
+    public string GetName() {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern string get_string();
+        var str = get_string();
+        return str;
+    }
+
+    private static void DropString([MarshalAs(UnmanagedType.LPUTF8Str)] string str) {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern void drop_string([MarshalAs(UnmanagedType.LPUTF8Str)] string str);
+        drop_string(str);
+    }
+
     public void Drop() {
         unsafe {
             [DllImport("blastcap", SetLastError = true)]
