@@ -29,16 +29,7 @@ public partial class NetworkClient {
     }
 
     public string GetName() {
-        [DllImport("blastcap", SetLastError = true)]
-        static extern string get_string();
-        var str = get_string();
-        return str;
-    }
-
-    private static void DropString([MarshalAs(UnmanagedType.LPUTF8Str)] string str) {
-        [DllImport("blastcap", SetLastError = true)]
-        static extern void drop_string([MarshalAs(UnmanagedType.LPUTF8Str)] string str);
-        drop_string(str);
+        return "temp";
     }
 
     public void Drop() {

@@ -108,18 +108,3 @@ pub unsafe extern "C" fn start_client_loop(
         on_fail,
     }))
 }
-///
-/// # Safety
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn get_string() -> *mut i8 {
-    CString::new("yoo").unwrap().into_raw()
-}
-
-///
-/// # Safety
-#[unsafe(no_mangle)]
-pub unsafe extern "C" fn drop_string(str: *mut i8) {
-    unsafe {
-        _ = CString::from_raw(str);
-    }
-}

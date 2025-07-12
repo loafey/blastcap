@@ -28,7 +28,5 @@ public partial class NetworkManager : Node {
     public override void _Process(double delta) {
         base._Process(delta);
         this.Inner?.Poll();
-
-        // GD.Print($"name: {this.Inner?.GetName()}");
     }
 }
