@@ -16,6 +16,7 @@ public partial class Game : Node3D {
     public PlayerCamera PC;
     [Export]
     public Node3D WorldMeshHolder;
+    private readonly Dictionary<int, Node3D> _layers = [];
     [Export]
     public PackedScene ExplosionScene;
     [Export]
@@ -30,7 +31,7 @@ public partial class Game : Node3D {
 
 
 
-    private void SpawnCube(Vector3 pos) {
+    private void SpawnCube(Node3D parent, Vector3 pos) {
         var floor = new MeshInstance3D();
         var mesh = new BoxMesh {
             // CenterOffset = new Vector3(0.5f, 0, 0.5f),
@@ -53,7 +54,7 @@ public partial class Game : Node3D {
 
         coll.AddChild(collShape);
         floor.AddChild(coll);
-        this.WorldMeshHolder.AddChild(floor);
+        parent.AddChild(floor);
     }
 
     public override void _Ready() {
@@ -147,8 +148,15 @@ public partial class Game : Node3D {
 
         this.nw.Inner.OnSpawnMap += (xList, yList, zList) => {
             for (var i = 0; i < xList.Count; i++) {
+                var key = (int)yList[i];
+                if (!this._layers.ContainsKey(key)) {
+                    var par = new Node3D();
+                    this._layers[key] = par;
+                    this.WorldMeshHolder.AddChild(par);
+                }
+                var parent = this._layers[key];
                 var pos = new Vector3(xList[i], yList[i], zList[i]);
-                this.SpawnCube(pos);
+                this.SpawnCube(parent, pos);
             }
         };
 
