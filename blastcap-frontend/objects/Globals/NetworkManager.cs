@@ -1,4 +1,8 @@
 using Godot;
+using System;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 
 public partial class NetworkManager : Node {
     public NetworkClient Inner { get; private set; }

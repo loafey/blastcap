@@ -204,7 +204,7 @@ pub fn client_interface(_attr: TS1, item_og: TS1) -> TS1 {
             "
 public void Send{name}({arg_string}) {{
     unsafe {{
-        [DllImport(\"libblastcap.so\", SetLastError = true)]
+        [DllImport(\"blastcap\", SetLastError = true)]
         static extern void {rust_name}({csharp_rust_arg_string});
         {csharp_conv}
         {rust_name}({call});
@@ -422,14 +422,14 @@ public partial class NetworkClient {{
     {{
         unsafe
         {{
-            [DllImport(\"libblastcap.so\", SetLastError = true)]
+            [DllImport(\"blastcap\", SetLastError = true)]
             static extern void client_poll(void* ptr{cs_rust_callbacks});
             client_poll(this._inner{cs_callbacks});
         }}
     }}
     public NetworkClient([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail)
     {{
-        [DllImport(\"libblastcap.so\", SetLastError = true)]
+        [DllImport(\"blastcap\", SetLastError = true)]
         static extern unsafe void* start_client_loop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail);
         unsafe
         {{
