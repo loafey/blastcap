@@ -427,14 +427,13 @@ public partial class NetworkClient {{
             client_poll(this._inner{cs_callbacks});
         }}
     }}
-    public NetworkClient([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail)
+    public void Connect([MarshalAs(UnmanagedType.LPUTF8Str)] string addr)
     {{
         [DllImport(\"blastcap\", SetLastError = true)]
-        static extern unsafe void* start_client_loop([MarshalAs(UnmanagedType.LPUTF8Str)] string addr, OnFail onFail);
+        static extern unsafe void start_client_loop(void* inner, [MarshalAs(UnmanagedType.LPUTF8Str)] string addr);
         unsafe
         {{
-            void* ptr = start_client_loop(addr, onFail);
-            this._inner = ptr;
+            start_client_loop(_inner, addr);
             {cs_set_cons}
         }}
     }}

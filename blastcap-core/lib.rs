@@ -38,33 +38,60 @@ pub extern "C" fn start_host_loop(
     });
 }
 
-pub struct ClientHandle {
-    recv: Receiver<ServerMessage>,
-    send: Sender<ClientRequest>,
-    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
-}
-
 include!("lib_gen.rs");
 
 include!("lib_poll.rs");
+
+// ///
+// /// # Safety
+// #[unsafe(no_mangle)]
+// pub unsafe extern "C" fn create_client_handle(
+//     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
+// ) -> *mut ClientHandle {
+// }
+
+pub struct ClientHandle {
+    recv: Receiver<ServerMessage>,
+    send: Sender<ClientRequest>,
+    server_send: Option<Sender<ServerMessage>>,
+    client_recv: Option<Receiver<ClientRequest>>,
+    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
+}
 ///
 /// # Safety
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn client_drop_handle(ch: *mut ClientHandle) {
-    unsafe {
-        println!("CLIENT - being dropped!");
-        drop(Box::from_raw(ch));
-    }
+pub unsafe extern "C" fn create_client(
+    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
+) -> *mut ClientHandle {
+    let (server_send, server_recv) = tokio::sync::mpsc::channel(1000);
+    let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
+    Box::leak(Box::new(ClientHandle {
+        recv: server_recv,
+        send: client_send,
+        on_fail,
+        server_send: Some(server_send),
+        client_recv: Some(client_recv),
+    }))
+}
+
+///
+/// # Safety
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn is_connected(client: *mut ClientHandle) -> std::ffi::c_int {
+    let client = unsafe { &mut *client } as &mut ClientHandle;
+    if client.client_recv.is_some() { 0 } else { 1 }
 }
 
 ///
 /// # Safety
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn start_client_loop(
+    client: *mut ClientHandle,
     addr: *const std::ffi::c_char,
-    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
-) -> *mut ClientHandle {
-    async fn client<A: ToSocketAddrs + std::fmt::Debug>(
+) {
+    let client = unsafe { &mut *client } as &mut ClientHandle;
+
+    async fn client_func<A: ToSocketAddrs + std::fmt::Debug>(
         addr: A,
         server_send: Sender<ServerMessage>,
         mut client_req_recv: Receiver<ClientRequest>,
@@ -88,12 +115,16 @@ pub unsafe extern "C" fn start_client_loop(
     let addr = unsafe { CStr::from_ptr(addr) }
         .to_string_lossy()
         .to_string();
-    let (send, recv) = tokio::sync::mpsc::channel(1000);
-    let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
+    let on_fail = client.on_fail;
+    let (Some(server_send), Some(client_recv)) =
+        (client.server_send.take(), client.client_recv.take())
+    else {
+        return;
+    };
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Unable to create Runtime");
         let _enter = rt.enter();
-        let Err(err) = rt.block_on(client(addr, send, client_recv)) else {
+        let Err(err) = rt.block_on(client_func(addr, server_send, client_recv)) else {
             return;
         };
         unsafe {
@@ -102,9 +133,13 @@ pub unsafe extern "C" fn start_client_loop(
             _ = CString::from_raw(str)
         };
     });
-    Box::leak(Box::new(ClientHandle {
-        recv,
-        send: client_send,
-        on_fail,
-    }))
+}
+///
+/// # Safety
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn client_drop_handle(ch: *mut ClientHandle) {
+    unsafe {
+        println!("CLIENT - being dropped!");
+        drop(Box::from_raw(ch));
+    }
 }

@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 using Godot;
 
@@ -10,6 +11,24 @@ public partial class NetworkClient {
     }
 
     public delegate void OnFail([MarshalAs(UnmanagedType.LPUTF8Str)] string error);
+
+    public NetworkClient(OnFail onFail) {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern unsafe void* create_client(OnFail onFail);
+
+        unsafe {
+            this._inner = create_client(onFail);
+        }
+    }
+
+    public bool IsConnected() {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern unsafe int is_connected(void* inner);
+
+        unsafe {
+            return is_connected(this._inner) != 0;
+        }
+    }
 
     private static bool _success = true;
     public static bool StartHostLoop(short port) {

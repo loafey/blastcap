@@ -9,20 +9,18 @@ public partial class NetworkManager : Node {
 
     public bool IsHost => NetworkClient.IsHost;
 
+    public override void _Ready() {
+        this.Inner = new NetworkClient((err) => {
+            GD.PrintErr(err);
+            this.Inner.Drop();
+            this.Inner = null;
+        });
+    }
+
     public void Connect(string addr) {
-        if (this.Inner != null) {
-            return;
+        if (!this.Inner.IsConnected()) {
+            this.Inner.Connect(addr);
         }
-
-        this.Inner = new NetworkClient(
-            addr,
-            onFail: (err) => {
-                GD.PrintErr(err);
-                this.Inner.Drop();
-                this.Inner = null;
-            }
-        );
-
     }
 
     public override void _Process(double delta) {

@@ -17,8 +17,8 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-NetworkManager="*res://objects/Globals/NetworkManager.cs"
 Linker="*res://objects/Globals/Linker.cs"
+NetworkManager="*res://objects/Globals/NetworkManager.cs"
 
 [dotnet]
 
