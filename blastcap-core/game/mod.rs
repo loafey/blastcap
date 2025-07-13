@@ -1,24 +1,25 @@
 use crate::{
     game::state::{LobbyState, State},
-    network::NetworkHost,
+    network::{Metadata, NetworkHost},
 };
 use std::{mem::MaybeUninit, net::SocketAddr};
 use tokio::time::Instant;
 
 mod actor;
 mod map;
-mod state;
+pub mod state;
 
 #[derive(Default)]
-struct ServerData {
+pub struct ServerData {
     host_player: Option<SocketAddr>,
     tick: usize,
 }
 
 pub struct Arg<'l> {
-    data: &'l mut ServerData,
-    host: &'l mut NetworkHost,
-    last_tick: &'l mut Instant,
+    pub data: &'l mut ServerData,
+    pub host: &'l mut NetworkHost,
+    pub last_tick: &'l mut Instant,
+    pub metadata: &'l mut Metadata,
 }
 impl<'l> Arg<'l> {
     pub unsafe fn clone(&self) -> Self {
@@ -30,30 +31,4 @@ impl<'l> Arg<'l> {
             new.assume_init()
         }
     }
-}
-
-pub async fn host_loop(port: u16) -> anyhow::Result<()> {
-    let mut host = NetworkHost::tcp(port).await?;
-    let mut data = ServerData::default();
-    let mut state: Box<dyn State> = LobbyState::new();
-    let mut last_tick = Instant::now();
-    loop {
-        let Ok(poll) = host.poll().await else {
-            break;
-        };
-        if let Some(new_state) = state
-            .handle_req(
-                poll,
-                Arg {
-                    data: &mut data,
-                    host: &mut host,
-                    last_tick: &mut last_tick,
-                },
-            )
-            .await?
-        {
-            state = new_state;
-        }
-    }
-    Ok(())
 }

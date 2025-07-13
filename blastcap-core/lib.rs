@@ -5,14 +5,21 @@
     arbitrary_self_types_pointers
 )]
 
-use crate::network::{
-    ClientPoll, NetworkClient,
-    messages::{ClientRequest, ServerMessage},
+use crate::{
+    game::{
+        Arg, ServerData,
+        state::{LobbyState, State},
+    },
+    network::{
+        ClientPoll, Metadata, NetworkClient, NetworkHost,
+        messages::{ClientRequest, ServerMessage},
+    },
 };
 use std::ffi::{CStr, CString};
 use tokio::{
     net::ToSocketAddrs,
     sync::mpsc::{Receiver, Sender},
+    time::Instant,
 };
 
 mod game;
@@ -29,10 +36,39 @@ pub extern "C" fn start_host_loop(
     port: u16,
     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 ) {
+    let Some(mut metadata) = Metadata::grab() else {
+        panic!("something else has claimed metadata")
+    };
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _enter = rt.enter();
-        let Err(err) = rt.block_on(game::host_loop(port)) else {
+        let Err(err): anyhow::Result<()> = rt.block_on(async move {
+            let mut host = NetworkHost::tcp(port).await?;
+            let mut data = ServerData::default();
+            let mut state: Box<dyn State> = LobbyState::new();
+            let mut last_tick = Instant::now();
+            loop {
+                let Ok(poll) = host.poll().await else {
+                    break;
+                };
+                metadata.tick().await?;
+                if let Some(new_state) = state
+                    .handle_req(
+                        poll,
+                        Arg {
+                            data: &mut data,
+                            host: &mut host,
+                            last_tick: &mut last_tick,
+                            metadata: &mut metadata,
+                        },
+                    )
+                    .await?
+                {
+                    state = new_state;
+                }
+            }
+            Ok(())
+        }) else {
             return;
         };
         unsafe {
@@ -71,6 +107,7 @@ impl ClientHandle {
     ) -> *mut Self {
         let (server_send, server_recv) = tokio::sync::mpsc::channel(1000);
         let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
+        Metadata::init_tcp();
         Box::leak(Box::new(ClientHandle {
             recv: server_recv,
             send: client_send,
@@ -110,6 +147,10 @@ impl ClientHandle {
             mut client_req_recv: Receiver<ClientRequest>,
         ) -> anyhow::Result<()> {
             println!("CLIENT - connecting to {addr:?}");
+            println!(
+                "Has metadata been taken already: {}",
+                Metadata::async_grab().await.is_none()
+            );
             let mut client = NetworkClient::tcp(addr).await?;
             let mut tick_counter: usize = 0;
             loop {

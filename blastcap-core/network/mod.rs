@@ -2,21 +2,24 @@ pub mod channel;
 pub mod messages;
 mod socket_addr_ext;
 mod tcp;
-pub use socket_addr_ext::*;
 
 static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
 
 use crate::network::{
     messages::{ClientRequest, ServerMessage},
-    tcp::{TcpClient, TcpHost},
+    tcp::{TcpClient, TcpHost, TcpMetadata},
 };
 use async_trait::async_trait;
+pub use socket_addr_ext::*;
 use std::{
     net::SocketAddr,
     ops::{Deref, DerefMut},
     sync::LazyLock,
 };
-use tokio::net::ToSocketAddrs;
+use tokio::{
+    net::ToSocketAddrs,
+    sync::{Mutex, mpsc::Sender},
+};
 
 pub const TICK_RATE: usize = 30;
 
@@ -98,4 +101,36 @@ pub trait NetworkHostExt {
     fn remove_client(&mut self, addr: SocketAddr);
     fn get_clients(&self) -> Vec<SocketAddr>;
     fn get_client_count(&self) -> u32;
+}
+
+static META_DATA: LazyLock<Mutex<Option<Metadata>>> = LazyLock::new(Default::default);
+
+pub struct Metadata {
+    inner: Box<dyn MetadataExt + 'static + Send + Sync>,
+}
+pub type MetadataTask = fn(&Metadata) -> anyhow::Result<()>;
+impl Metadata {
+    pub fn init_tcp() {
+        let tcp = Box::new(TcpMetadata::new());
+        let mut lock = META_DATA.blocking_lock();
+        *lock = Some(Metadata { inner: tcp });
+    }
+    pub fn grab() -> Option<Self> {
+        META_DATA.blocking_lock().take()
+    }
+    pub async fn async_grab() -> Option<Self> {
+        META_DATA.lock().await.take()
+    }
+}
+impl Deref for Metadata {
+    type Target = dyn MetadataExt;
+
+    fn deref(&self) -> &Self::Target {
+        &*self.inner
+    }
+}
+#[async_trait]
+pub trait MetadataExt {
+    fn get_my_name(&self) -> anyhow::Result<String>;
+    async fn tick(&self) -> anyhow::Result<()>;
 }

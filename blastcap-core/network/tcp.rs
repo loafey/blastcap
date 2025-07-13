@@ -1,5 +1,5 @@
 use crate::network::{
-    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, NetworkClientExt, NetworkHostExt,
+    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, MetadataExt, NetworkClientExt, NetworkHostExt,
     ServerMessage, TICK_RATE, channel::Channel,
 };
 use async_trait::async_trait;
@@ -175,5 +175,22 @@ impl NetworkHostExt for TcpHost {
 
     fn get_client_count(&self) -> u32 {
         self.clients.len() as u32
+    }
+}
+
+pub(super) struct TcpMetadata {}
+impl TcpMetadata {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+#[async_trait]
+impl MetadataExt for TcpMetadata {
+    fn get_my_name(&self) -> anyhow::Result<String> {
+        Ok("jobert".to_string())
+    }
+
+    async fn tick(&self) -> anyhow::Result<()> {
+        Ok(())
     }
 }
