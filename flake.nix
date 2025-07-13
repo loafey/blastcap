@@ -73,10 +73,15 @@
           nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
           LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
 
+          # installPhase = ''
+          #   ls
+          #   install -m755 -D sys/libsteam_api.so $out/lib/libsteam_api.so
+          # '';
+
           shellHook = ''
             export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${
               pkgs.lib.makeLibraryPath min-pkgs
-            }"
+            }:$(dirname $(dirname $out))/sys/"
           '';
         };
       });
