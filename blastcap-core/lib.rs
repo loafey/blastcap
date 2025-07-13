@@ -112,14 +112,18 @@ impl ClientHandle {
             println!("CLIENT - connecting to {addr:?}");
             let mut client = NetworkClient::tcp(addr).await?;
             let mut tick_counter: usize = 0;
-            while let Ok(res) = client.poll().await {
-                match res {
-                    ClientPoll::Message(client_message) => server_send.send(client_message).await?,
-                    ClientPoll::Tick => {
-                        tick_counter = tick_counter.wrapping_add(1);
-                        while let Ok(msg) = client_req_recv.try_recv() {
-                            client.send(msg).await?;
+            loop {
+                tokio::select! {
+                    res = client.poll() => {
+                        let Ok(res) = res else { break };
+                        match res {
+                            ClientPoll::Message(client_message) => server_send.send(client_message).await?,
+                            ClientPoll::Tick => tick_counter = tick_counter.wrapping_add(1),
                         }
+                    }
+                    msg = client_req_recv.recv() => {
+                        let Some(msg) = msg else { break };
+                        client.send(msg).await?;
                     }
                 }
             }
