@@ -109,15 +109,12 @@ pub trait NetworkHostExt {
 }
 
 #[allow(clippy::type_complexity)]
-static META_DATA: LazyLock<
-    Mutex<
-        Option<Result<Metadata, Sender<Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>>>>,
-    >,
-> = LazyLock::new(Default::default);
+static META_DATA: LazyLock<Mutex<Option<Result<Metadata, Sender<MetadataTask>>>>> =
+    LazyLock::new(Default::default);
 #[allow(clippy::type_complexity)]
 pub enum MetadataHolder {
     Owned(Metadata),
-    NotOwned(Sender<Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>>),
+    NotOwned(Sender<MetadataTask>),
 }
 impl Debug for MetadataHolder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -151,19 +148,23 @@ impl MetadataHolder {
     }
 }
 
+pub type MetadataTask = Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>;
 pub struct Metadata {
     inner: Box<dyn MetadataExt + 'static + Send + Sync>,
 }
 impl Metadata {
+    pub unsafe fn peek() -> Option<&'static Metadata> {
+        match &*META_DATA.blocking_lock() {
+            Some(Ok(m)) => Some(unsafe { std::mem::transmute::<&Metadata, &'static Metadata>(m) }),
+            None | Some(Err(_)) => None,
+        }
+    }
     pub fn init_tcp() {
         let tcp = Box::new(TcpMetadata::new());
         let mut lock = META_DATA.blocking_lock();
         *lock = Some(Ok(Metadata { inner: tcp }));
     }
-    pub fn grab_host() -> (
-        Self,
-        Receiver<Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>>,
-    ) {
+    pub fn grab_host() -> (Self, Receiver<MetadataTask>) {
         let mut lock = META_DATA.blocking_lock();
         match &*lock {
             Some(i) => match i {

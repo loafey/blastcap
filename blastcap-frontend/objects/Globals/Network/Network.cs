@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Godot;
 
@@ -47,8 +48,10 @@ public partial class NetworkClient {
         return _success;
     }
 
-    public string GetName() {
-        return "temp";
+    public string GetMyName() {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern unsafe string get_my_name(void* inner);
+        unsafe { return get_my_name(this._inner); }
     }
 
     public void Drop() {
