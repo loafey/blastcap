@@ -5,7 +5,7 @@ use crate::network::{
     messages::{ClientRequest, ServerMessage},
 };
 use async_trait::async_trait;
-use steamworks::Client;
+use steamworks::{Client, SteamId};
 
 pub(super) struct SteamClient {}
 #[async_trait]
@@ -61,10 +61,27 @@ impl SteamMetadata {
 
 #[async_trait]
 impl MetadataExt for SteamMetadata {
-    fn get_my_name(&self) -> anyhow::Result<String> {
-        todo!()
+    fn get_my_id(&self) -> u64 {
+        self.client.user().steam_id().raw()
+    }
+
+    fn get_name(&self, id: u64) -> anyhow::Result<String> {
+        Ok(self
+            .client
+            .friends()
+            .get_friend(SteamId::from_raw(id))
+            .name())
     }
     async fn tick(&self) -> anyhow::Result<()> {
-        todo!()
+        self.client.run_callbacks();
+        Ok(())
+    }
+
+    fn get_avatar(&self, id: u64) -> Option<(Vec<u8>, u16, u16)> {
+        self.client
+            .friends()
+            .get_friend(SteamId::from_raw(id))
+            .medium_avatar()
+            .map(|a| (a, 64, 64))
     }
 }

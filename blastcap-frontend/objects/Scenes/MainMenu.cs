@@ -21,6 +21,12 @@ public partial class MainMenu : Node3D {
     [Export]
     public Button ConnectButton;
 
+    [Export]
+    public Label UserNameLabel;
+
+    [Export]
+    public TextureRect UserAvatar;
+
     private void DrawPlayerList() {
         foreach (var child in this.PlayerList.GetChildren()) {
             child.QueueFree();
@@ -90,6 +96,13 @@ public partial class MainMenu : Node3D {
             this.nw.Connect("localhost");
             this.OnConnect();
         };
+
+        this.UserNameLabel.Text = this.nw.Inner.GetName(this.nw.Inner.GetMyId());
+        this.nw.Inner.GetAvatar(this.nw.Inner.GetMyId(), (data, width, height) => {
+            var img = Image.CreateFromData(width, height, false, Image.Format.Rgba8, data);
+            var texture = ImageTexture.CreateFromImage(img);
+            this.UserAvatar.Texture = texture;
+        });
     }
 
 

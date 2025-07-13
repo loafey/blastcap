@@ -179,19 +179,25 @@ impl NetworkHostExt for TcpHost {
 }
 
 pub(super) struct TcpMetadata {
-    username: String,
+    id: u64,
 }
 impl TcpMetadata {
     pub fn new() -> Self {
-        Self {
-            username: format!("{}", rand::random::<u128>()),
-        }
+        Self { id: rand::random() }
     }
 }
 #[async_trait]
 impl MetadataExt for TcpMetadata {
-    fn get_my_name(&self) -> anyhow::Result<String> {
-        Ok(self.username.clone())
+    fn get_avatar(&self, _id: u64) -> Option<(Vec<u8>, u16, u16)> {
+        None
+    }
+
+    fn get_my_id(&self) -> u64 {
+        self.id
+    }
+
+    fn get_name(&self, id: u64) -> anyhow::Result<String> {
+        Ok(format!("{id}"))
     }
 
     async fn tick(&self) -> anyhow::Result<()> {

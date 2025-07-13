@@ -1,7 +1,8 @@
-[gd_scene load_steps=6 format=3 uid="uid://bo5tvenb8rnc8"]
+[gd_scene load_steps=7 format=3 uid="uid://bo5tvenb8rnc8"]
 
 [ext_resource type="Script" uid="uid://c2biuv8qm1hi8" path="res://objects/Scenes/MainMenu.cs" id="1_yqorp"]
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="2_0ykhv"]
+[ext_resource type="Texture2D" uid="uid://bynqq3gi3gdtv" path="res://icon.svg" id="3_j38x1"]
 
 [sub_resource type="Gradient" id="Gradient_o5qli"]
 offsets = PackedFloat32Array(0, 0.438312, 0.746753, 1)
@@ -13,13 +14,15 @@ fill_to = Vector2(1, 1)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0ykhv"]
 
-[node name="Node3D" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "MapList", "HostButton", "ConnectButton")]
+[node name="Node3D" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "MapList", "HostButton", "ConnectButton", "UserNameLabel", "UserAvatar")]
 script = ExtResource("1_yqorp")
 ChatBox = NodePath("CanvasLayer/ChatBox")
 PlayerList = NodePath("CanvasLayer/PlayerList/Scroll/List")
 MapList = NodePath("CanvasLayer/MainMenu/MapList")
 HostButton = NodePath("CanvasLayer/MainMenu/Host/Button")
 ConnectButton = NodePath("CanvasLayer/MainMenu/Connect/Button")
+UserNameLabel = NodePath("CanvasLayer/PlayerList/UserInfo/HBoxContainer/Label")
+UserAvatar = NodePath("CanvasLayer/PlayerList/UserInfo/HBoxContainer/TextureRect")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -105,6 +108,31 @@ size_flags_vertical = 3
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="UserInfo" type="Panel" parent="CanvasLayer/PlayerList"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/PlayerList/UserInfo"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/PlayerList/UserInfo/HBoxContainer"]
+custom_minimum_size = Vector2(64, 64)
+layout_mode = 2
+texture = ExtResource("3_j38x1")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="CanvasLayer/PlayerList/UserInfo/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "User"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="StaticBody3D" type="StaticBody3D" parent="."]
 

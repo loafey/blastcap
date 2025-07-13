@@ -238,15 +238,45 @@ impl ClientHandle {
     ///
     /// # Safety
     #[unsafe(no_mangle)]
-    pub unsafe extern "C" fn get_my_name(self: *mut Self) -> *mut i8 {
+    pub unsafe extern "C" fn metadata_get_id(self: *mut Self) -> u64 {
         let client = unsafe { &mut *self } as &mut ClientHandle;
 
-        let Ok(Ok(name)) = client.metadata(|m| m.get_my_name()) else {
+        let Ok(id) = client.metadata(|m| m.get_my_id()) else {
+            return 0;
+        };
+        id
+    }
+
+    ///
+    /// # Safety
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn metadata_get_name(self: *mut Self, id: u64) -> *mut i8 {
+        let client = unsafe { &mut *self } as &mut ClientHandle;
+
+        let Ok(Ok(name)) = client.metadata(move |m| m.get_name(id)) else {
             return std::ptr::null_mut();
         };
         let Ok(str) = CString::new(name) else {
             return std::ptr::null_mut();
         };
         str.into_raw()
+    }
+
+    ///
+    /// # Safety
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn metadata_get_avatar(
+        self: *mut Self,
+        id: u64,
+        callback: extern "C" fn(*const u8, u32, u16, u16),
+    ) {
+        let client = unsafe { &mut *self } as &mut ClientHandle;
+        let Ok(Some((data, width, height))) = client.metadata(move |m| m.get_avatar(id)) else {
+            return;
+        };
+
+        let (ptr, length, _capacity) = data.into_raw_parts();
+        callback(ptr, length as u32, width, height);
+        // Vec::from_raw_parts(ptr, length, capacity);
     }
 }

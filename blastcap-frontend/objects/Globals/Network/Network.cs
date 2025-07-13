@@ -48,10 +48,24 @@ public partial class NetworkClient {
         return _success;
     }
 
-    public string GetMyName() {
+    public string GetName(ulong id) {
         [DllImport("blastcap", SetLastError = true)]
-        static extern unsafe string get_my_name(void* inner);
-        unsafe { return get_my_name(this._inner); }
+        static extern unsafe string metadata_get_name(void* inner, ulong id);
+        unsafe { return metadata_get_name(this._inner, id); }
+    }
+
+    public ulong GetMyId() {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern unsafe ulong metadata_get_id(void* inner);
+        unsafe { return metadata_get_id(this._inner); }
+    }
+
+    public delegate void AvatarCallback(byte[] data, ushort width, ushort height);
+    public delegate void AvatarCallbackRaw([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data, int len, ushort width, ushort height);
+    public void GetAvatar(ulong id, AvatarCallback cb) {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern unsafe string metadata_get_avatar(void* inner, ulong id, AvatarCallbackRaw cb);
+        unsafe { metadata_get_avatar(this._inner, id, (data, _len, w, h) => cb(data, w, h)); }
     }
 
     public void Drop() {
