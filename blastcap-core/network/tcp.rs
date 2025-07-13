@@ -178,16 +178,20 @@ impl NetworkHostExt for TcpHost {
     }
 }
 
-pub(super) struct TcpMetadata {}
+pub(super) struct TcpMetadata {
+    username: String,
+}
 impl TcpMetadata {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            username: format!("{}", rand::random::<u128>()),
+        }
     }
 }
 #[async_trait]
 impl MetadataExt for TcpMetadata {
     fn get_my_name(&self) -> anyhow::Result<String> {
-        Ok("jobert".to_string())
+        Ok(self.username.clone())
     }
 
     async fn tick(&self) -> anyhow::Result<()> {

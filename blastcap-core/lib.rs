@@ -172,8 +172,9 @@ impl ClientHandle {
                     ClientPoll::Message(client_message) => server_send.send(client_message).await?,
                     ClientPoll::Tick => {
                         tick_counter = tick_counter.wrapping_add(1);
+                        let n = m_holder.act(|m| m.get_my_name()).await?;
+                        println!("my name is {n}");
                     }
-                    ClientPoll::Metadata(task) => m_holder.act(task).await?,
                 }
             }
             Ok(())

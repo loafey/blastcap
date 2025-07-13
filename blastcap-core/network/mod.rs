@@ -22,6 +22,7 @@ use tokio::{
     sync::{
         Mutex,
         mpsc::{Receiver, Sender, channel},
+        oneshot::channel as oneshot,
     },
 };
 
@@ -53,7 +54,6 @@ impl NetworkClient {
 
 pub enum ClientPoll {
     Message(ServerMessage),
-    Metadata(MetadataTask),
     Tick,
 }
 
@@ -109,11 +109,15 @@ pub trait NetworkHostExt {
 }
 
 #[allow(clippy::type_complexity)]
-static META_DATA: LazyLock<Mutex<Option<Result<Metadata, Sender<MetadataTask>>>>> =
-    LazyLock::new(Default::default);
+static META_DATA: LazyLock<
+    Mutex<
+        Option<Result<Metadata, Sender<Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>>>>,
+    >,
+> = LazyLock::new(Default::default);
+#[allow(clippy::type_complexity)]
 pub enum MetadataHolder {
     Owned(Metadata),
-    NotOwned(Sender<MetadataTask>),
+    NotOwned(Sender<Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>>),
 }
 impl Debug for MetadataHolder {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -124,10 +128,25 @@ impl Debug for MetadataHolder {
     }
 }
 impl MetadataHolder {
-    pub async fn act(&self, act: MetadataTask) -> anyhow::Result<()> {
+    pub async fn act<
+        T: 'static + Send,
+        F: FnOnce(&Metadata) -> anyhow::Result<T> + 'static + Send,
+    >(
+        &self,
+        act: F,
+    ) -> anyhow::Result<T> {
         match self {
             MetadataHolder::Owned(metadata) => act(metadata),
-            MetadataHolder::NotOwned(sender) => Ok(sender.send(act).await?),
+            MetadataHolder::NotOwned(sender) => {
+                let (send, recv) = oneshot();
+                _ = sender
+                    .send(Box::new(move |m| {
+                        _ = send.send(act(m));
+                        Ok(())
+                    }))
+                    .await;
+                recv.await?
+            }
         }
     }
 }
@@ -135,14 +154,16 @@ impl MetadataHolder {
 pub struct Metadata {
     inner: Box<dyn MetadataExt + 'static + Send + Sync>,
 }
-pub type MetadataTask = fn(&Metadata) -> anyhow::Result<()>;
 impl Metadata {
     pub fn init_tcp() {
         let tcp = Box::new(TcpMetadata::new());
         let mut lock = META_DATA.blocking_lock();
         *lock = Some(Ok(Metadata { inner: tcp }));
     }
-    pub fn grab_host() -> (Self, Receiver<MetadataTask>) {
+    pub fn grab_host() -> (
+        Self,
+        Receiver<Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>>,
+    ) {
         let mut lock = META_DATA.blocking_lock();
         match &*lock {
             Some(i) => match i {

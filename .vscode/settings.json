@@ -18,5 +18,8 @@
     "omnisharp.enableEditorConfigSupport": true,
     "dotnet.defaultSolution": "blastcap-frontend/Blastcap.sln",
     "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "fullSolution",
-    "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution"
+    "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution",
+    "cSpell.words": [
+        "oneshot"
+    ]
 }
