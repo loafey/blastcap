@@ -45,10 +45,14 @@ impl DerefMut for NetworkClient {
     }
 }
 impl NetworkClient {
-    pub async fn tcp<A: ToSocketAddrs>(addr: A) -> anyhow::Result<Self> {
+    async fn tcp<A: ToSocketAddrs>(addr: A) -> anyhow::Result<Self> {
         Ok(Self {
             inner: Box::new(TcpClient::new(addr).await?),
         })
+    }
+
+    pub async fn create(addr: String) -> anyhow::Result<Self> {
+        Self::tcp(format!("{addr}:8000")).await
     }
 }
 
@@ -80,10 +84,13 @@ impl DerefMut for NetworkHost {
     }
 }
 impl NetworkHost {
-    pub async fn tcp(port: u16) -> anyhow::Result<Self> {
+    async fn tcp(port: u16) -> anyhow::Result<Self> {
         Ok(Self {
             inner: Box::new(TcpHost::new(port).await?),
         })
+    }
+    pub async fn create() -> anyhow::Result<Self> {
+        Self::tcp(8000).await
     }
 }
 
@@ -159,7 +166,10 @@ impl Metadata {
             None | Some(Err(_)) => None,
         }
     }
-    pub fn init_tcp() {
+    pub fn init() {
+        Self::init_tcp();
+    }
+    fn init_tcp() {
         let tcp = Box::new(TcpMetadata::new());
         let mut lock = META_DATA.blocking_lock();
         *lock = Some(Ok(Metadata { inner: tcp }));

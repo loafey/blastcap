@@ -32,13 +32,13 @@ public partial class NetworkClient {
     }
 
     private static bool _success = true;
-    public static bool StartHostLoop(short port) {
+    public static bool StartHostLoop() {
         _success = true;
         IsHost = true;
         [DllImport("blastcap", SetLastError = true)]
-        static extern void start_host_loop(short port, OnFail onFail);
+        static extern void start_host_loop(OnFail onFail);
 
-        start_host_loop(port, (err) => {
+        start_host_loop((err) => {
             _success = false;
             IsHost = false;
             GD.PrintErr($"SERVER - {err}");

@@ -80,14 +80,14 @@ public partial class MainMenu : Node3D {
         this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
 
         this.HostButton.Pressed += () => {
-            if (NetworkClient.StartHostLoop(4000)) {
-                this.nw.Connect("localhost:4000");
+            if (NetworkClient.StartHostLoop()) {
+                this.nw.Connect("localhost");
                 this.OnConnect();
             }
         };
 
         this.ConnectButton.Pressed += () => {
-            this.nw.Connect("localhost:4000");
+            this.nw.Connect("localhost");
             this.OnConnect();
         };
     }

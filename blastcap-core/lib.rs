@@ -35,16 +35,13 @@ sharpify::constants!(
 );
 
 #[unsafe(no_mangle)]
-pub extern "C" fn start_host_loop(
-    port: u16,
-    on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
-) {
+pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi::c_char)) {
     let (mut metadata, mut recv) = Metadata::grab_host();
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _enter = rt.enter();
         let Err(err): anyhow::Result<()> = rt.block_on(async move {
-            let mut host = NetworkHost::tcp(port).await?;
+            let mut host = NetworkHost::create().await?;
             let mut data = ServerData::default();
             let mut state: Box<dyn State> = LobbyState::new();
             let mut last_tick = Instant::now();
@@ -117,7 +114,7 @@ impl ClientHandle {
         let (server_send, server_recv) = tokio::sync::mpsc::channel(1000);
         let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
         let (metadata_send, metadata_recv) = tokio::sync::mpsc::channel(10);
-        Metadata::init_tcp();
+        Metadata::init();
         Box::leak(Box::new(ClientHandle {
             recv: server_recv,
             send: client_send,
@@ -153,8 +150,8 @@ impl ClientHandle {
     pub unsafe extern "C" fn start_client_loop(self: *mut Self, addr: *const std::ffi::c_char) {
         let client = unsafe { &mut *self } as &mut ClientHandle;
 
-        async fn client_func<A: ToSocketAddrs + std::fmt::Debug>(
-            addr: A,
+        async fn client_func(
+            addr: String,
             server_send: Sender<ServerMessage>,
             mut client_req_recv: Receiver<ClientRequest>,
             mut metadata_req_recv: Receiver<MetadataTask>,
@@ -162,7 +159,7 @@ impl ClientHandle {
             println!("CLIENT - connecting to {addr:?}");
             let m_holder = Metadata::grab_client().await;
             println!("Metadata status: {m_holder:?}",);
-            let mut client = NetworkClient::tcp(addr).await?;
+            let mut client = NetworkClient::create(addr).await?;
             let mut tick_counter: usize = 0;
             loop {
                 let poll = tokio::select! {
