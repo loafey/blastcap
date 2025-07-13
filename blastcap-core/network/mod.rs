@@ -12,13 +12,17 @@ use crate::network::{
 use async_trait::async_trait;
 pub use socket_addr_ext::*;
 use std::{
+    fmt::Debug,
     net::SocketAddr,
     ops::{Deref, DerefMut},
     sync::LazyLock,
 };
 use tokio::{
     net::ToSocketAddrs,
-    sync::{Mutex, mpsc::Sender},
+    sync::{
+        Mutex,
+        mpsc::{Receiver, Sender, channel},
+    },
 };
 
 pub const TICK_RATE: usize = 30;
@@ -49,6 +53,7 @@ impl NetworkClient {
 
 pub enum ClientPoll {
     Message(ServerMessage),
+    Metadata(MetadataTask),
     Tick,
 }
 
@@ -103,7 +108,29 @@ pub trait NetworkHostExt {
     fn get_client_count(&self) -> u32;
 }
 
-static META_DATA: LazyLock<Mutex<Option<Metadata>>> = LazyLock::new(Default::default);
+#[allow(clippy::type_complexity)]
+static META_DATA: LazyLock<Mutex<Option<Result<Metadata, Sender<MetadataTask>>>>> =
+    LazyLock::new(Default::default);
+pub enum MetadataHolder {
+    Owned(Metadata),
+    NotOwned(Sender<MetadataTask>),
+}
+impl Debug for MetadataHolder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Owned(_) => write!(f, "Owned"),
+            Self::NotOwned(_) => write!(f, "NotOwned"),
+        }
+    }
+}
+impl MetadataHolder {
+    pub async fn act(&self, act: MetadataTask) -> anyhow::Result<()> {
+        match self {
+            MetadataHolder::Owned(metadata) => act(metadata),
+            MetadataHolder::NotOwned(sender) => Ok(sender.send(act).await?),
+        }
+    }
+}
 
 pub struct Metadata {
     inner: Box<dyn MetadataExt + 'static + Send + Sync>,
@@ -113,13 +140,36 @@ impl Metadata {
     pub fn init_tcp() {
         let tcp = Box::new(TcpMetadata::new());
         let mut lock = META_DATA.blocking_lock();
-        *lock = Some(Metadata { inner: tcp });
+        *lock = Some(Ok(Metadata { inner: tcp }));
     }
-    pub fn grab_host() -> Option<Self> {
-        META_DATA.blocking_lock().take()
+    pub fn grab_host() -> (Self, Receiver<MetadataTask>) {
+        let mut lock = META_DATA.blocking_lock();
+        match &*lock {
+            Some(i) => match i {
+                Ok(_) => {
+                    let (send, recv) = channel(1);
+                    let mut wrapped = Some(Err(send));
+                    std::mem::swap(&mut wrapped, &mut *lock);
+                    (wrapped.unwrap().unwrap(), recv)
+                }
+                Err(_) => panic!("metadata has already been grabbed"),
+            },
+            None => panic!("metadata has not been initialized"),
+        }
     }
-    pub async fn grab_client() -> Option<Self> {
-        META_DATA.lock().await.take()
+    pub async fn grab_client() -> MetadataHolder {
+        let mut lock = META_DATA.lock().await;
+        match &*lock {
+            Some(_) => {
+                let mut wrapped = None;
+                std::mem::swap(&mut wrapped, &mut *lock);
+                match wrapped.unwrap() {
+                    Ok(o) => MetadataHolder::Owned(o),
+                    Err(o) => MetadataHolder::NotOwned(o),
+                }
+            }
+            None => panic!("metadata has not been initialized"),
+        }
     }
 }
 impl Deref for Metadata {

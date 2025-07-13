@@ -36,9 +36,7 @@ pub extern "C" fn start_host_loop(
     port: u16,
     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 ) {
-    let Some(mut metadata) = Metadata::grab_host() else {
-        panic!("something else has claimed metadata")
-    };
+    let (mut metadata, mut recv) = Metadata::grab_host();
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _enter = rt.enter();
@@ -48,9 +46,15 @@ pub extern "C" fn start_host_loop(
             let mut state: Box<dyn State> = LobbyState::new();
             let mut last_tick = Instant::now();
             loop {
-                let Ok(poll) = host.poll().await else {
-                    break;
+                let poll = tokio::select! {
+                    poll = host.poll() => poll,
+                    task = recv.recv() => {
+                        let Some(task) = task else { continue };
+                        task(&metadata)?;
+                        continue;
+                    }
                 };
+                let Ok(poll) = poll else { break };
                 metadata.tick().await?;
                 if let Some(new_state) = state
                     .handle_req(
@@ -147,10 +151,8 @@ impl ClientHandle {
             mut client_req_recv: Receiver<ClientRequest>,
         ) -> anyhow::Result<()> {
             println!("CLIENT - connecting to {addr:?}");
-            println!(
-                "Has metadata been taken already: {}",
-                Metadata::grab_client().await.is_none()
-            );
+            let m_holder = Metadata::grab_client().await;
+            println!("Metadata status: {m_holder:?}",);
             let mut client = NetworkClient::tcp(addr).await?;
             let mut tick_counter: usize = 0;
             loop {
@@ -168,7 +170,10 @@ impl ClientHandle {
                 let Some(res) = poll else { continue };
                 match res {
                     ClientPoll::Message(client_message) => server_send.send(client_message).await?,
-                    ClientPoll::Tick => tick_counter = tick_counter.wrapping_add(1),
+                    ClientPoll::Tick => {
+                        tick_counter = tick_counter.wrapping_add(1);
+                    }
+                    ClientPoll::Metadata(task) => m_holder.act(task).await?,
                 }
             }
             Ok(())
