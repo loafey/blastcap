@@ -1,6 +1,7 @@
 pub mod channel;
 pub mod messages;
 mod socket_addr_ext;
+mod steam;
 mod tcp;
 
 static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
@@ -25,6 +26,10 @@ use tokio::{
         oneshot::channel as oneshot,
     },
 };
+
+fn use_tcp() -> bool {
+    std::env::var("BLASTCAP_USE_TCP").is_ok()
+}
 
 pub const TICK_RATE: usize = 30;
 
@@ -52,7 +57,10 @@ impl NetworkClient {
     }
 
     pub async fn create(addr: String) -> anyhow::Result<Self> {
-        Self::tcp(format!("{addr}:8000")).await
+        match use_tcp() {
+            true => Self::tcp(format!("{addr}:8000")).await,
+            false => todo!("steam client"),
+        }
     }
 }
 
@@ -90,7 +98,10 @@ impl NetworkHost {
         })
     }
     pub async fn create() -> anyhow::Result<Self> {
-        Self::tcp(8000).await
+        match use_tcp() {
+            true => Self::tcp(8000).await,
+            false => todo!("steam host"),
+        }
     }
 }
 
@@ -167,7 +178,10 @@ impl Metadata {
         }
     }
     pub fn init() {
-        Self::init_tcp();
+        match use_tcp() {
+            true => Self::init_tcp(),
+            false => todo!("steam metadata"),
+        }
     }
     fn init_tcp() {
         let tcp = Box::new(TcpMetadata::new());
