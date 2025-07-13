@@ -47,6 +47,7 @@ public partial class MainMenu : Node3D {
             this.DrawPlayerList();
         };
         this.nw.Inner.OnStatus += (count, diff) => { };
+        this.nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
         this.nw.Inner.OnPlayerList += (playerList) => {
             this.players.Clear();
             foreach (var player in playerList) {

@@ -121,8 +121,6 @@ public partial class Game : Node3D {
             actor.MoveTo(goals);
         };
 
-        this.nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
-
         this.nw.Inner.OnAction += (action, actorIndex, targetIndex, targetDamage, time) => {
             var children = this.ActorHolder.GetChildren();
             var actor = (Actor)children[(int)actorIndex];
