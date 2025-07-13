@@ -14,6 +14,7 @@
     <Exec Command="cargo build" WorkingDirectory="$(ProjectDir)/.." />
     <!-- <Exec Command="cp target/debug/libblastcap.so blastcap-frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
     <Exec Command="cp target/debug/libblastcap.so blastcap-frontend/.godot/mono/temp/bin/Debug/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
+    <Exec Command="cp sys/* blastcap-frontend/.godot/mono/temp/bin/Debug/" WorkingDirectory="$(ProjectDir)/.." />
   </Target>
   <Target Name="PreBuildRelease" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Release'">
     <Exec Command="cargo build --release" WorkingDirectory="$(ProjectDir)/.." />

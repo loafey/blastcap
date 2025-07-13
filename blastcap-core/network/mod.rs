@@ -8,6 +8,7 @@ static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().u
 
 use crate::network::{
     messages::{ClientRequest, ServerMessage},
+    steam::SteamMetadata,
     tcp::{TcpClient, TcpHost, TcpMetadata},
 };
 use async_trait::async_trait;
@@ -178,15 +179,12 @@ impl Metadata {
         }
     }
     pub fn init() {
-        match use_tcp() {
-            true => Self::init_tcp(),
-            false => todo!("steam metadata"),
-        }
-    }
-    fn init_tcp() {
-        let tcp = Box::new(TcpMetadata::new());
+        let inner: Box<dyn MetadataExt + Send + Sync + 'static> = match use_tcp() {
+            true => Box::new(TcpMetadata::new()),
+            false => Box::new(SteamMetadata::new().unwrap()),
+        };
         let mut lock = META_DATA.blocking_lock();
-        *lock = Some(Ok(Metadata { inner: tcp }));
+        *lock = Some(Ok(Metadata { inner }));
     }
     pub fn grab_host() -> (Self, Receiver<MetadataTask>) {
         let mut lock = META_DATA.blocking_lock();

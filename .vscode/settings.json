@@ -7,7 +7,7 @@
         "**/*.uid": true,
         // "**/*.tscn": true,
         // "**/*.sln": true,
-        "**/*.so": true,
+        // "**/*.so": true,
         "**/*.lock": true,
         "godot/.godot": true,
         ".envrc": true,

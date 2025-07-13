@@ -1,10 +1,11 @@
 use std::net::SocketAddr;
 
 use crate::network::{
-    ClientPoll, HostPoll, NetworkClientExt, NetworkHostExt,
+    ClientPoll, HostPoll, MetadataExt, NetworkClientExt, NetworkHostExt,
     messages::{ClientRequest, ServerMessage},
 };
 use async_trait::async_trait;
+use steamworks::Client;
 
 pub(super) struct SteamClient {}
 #[async_trait]
@@ -44,6 +45,26 @@ impl NetworkHostExt for SteamHost {
     }
 
     fn get_client_count(&self) -> u32 {
+        todo!()
+    }
+}
+
+pub(super) struct SteamMetadata {
+    client: Client,
+}
+impl SteamMetadata {
+    pub fn new() -> anyhow::Result<Self> {
+        let client = steamworks::Client::init_app(480)?;
+        Ok(Self { client })
+    }
+}
+
+#[async_trait]
+impl MetadataExt for SteamMetadata {
+    fn get_my_name(&self) -> anyhow::Result<String> {
+        todo!()
+    }
+    async fn tick(&self) -> anyhow::Result<()> {
         todo!()
     }
 }

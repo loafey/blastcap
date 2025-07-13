@@ -16,8 +16,7 @@ public partial class Linker : Node {
                 var lib = NativeLibrary.Load(path);
                 return lib;
             } catch (Exception e) {
-                GD.Print($"Tried to load \"{libraryName}\" but got error: \"{e}\"");
-                System.Environment.Exit(1);
+                OS.Crash($"Tried to load \"{libraryName}\" but got error: \"{e}\"");
             }
         }
         return IntPtr.Zero;
