@@ -36,7 +36,7 @@ pub extern "C" fn start_host_loop(
     port: u16,
     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 ) {
-    let Some(mut metadata) = Metadata::grab() else {
+    let Some(mut metadata) = Metadata::grab_host() else {
         panic!("something else has claimed metadata")
     };
     std::thread::spawn(move || {
@@ -149,7 +149,7 @@ impl ClientHandle {
             println!("CLIENT - connecting to {addr:?}");
             println!(
                 "Has metadata been taken already: {}",
-                Metadata::async_grab().await.is_none()
+                Metadata::grab_client().await.is_none()
             );
             let mut client = NetworkClient::tcp(addr).await?;
             let mut tick_counter: usize = 0;

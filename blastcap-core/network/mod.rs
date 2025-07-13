@@ -115,10 +115,10 @@ impl Metadata {
         let mut lock = META_DATA.blocking_lock();
         *lock = Some(Metadata { inner: tcp });
     }
-    pub fn grab() -> Option<Self> {
+    pub fn grab_host() -> Option<Self> {
         META_DATA.blocking_lock().take()
     }
-    pub async fn async_grab() -> Option<Self> {
+    pub async fn grab_client() -> Option<Self> {
         META_DATA.lock().await.take()
     }
 }
