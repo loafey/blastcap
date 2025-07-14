@@ -23,7 +23,6 @@ impl State for LobbyState {
             data,
             host,
             last_tick,
-            metadata,
         }: Arg<'l>,
     ) -> Res {
         match req {
@@ -54,7 +53,6 @@ impl State for LobbyState {
                         data,
                         host,
                         last_tick,
-                        metadata,
                     },
                 )
                 .await

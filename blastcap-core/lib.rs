@@ -36,7 +36,6 @@ sharpify::constants!(
 
 #[unsafe(no_mangle)]
 pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi::c_char)) {
-    let (mut metadata, mut recv) = Metadata::grab_host();
     std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _enter = rt.enter();
@@ -46,16 +45,7 @@ pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi:
             let mut state: Box<dyn State> = LobbyState::new();
             let mut last_tick = Instant::now();
             loop {
-                let poll = tokio::select! {
-                    poll = host.poll() => poll,
-                    task = recv.recv() => {
-                        let Some(task) = task else { continue };
-                        task(&metadata)?;
-                        continue;
-                    }
-                };
-                let Ok(poll) = poll else { break };
-                metadata.tick().await?;
+                let Ok(poll) = host.poll().await else { break };
                 if let Some(new_state) = state
                     .handle_req(
                         poll,
@@ -63,7 +53,6 @@ pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi:
                             data: &mut data,
                             host: &mut host,
                             last_tick: &mut last_tick,
-                            metadata: &mut metadata,
                         },
                     )
                     .await?

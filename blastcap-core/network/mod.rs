@@ -8,7 +8,7 @@ static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().u
 
 use crate::network::{
     messages::{ClientRequest, ServerMessage},
-    steam::SteamMetadata,
+    steam::{SteamHost, SteamMetadata},
     tcp::{TcpClient, TcpHost, TcpMetadata},
 };
 use async_trait::async_trait;
@@ -93,16 +93,13 @@ impl DerefMut for NetworkHost {
     }
 }
 impl NetworkHost {
-    async fn tcp(port: u16) -> anyhow::Result<Self> {
-        Ok(Self {
-            inner: Box::new(TcpHost::new(port).await?),
-        })
-    }
     pub async fn create() -> anyhow::Result<Self> {
-        match use_tcp() {
-            true => Self::tcp(8000).await,
-            false => todo!("steam host"),
-        }
+        Ok(Self {
+            inner: match use_tcp() {
+                true => Box::new(TcpHost::new(8000).await?),
+                false => Box::new(SteamHost::new().await?),
+            },
+        })
     }
 }
 
@@ -186,8 +183,8 @@ impl Metadata {
         let mut lock = META_DATA.blocking_lock();
         *lock = Some(Ok(Metadata { inner }));
     }
-    pub fn grab_host() -> (Self, Receiver<MetadataTask>) {
-        let mut lock = META_DATA.blocking_lock();
+    pub async fn grab_host() -> (Self, Receiver<MetadataTask>) {
+        let mut lock = META_DATA.lock().await;
         match &*lock {
             Some(i) => match i {
                 Ok(_) => {
@@ -228,5 +225,6 @@ pub trait MetadataExt {
     fn get_my_id(&self) -> u64;
     fn get_name(&self, id: u64) -> anyhow::Result<String>;
     fn get_avatar(&self, id: u64) -> Option<(Vec<u8>, u16, u16)>;
+    fn create_lobby(&self) -> anyhow::Result<u64>;
     async fn tick(&self) -> anyhow::Result<()>;
 }

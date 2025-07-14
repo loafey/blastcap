@@ -19,7 +19,6 @@ pub struct Arg<'l> {
     pub data: &'l mut ServerData,
     pub host: &'l mut NetworkHost,
     pub last_tick: &'l mut Instant,
-    pub metadata: &'l mut Metadata,
 }
 impl<'l> Arg<'l> {
     pub unsafe fn clone(&self) -> Self {

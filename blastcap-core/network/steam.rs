@@ -1,11 +1,14 @@
 use std::net::SocketAddr;
 
 use crate::network::{
-    ClientPoll, HostPoll, MetadataExt, NetworkClientExt, NetworkHostExt,
+    ClientPoll, HostPoll, Metadata, MetadataExt, MetadataTask, NetworkClientExt, NetworkHostExt,
+    TICK_RATE,
     messages::{ClientRequest, ServerMessage},
 };
 use async_trait::async_trait;
-use steamworks::{Client, SteamId};
+use futures::channel::oneshot;
+use steamworks::{Client, LobbyCreated, LobbyEnter, SteamId};
+use tokio::sync::mpsc::Receiver;
 
 pub(super) struct SteamClient {}
 #[async_trait]
@@ -17,35 +20,59 @@ impl NetworkClientExt for SteamClient {
         todo!()
     }
 }
-pub(super) struct SteamHost {}
+pub(super) struct SteamHost {
+    metadata: Metadata,
+    metadata_recv: Receiver<MetadataTask>,
+    lobby_id: u64,
+}
+impl SteamHost {
+    pub async fn new() -> anyhow::Result<Self> {
+        let (metadata, metadata_recv) = Metadata::grab_host().await;
+        let lobby_id = metadata.create_lobby()?;
+
+        Ok(Self {
+            metadata,
+            metadata_recv,
+            lobby_id,
+        })
+    }
+}
 
 #[async_trait]
 impl NetworkHostExt for SteamHost {
     async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
-        todo!()
+        todo!("mock")
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
-        todo!()
+        self.metadata.tick().await?;
+        tokio::select! {
+            _ = tokio::time::sleep(std::time::Duration::from_secs_f64(const { 1.0 / TICK_RATE as f64 })) => {
+                while let Ok(task) = self.metadata_recv.try_recv() {
+                    task(&self.metadata)?;
+                }
+                Ok(HostPoll::Tick)
+            }
+        }
     }
 
     async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()> {
-        todo!()
+        todo!("send")
     }
 
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
-        todo!()
+        todo!("broadcast")
     }
 
     fn remove_client(&mut self, addr: SocketAddr) {
-        todo!()
+        todo!("remove_client")
     }
 
     fn get_clients(&self) -> Vec<SocketAddr> {
-        todo!()
+        todo!("get_clients")
     }
 
     fn get_client_count(&self) -> u32 {
-        todo!()
+        todo!("get_client_count")
     }
 }
 
@@ -83,5 +110,26 @@ impl MetadataExt for SteamMetadata {
             .get_friend(SteamId::from_raw(id))
             .medium_avatar()
             .map(|a| (a, 64, 64))
+    }
+
+    fn create_lobby(&self) -> anyhow::Result<u64> {
+        self.client
+            .register_callback(|p: LobbyEnter| println!("---- {p:?}"));
+        self.client
+            .register_callback(|p: LobbyCreated| println!("---- {p:?}"));
+        let (send, recv) = std::sync::mpsc::channel();
+        self.client
+            .matchmaking()
+            .create_lobby(steamworks::LobbyType::FriendsOnly, 8, move |r| {
+                let Err(e) = send.send(r) else { return };
+                panic!("{e}");
+            });
+        let lobby_id = loop {
+            self.client.run_callbacks();
+            if let Ok(id) = recv.try_recv() {
+                break id?.raw();
+            }
+        };
+        Ok(lobby_id)
     }
 }

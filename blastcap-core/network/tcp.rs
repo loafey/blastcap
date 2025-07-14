@@ -203,4 +203,8 @@ impl MetadataExt for TcpMetadata {
     async fn tick(&self) -> anyhow::Result<()> {
         Ok(())
     }
+
+    fn create_lobby(&self) -> anyhow::Result<u64> {
+        Ok(0)
+    }
 }
