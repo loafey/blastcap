@@ -87,14 +87,59 @@ include!("lib_gen.rs");
 
 include!("lib_poll.rs");
 
-// ///
-// /// # Safety
-// #[unsafe(no_mangle)]
-// pub unsafe extern "C" fn create_client_handle(
-//     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
-// ) -> *mut ClientHandle {
-// }
-
+///
+/// # Safety
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn register_panic_callback(
+    callback: unsafe extern "C" fn(*const std::ffi::c_char),
+) {
+    std::panic::set_hook(Box::new(move |e| {
+        let thread = std::thread::current()
+            .name()
+            .map(|a| a.to_string())
+            .unwrap_or("<unnamed>".to_string());
+        let thread = format!("'{thread}'(id: {:?})", std::thread::current().id());
+        let location = e
+            .location()
+            .map(|e| format!("{}:{}:{}", e.file(), e.line(), e.column()))
+            .unwrap_or("unknown location".to_string());
+        let payload = if let Some(s) = e.payload().downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = e.payload().downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "unknown error".to_string()
+        };
+        let payload = payload
+            .lines()
+            .map(|a| format!("    {a}"))
+            .collect::<Vec<_>>()
+            .join("\n");
+        let top = format!("thread {thread} panicked");
+        let location = format!("crashed at {location}:");
+        let end = if payload.contains("Stack backtrace:") {
+            ""
+        } else {
+            "\nnote: run with `RUST_BACKTRACE=1` environment variable to display a backtrace"
+        };
+        let final_string = format!(
+            "{0}\n{top}\n{location}\n{payload}{end}",
+            "=".repeat(payload.lines().map(|l| l.len()).max().unwrap_or(4).min(60))
+        );
+        unsafe {
+            let Ok(cstr) = CString::new(final_string.clone()) else {
+                eprintln!("= Error string contained multiple null!");
+                eprintln!("{final_string}");
+                let err_str =
+                    c"Error contains multiple null! Please look at the terminal output!".as_ptr();
+                callback(err_str);
+                return;
+            };
+            let raw = cstr.as_ptr();
+            callback(raw);
+        }
+    }));
+}
 pub struct ClientHandle {
     recv: Receiver<ServerMessage>,
     send: Sender<ClientRequest>,

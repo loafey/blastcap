@@ -16,10 +16,9 @@ public partial class NetworkClient {
     public NetworkClient(OnFail onFail) {
         [DllImport("blastcap", SetLastError = true)]
         static extern unsafe void* create_client(OnFail onFail);
-
-        unsafe {
-            this._inner = create_client(onFail);
-        }
+        GD.Print("= Creating network client = ");
+        unsafe { this._inner = create_client(onFail); }
+        GD.Print("= Done creating network client =");
     }
 
     public bool IsConnected() {
