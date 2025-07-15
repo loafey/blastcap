@@ -1,6 +1,6 @@
 use crate::network::{
     ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, MetadataExt, NetworkClientExt, NetworkHostExt,
-    ServerMessage, TICK_RATE, channel::Channel,
+    ServerMessage, channel::Channel, tick,
 };
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
@@ -47,7 +47,7 @@ impl NetworkClientExt for TcpClient {
                 let Some(msg) = msg else { panic!("no clients somehow") };
                 Ok(ClientPoll::Message(msg))
             }
-            _ = tokio::time::sleep(std::time::Duration::from_secs_f64(const { 1.0 / TICK_RATE as f64})) => {
+            _ = tick() => {
                 Ok(ClientPoll::Tick)
             }
         }
@@ -136,7 +136,7 @@ impl NetworkHostExt for TcpHost {
                 let Some((addr, req)) = msg else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr, req })
             }
-            _ = tokio::time::sleep(std::time::Duration::from_secs_f64(const { 1.0 / TICK_RATE as f64 })) => {
+            _ = tick() => {
                 Ok(HostPoll::Tick)
             }
         }
@@ -180,11 +180,13 @@ impl NetworkHostExt for TcpHost {
 }
 
 pub struct TcpMetadata {
-    id: u64,
+    _id: u64,
 }
 impl TcpMetadata {
     pub fn new() -> Self {
-        Self { id: rand::random() }
+        Self {
+            _id: rand::random(),
+        }
     }
 }
 #[async_trait]
@@ -194,7 +196,7 @@ impl MetadataExt for TcpMetadata {
     }
 
     fn get_my_id(&self) -> u64 {
-        self.id
+        self._id
     }
 
     fn get_name(&self, id: u64) -> anyhow::Result<String> {

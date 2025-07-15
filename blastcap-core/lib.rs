@@ -11,16 +11,14 @@ use crate::{
         state::{LobbyState, State},
     },
     network::{
-        ClientPoll, Metadata, MetadataTask, NetworkClient, NetworkHost,
+        ClientPoll, NetworkClient, NetworkHost,
         messages::{ClientRequest, ServerMessage},
+        metadata, metadata_block,
     },
 };
 use std::ffi::{CStr, CString};
 use tokio::{
-    sync::{
-        mpsc::{Receiver, Sender},
-        oneshot::channel as oneshot,
-    },
+    sync::mpsc::{Receiver, Sender},
     time::Instant,
 };
 
@@ -133,8 +131,6 @@ pub struct ClientHandle {
     send: Sender<ClientRequest>,
     server_send: Option<Sender<ServerMessage>>,
     client_recv: Option<Receiver<ClientRequest>>,
-    metadata_send: Sender<MetadataTask>,
-    metadata_recv: Option<Receiver<MetadataTask>>,
     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 }
 impl ClientHandle {
@@ -146,16 +142,12 @@ impl ClientHandle {
     ) -> *mut Self {
         let (server_send, server_recv) = tokio::sync::mpsc::channel(1000);
         let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
-        let (metadata_send, metadata_recv) = tokio::sync::mpsc::channel(10);
-        Metadata::init();
         Box::leak(Box::new(ClientHandle {
             recv: server_recv,
             send: client_send,
             on_fail,
             server_send: Some(server_send),
             client_recv: Some(client_recv),
-            metadata_send,
-            metadata_recv: Some(metadata_recv),
         }))
     }
 
@@ -187,11 +179,8 @@ impl ClientHandle {
             addr: String,
             server_send: Sender<ServerMessage>,
             mut client_req_recv: Receiver<ClientRequest>,
-            mut metadata_req_recv: Receiver<MetadataTask>,
         ) -> anyhow::Result<()> {
             println!("CLIENT - connecting to {addr:?}");
-            let m_holder = Metadata::grab_client().await;
-            println!("Metadata status: {m_holder:?}",);
             let mut client = NetworkClient::create(addr).await?;
             let mut tick_counter: usize = 0;
             loop {
@@ -203,11 +192,6 @@ impl ClientHandle {
                     msg = client_req_recv.recv() => {
                         let Some(msg) = msg else { break };
                         client.send(msg).await?;
-                        None
-                    }
-                    task = metadata_req_recv.recv() => {
-                        let Some(task) = task else { break };
-                        m_holder.act(task).await?;
                         None
                     }
                 };
@@ -230,18 +214,10 @@ impl ClientHandle {
         else {
             return;
         };
-        let Some(metadata_task_recv) = client.metadata_recv.take() else {
-            return;
-        };
         std::thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().expect("Unable to create Runtime");
             let _enter = rt.enter();
-            let Err(err) = rt.block_on(client_func(
-                addr,
-                server_send,
-                client_recv,
-                metadata_task_recv,
-            )) else {
+            let Err(err) = rt.block_on(client_func(addr, server_send, client_recv)) else {
                 return;
             };
             unsafe {
@@ -252,43 +228,19 @@ impl ClientHandle {
         });
     }
 
-    pub fn metadata<T: Send + 'static, F: FnOnce(&Metadata) -> T + Send + 'static>(
-        &self,
-        f: F,
-    ) -> anyhow::Result<T> {
-        let (send, recv) = oneshot();
-        if let Some(m) = unsafe { Metadata::peek() } {
-            _ = send.send(f(m));
-        } else {
-            _ = self.metadata_send.blocking_send(Box::new(move |m| {
-                _ = send.send(f(m));
-                Ok(())
-            }));
-        }
-        Ok(recv.blocking_recv()?)
-    }
-
     ///
     /// # Safety
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn metadata_get_id(self: *mut Self) -> u64 {
-        let client = unsafe { &mut *self } as &mut ClientHandle;
-
-        let Ok(id) = client.metadata(|m| m.get_my_id()) else {
-            return 0;
-        };
-        id
+        metadata_block(|m| m.get_my_id())
     }
 
     ///
     /// # Safety
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn metadata_get_name(self: *mut Self, id: u64) -> *mut i8 {
-        let client = unsafe { &mut *self } as &mut ClientHandle;
-
-        let Ok(Ok(name)) = client.metadata(move |m| m.get_name(id)) else {
-            return std::ptr::null_mut();
-        };
+        let name =
+            metadata_block(move |m| m.get_name(id)).unwrap_or_else(|_| "unknown name".to_string());
         let Ok(str) = CString::new(name) else {
             return std::ptr::null_mut();
         };
@@ -303,8 +255,7 @@ impl ClientHandle {
         id: u64,
         callback: extern "C" fn(*const u8, u32, u16, u16),
     ) {
-        let client = unsafe { &mut *self } as &mut ClientHandle;
-        let Ok(Some((data, width, height))) = client.metadata(move |m| m.get_avatar(id)) else {
+        let Some((data, width, height)) = metadata_block(move |m| m.get_avatar(id)) else {
             return;
         };
 

@@ -1,12 +1,11 @@
 use crate::network::{
-    ClientPoll, HostPoll, Metadata, MetadataExt, MetadataTask, NetworkClientExt, NetworkHostExt,
-    TICK_RATE,
+    ClientPoll, HostPoll, MetadataExt, NetworkClientExt, NetworkHostExt,
     messages::{ClientRequest, ServerMessage},
+    metadata, tick,
 };
 use async_trait::async_trait;
 use std::net::SocketAddr;
 use steamworks::{Client, LobbyCreated, LobbyEnter, SteamId};
-use tokio::sync::mpsc::Receiver;
 
 pub struct SteamClient {}
 impl SteamClient {
@@ -25,18 +24,13 @@ impl NetworkClientExt for SteamClient {
     }
 }
 pub struct SteamHost {
-    metadata: Metadata,
-    metadata_recv: Receiver<MetadataTask>,
     _lobby_id: u64,
 }
 impl SteamHost {
     pub async fn new() -> anyhow::Result<Self> {
-        let (metadata, metadata_recv) = Metadata::grab_host().await;
-        let lobby_id = metadata.create_lobby()?;
+        let lobby_id = metadata(|m| m.create_lobby()).await?;
 
         Ok(Self {
-            metadata,
-            metadata_recv,
             _lobby_id: lobby_id,
         })
     }
@@ -48,12 +42,8 @@ impl NetworkHostExt for SteamHost {
         todo!("mock")
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
-        self.metadata.tick().await?;
         tokio::select! {
-            _ = tokio::time::sleep(std::time::Duration::from_secs_f64(const { 1.0 / TICK_RATE as f64 })) => {
-                while let Ok(task) = self.metadata_recv.try_recv() {
-                    task(&self.metadata)?;
-                }
+            _ = tick() => {
                 Ok(HostPoll::Tick)
             }
         }
@@ -84,9 +74,9 @@ pub struct SteamMetadata {
     client: Client,
 }
 impl SteamMetadata {
-    pub fn new() -> anyhow::Result<Self> {
-        let client = steamworks::Client::init_app(480)?;
-        Ok(Self { client })
+    pub fn new() -> Self {
+        let client = steamworks::Client::init_app(480).unwrap();
+        Self { client }
     }
 }
 

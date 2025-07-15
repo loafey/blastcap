@@ -20,3 +20,9 @@ fn use_tcp() -> bool {
 }
 
 pub const TICK_RATE: usize = 30;
+pub async fn tick() {
+    tokio::time::sleep(std::time::Duration::from_secs_f64(
+        const { 1.0 / TICK_RATE as f64 },
+    ))
+    .await
+}
