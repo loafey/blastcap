@@ -33,7 +33,10 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
                         let Err(e) = act(&m) else { continue };
                         panic!("metadata panic: {e}")
                     }
-                    _ = tick() => {}
+                    _ = tick() => {
+                        let Err(e) = m.tick().await else { continue };
+                        panic!("metadata tick panic: {e}")
+                    }
                 }
             }
         });
