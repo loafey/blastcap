@@ -86,5 +86,6 @@ pub trait MetadataExt {
     fn get_name(&self, id: u64) -> anyhow::Result<String>;
     fn get_avatar(&self, id: u64) -> Option<(Vec<u8>, u16, u16)>;
     fn create_lobby(&self) -> anyhow::Result<u64>;
+    fn register_callbacks(&self);
     async fn tick(&self) -> anyhow::Result<()>;
 }

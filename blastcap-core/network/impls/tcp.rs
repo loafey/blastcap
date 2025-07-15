@@ -191,6 +191,8 @@ impl TcpMetadata {
 }
 #[async_trait]
 impl MetadataExt for TcpMetadata {
+    fn register_callbacks(&self) {}
+
     fn get_avatar(&self, _id: u64) -> Option<(Vec<u8>, u16, u16)> {
         None
     }
