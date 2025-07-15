@@ -1,7 +1,4 @@
-use crate::network::{
-    impls::{steam::SteamHost, tcp::TcpHost},
-    messages::{ClientRequest, ServerMessage},
-};
+use crate::network::messages::{ClientRequest, ServerMessage};
 use async_trait::async_trait;
 use std::{
     net::SocketAddr,
@@ -10,6 +7,11 @@ use std::{
 
 pub struct NetworkHost {
     inner: Box<dyn NetworkHostExt>,
+}
+impl NetworkHost {
+    pub fn new<T: NetworkHostExt + 'static>(t: T) -> Self {
+        NetworkHost { inner: Box::new(t) }
+    }
 }
 unsafe impl Send for NetworkHost {}
 impl Deref for NetworkHost {
@@ -22,16 +24,6 @@ impl Deref for NetworkHost {
 impl DerefMut for NetworkHost {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut *self.inner
-    }
-}
-impl NetworkHost {
-    pub async fn create() -> anyhow::Result<Self> {
-        Ok(Self {
-            inner: match super::use_tcp() {
-                true => Box::new(TcpHost::new(8000).await?),
-                false => Box::new(SteamHost::new().await?),
-            },
-        })
     }
 }
 

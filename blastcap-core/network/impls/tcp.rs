@@ -1,6 +1,6 @@
 use crate::network::{
-    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, MetadataExt, NetworkClientExt, NetworkHostExt,
-    ServerMessage, channel::Channel, tick,
+    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, MetadataExt, NetworkClientExt, NetworkHost,
+    NetworkHostExt, ServerMessage, channel::Channel, tick,
 };
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
@@ -209,7 +209,7 @@ impl MetadataExt for TcpMetadata {
         Ok(())
     }
 
-    fn create_lobby(&self) -> anyhow::Result<u64> {
-        Ok(0)
+    async fn create_lobby(&self) -> anyhow::Result<NetworkHost> {
+        Ok(NetworkHost::new(TcpHost::new(8000).await?))
     }
 }

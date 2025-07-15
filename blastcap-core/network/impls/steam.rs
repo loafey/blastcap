@@ -1,11 +1,14 @@
 use crate::network::{
-    ClientPoll, HostPoll, MetadataExt, NetworkClientExt, NetworkHostExt,
+    ClientPoll, HostPoll, MetadataExt, NetworkClientExt, NetworkHost, NetworkHostExt,
     messages::{ClientRequest, ServerMessage},
     metadata, tick,
 };
 use async_trait::async_trait;
-use std::net::SocketAddr;
-use steamworks::{Client, LobbyCreated, LobbyEnter, SteamId};
+use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
+use steamworks::{
+    Client, LobbyCreated, LobbyEnter, SteamId, networking_sockets::ListenSocket,
+    networking_types::NetworkingConfigEntry,
+};
 
 pub struct SteamClient {}
 impl SteamClient {
@@ -24,16 +27,8 @@ impl NetworkClientExt for SteamClient {
     }
 }
 pub struct SteamHost {
-    _lobby_id: u64,
-}
-impl SteamHost {
-    pub async fn new() -> anyhow::Result<Self> {
-        let lobby_id = metadata(|m| m.create_lobby()).await?;
-
-        Ok(Self {
-            _lobby_id: lobby_id,
-        })
-    }
+    lobby_id: u64,
+    listen_socket: ListenSocket,
 }
 
 #[async_trait]
@@ -43,9 +38,7 @@ impl NetworkHostExt for SteamHost {
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
         tokio::select! {
-            _ = tick() => {
-                Ok(HostPoll::Tick)
-            }
+            _ = tick() => Ok(HostPoll::Tick)
         }
     }
 
@@ -108,11 +101,7 @@ impl MetadataExt for SteamMetadata {
             .map(|a| (a, 64, 64))
     }
 
-    fn create_lobby(&self) -> anyhow::Result<u64> {
-        self.client
-            .register_callback(|p: LobbyEnter| println!("---- {p:?}"));
-        self.client
-            .register_callback(|p: LobbyCreated| println!("---- {p:?}"));
+    async fn create_lobby(&self) -> anyhow::Result<NetworkHost> {
         let (send, recv) = std::sync::mpsc::channel();
         self.client
             .matchmaking()
@@ -120,12 +109,19 @@ impl MetadataExt for SteamMetadata {
                 let Err(e) = send.send(r) else { return };
                 panic!("{e}");
             });
+        let listen_socket = self.client.networking_sockets().create_listen_socket_ip(
+            SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 8000)),
+            [],
+        )?;
         let lobby_id = loop {
             self.client.run_callbacks();
             if let Ok(id) = recv.try_recv() {
                 break id?.raw();
             }
         };
-        Ok(lobby_id)
+        Ok(NetworkHost::new(SteamHost {
+            lobby_id,
+            listen_socket,
+        }))
     }
 }

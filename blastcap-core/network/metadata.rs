@@ -1,11 +1,12 @@
 use async_trait::async_trait;
-use std::{ops::Deref, sync::LazyLock};
+use std::{ops::Deref, pin::Pin, sync::LazyLock};
 use tokio::sync::{
     mpsc::{Sender, channel},
     oneshot::channel as oneshot,
 };
 
 use crate::network::{
+    NetworkHost,
     impls::{steam::SteamMetadata, tcp::TcpMetadata},
     tick, use_tcp,
 };
@@ -30,7 +31,7 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
                 tokio::select! {
                     msg = recv.recv() => {
                         let Some(act) = msg else { break };
-                        let Err(e) = act(&m) else { continue };
+                        let Err(e) = act(unsafe{std::mem::transmute::<&Metadata, &'static Metadata>(&m)}).await else { continue };
                         panic!("metadata panic: {e}")
                     }
                     _ = tick() => {
@@ -46,30 +47,47 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
     send
 });
 
-pub async fn metadata<T: 'static + Send, F: FnOnce(&Metadata) -> T + 'static + Send>(f: F) -> T {
+pub async fn metadata<
+    T: 'static + Send,
+    I: FnOnce(&'static Metadata) -> F + Send + 'static,
+    F: Future<Output = T> + Send,
+>(
+    f: I,
+) -> T {
     let (send, recv) = oneshot();
     METADATA
         .send(Box::new(move |m| {
-            _ = send.send(f(m));
-            Ok(())
+            Box::pin(async move {
+                _ = send.send(f(m).await);
+                Ok(())
+            })
         }))
         .await
         .unwrap();
     recv.await.unwrap()
 }
 
-pub fn metadata_block<T: 'static + Send, F: FnOnce(&Metadata) -> T + 'static + Send>(f: F) -> T {
+pub fn metadata_block<
+    T: 'static + Send,
+    I: FnOnce(&'static Metadata) -> F + Send + 'static,
+    F: Future<Output = T> + Send,
+>(
+    f: I,
+) -> T {
     let (send, recv) = oneshot();
     METADATA
         .blocking_send(Box::new(move |m| {
-            _ = send.send(f(m));
-            Ok(())
+            Box::pin(async move {
+                _ = send.send(f(m).await);
+                Ok(())
+            })
         }))
         .unwrap();
     recv.blocking_recv().unwrap()
 }
 
-pub type MetadataTask = Box<dyn FnOnce(&Metadata) -> anyhow::Result<()> + Send>;
+pub type MetadataTask =
+    Box<dyn FnOnce(&'static Metadata) -> Pin<Box<dyn Future<Output = anyhow::Result<()>>>> + Send>;
 pub struct Metadata {
     inner: Box<dyn MetadataExt + 'static + Send + Sync>,
 }
@@ -85,7 +103,7 @@ pub trait MetadataExt {
     fn get_my_id(&self) -> u64;
     fn get_name(&self, id: u64) -> anyhow::Result<String>;
     fn get_avatar(&self, id: u64) -> Option<(Vec<u8>, u16, u16)>;
-    fn create_lobby(&self) -> anyhow::Result<u64>;
+    async fn create_lobby(&self) -> anyhow::Result<NetworkHost>;
     fn register_callbacks(&self);
     async fn tick(&self) -> anyhow::Result<()>;
 }

@@ -13,7 +13,7 @@ use crate::{
     network::{
         ClientPoll, NetworkClient, NetworkHost,
         messages::{ClientRequest, ServerMessage},
-        metadata_block,
+        metadata, metadata_block,
     },
 };
 use std::ffi::{CStr, CString};
@@ -37,7 +37,7 @@ pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi:
         let rt = tokio::runtime::Runtime::new().unwrap();
         let _enter = rt.enter();
         let Err(err): anyhow::Result<()> = rt.block_on(async move {
-            let mut host = NetworkHost::create().await?;
+            let mut host = metadata(async |a| a.create_lobby().await).await?;
             let mut data = ServerData::default();
             let mut state: Box<dyn State> = LobbyState::new();
             let mut last_tick = Instant::now();
@@ -232,15 +232,15 @@ impl ClientHandle {
     /// # Safety
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn metadata_get_id(self: *mut Self) -> u64 {
-        metadata_block(|m| m.get_my_id())
+        metadata_block(async |m| m.get_my_id())
     }
 
     ///
     /// # Safety
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn metadata_get_name(self: *mut Self, id: u64) -> *mut i8 {
-        let name =
-            metadata_block(move |m| m.get_name(id)).unwrap_or_else(|_| "unknown name".to_string());
+        let name = metadata_block(async move |m| m.get_name(id))
+            .unwrap_or_else(|_| "unknown name".to_string());
         let Ok(str) = CString::new(name) else {
             return std::ptr::null_mut();
         };
@@ -255,7 +255,7 @@ impl ClientHandle {
         id: u64,
         callback: extern "C" fn(*const u8, u32, u16, u16),
     ) {
-        let Some((data, width, height)) = metadata_block(move |m| m.get_avatar(id)) else {
+        let Some((data, width, height)) = metadata_block(async move |m| m.get_avatar(id)) else {
             return;
         };
 
