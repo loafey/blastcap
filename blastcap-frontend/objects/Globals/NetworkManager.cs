@@ -15,7 +15,6 @@ public partial class NetworkManager : Node {
             this.Inner.Drop();
             this.Inner = null;
         });
-        // Freeze here
         GD.Print($"= Logged in as: {this.Inner.GetName(this.Inner.GetMyId())}");
     }
 
