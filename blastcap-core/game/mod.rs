@@ -1,7 +1,4 @@
-use crate::{
-    game::state::{LobbyState, State},
-    network::{Metadata, NetworkHost},
-};
+use crate::network::NetworkHost;
 use std::{mem::MaybeUninit, net::SocketAddr};
 use tokio::time::Instant;
 

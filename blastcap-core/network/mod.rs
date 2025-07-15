@@ -11,29 +11,9 @@ mod socket_addr_ext;
 
 static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
 
-use crate::network::{
-    impls::{
-        steam::{SteamHost, SteamMetadata},
-        tcp::{TcpClient, TcpHost, TcpMetadata},
-    },
-    messages::{ClientRequest, ServerMessage},
-};
-use async_trait::async_trait;
+use crate::network::messages::{ClientRequest, ServerMessage};
 pub use socket_addr_ext::*;
-use std::{
-    fmt::Debug,
-    net::SocketAddr,
-    ops::{Deref, DerefMut},
-    sync::LazyLock,
-};
-use tokio::{
-    net::ToSocketAddrs,
-    sync::{
-        Mutex,
-        mpsc::{Receiver, Sender, channel},
-        oneshot::channel as oneshot,
-    },
-};
+use std::{net::SocketAddr, sync::LazyLock};
 
 fn use_tcp() -> bool {
     std::env::var("BLASTCAP_USE_TCP").is_ok()

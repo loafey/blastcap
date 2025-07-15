@@ -17,7 +17,6 @@ use crate::{
 };
 use std::ffi::{CStr, CString};
 use tokio::{
-    net::ToSocketAddrs,
     sync::{
         mpsc::{Receiver, Sender},
         oneshot::channel as oneshot,

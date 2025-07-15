@@ -2,7 +2,6 @@ use super::Arg;
 use crate::{
     game::{
         actor::{Actor, Controller},
-        map::Piece,
         state::{GameStartedState, Res, State},
     },
     network::messages::{ClientRequest, ServerMessage},
@@ -85,7 +84,7 @@ impl State for WaitingState {
                             controller: Controller::Bot,
                             position,
                             health: 15,
-                            base_movement: 8,
+                            _base_movement: 8,
                             abilities: Default::default(),
                             resources: Default::default(),
                         };

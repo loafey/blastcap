@@ -28,7 +28,7 @@ pub struct Actor {
     #[serde(skip)]
     pub position: Vec3,
     pub health: i32,
-    pub base_movement: usize,
+    pub _base_movement: usize,
     pub abilities: Abilities,
     pub resources: TurnResources,
 }
@@ -55,7 +55,7 @@ impl Actor {
                 ))
                 .await?
         } else {
-            let v @ Vec3 { x, y, z } = Vec3::new(
+            let Vec3 { x, y, z } = Vec3::new(
                 rand::random_range(0..16),
                 rand::random_range(0..16),
                 rand::random_range(0..16),

@@ -1,25 +1,10 @@
-use crate::network::{
-    impls::{
-        steam::{SteamHost, SteamMetadata},
-        tcp::{TcpClient, TcpHost, TcpMetadata},
-    },
-    messages::{ClientRequest, ServerMessage},
-    socket_addr_ext::*,
-};
+use crate::network::impls::{steam::SteamMetadata, tcp::TcpMetadata};
 use async_trait::async_trait;
-use std::{
-    fmt::Debug,
-    net::SocketAddr,
-    ops::{Deref, DerefMut},
-    sync::LazyLock,
-};
-use tokio::{
-    net::ToSocketAddrs,
-    sync::{
-        Mutex,
-        mpsc::{Receiver, Sender, channel},
-        oneshot::channel as oneshot,
-    },
+use std::{fmt::Debug, ops::Deref, sync::LazyLock};
+use tokio::sync::{
+    Mutex,
+    mpsc::{Receiver, Sender, channel},
+    oneshot::channel as oneshot,
 };
 
 #[allow(clippy::type_complexity)]

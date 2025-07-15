@@ -1,12 +1,10 @@
-use std::net::SocketAddr;
-
 use crate::network::{
     ClientPoll, HostPoll, Metadata, MetadataExt, MetadataTask, NetworkClientExt, NetworkHostExt,
     TICK_RATE,
     messages::{ClientRequest, ServerMessage},
 };
 use async_trait::async_trait;
-use futures::channel::oneshot;
+use std::net::SocketAddr;
 use steamworks::{Client, LobbyCreated, LobbyEnter, SteamId};
 use tokio::sync::mpsc::Receiver;
 
@@ -22,14 +20,14 @@ impl NetworkClientExt for SteamClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
         todo!()
     }
-    async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
+    async fn send(&mut self, _req: ClientRequest) -> anyhow::Result<()> {
         todo!()
     }
 }
 pub struct SteamHost {
     metadata: Metadata,
     metadata_recv: Receiver<MetadataTask>,
-    lobby_id: u64,
+    _lobby_id: u64,
 }
 impl SteamHost {
     pub async fn new() -> anyhow::Result<Self> {
@@ -39,14 +37,14 @@ impl SteamHost {
         Ok(Self {
             metadata,
             metadata_recv,
-            lobby_id,
+            _lobby_id: lobby_id,
         })
     }
 }
 
 #[async_trait]
 impl NetworkHostExt for SteamHost {
-    async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
+    async fn mock(&mut self, _req: ClientRequest) -> anyhow::Result<()> {
         todo!("mock")
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
@@ -61,15 +59,15 @@ impl NetworkHostExt for SteamHost {
         }
     }
 
-    async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()> {
+    async fn send(&mut self, _addr: SocketAddr, _req: ServerMessage) -> anyhow::Result<()> {
         todo!("send")
     }
 
-    async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
+    async fn broadcast(&mut self, _req: ServerMessage) -> anyhow::Result<()> {
         todo!("broadcast")
     }
 
-    fn remove_client(&mut self, addr: SocketAddr) {
+    fn remove_client(&mut self, _addr: SocketAddr) {
         todo!("remove_client")
     }
 

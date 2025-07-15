@@ -1,25 +1,11 @@
 use crate::network::{
-    impls::{
-        steam::{SteamHost, SteamMetadata},
-        tcp::{TcpClient, TcpHost, TcpMetadata},
-    },
+    impls::{steam::SteamHost, tcp::TcpHost},
     messages::{ClientRequest, ServerMessage},
-    socket_addr_ext::*,
 };
 use async_trait::async_trait;
 use std::{
-    fmt::Debug,
     net::SocketAddr,
     ops::{Deref, DerefMut},
-    sync::LazyLock,
-};
-use tokio::{
-    net::ToSocketAddrs,
-    sync::{
-        Mutex,
-        mpsc::{Receiver, Sender, channel},
-        oneshot::channel as oneshot,
-    },
 };
 
 pub struct NetworkHost {

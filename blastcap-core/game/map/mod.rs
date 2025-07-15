@@ -149,6 +149,7 @@ impl Map {
         *piece = value;
     }
 
+    #[allow(unused)]
     pub fn dead_get(&self, Vec3 { x, y, z }: Vec3) -> Option<usize> {
         self.dead
             .get(z)
