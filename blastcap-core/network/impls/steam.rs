@@ -9,6 +9,7 @@ use steamworks::{
     Client, LobbyCreated, LobbyEnter, SteamId, networking_sockets::ListenSocket,
     networking_types::NetworkingConfigEntry,
 };
+use tokio::sync::{mpsc, oneshot};
 
 pub struct SteamClient {}
 impl SteamClient {
@@ -28,7 +29,8 @@ impl NetworkClientExt for SteamClient {
 }
 pub struct SteamHost {
     lobby_id: u64,
-    listen_socket: ListenSocket,
+    kill_send: oneshot::Sender<()>,
+    msg_recv: mpsc::Receiver<()>,
 }
 
 #[async_trait]
@@ -37,6 +39,7 @@ impl NetworkHostExt for SteamHost {
         todo!("mock")
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
+        self.listen_socket.events();
         tokio::select! {
             _ = tick() => Ok(HostPoll::Tick)
         }
@@ -119,9 +122,17 @@ impl MetadataExt for SteamMetadata {
                 break id?.raw();
             }
         };
+        let (kill_send, kill_recv) = oneshot::channel();
+        let (msg_send, msg_recv) = mpsc::channel(1000);
+        std::thread::spawn(move || {
+            loop {
+                let ev = listen_socket.receive_event();
+            }
+        });
         Ok(NetworkHost::new(SteamHost {
             lobby_id,
-            listen_socket,
+            kill_send,
+            msg_recv,
         }))
     }
 }
