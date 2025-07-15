@@ -13,7 +13,7 @@ use crate::{
     network::{
         ClientPoll, NetworkClient, NetworkHost,
         messages::{ClientRequest, ServerMessage},
-        metadata, metadata_block,
+        metadata_block,
     },
 };
 use std::ffi::{CStr, CString};

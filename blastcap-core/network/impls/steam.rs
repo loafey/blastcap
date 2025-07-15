@@ -17,10 +17,10 @@ impl SteamClient {
 #[async_trait]
 impl NetworkClientExt for SteamClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
-        todo!()
+        todo!("client poll")
     }
     async fn send(&mut self, _req: ClientRequest) -> anyhow::Result<()> {
-        todo!()
+        todo!("client send")
     }
 }
 pub struct SteamHost {
