@@ -8,15 +8,15 @@ public partial class Linker : Node {
     public delegate void OnPanic([MarshalAs(UnmanagedType.LPUTF8Str)] string error);
 
     public override void _Ready() {
-        GD.Print("= Registering panic callback =");
+        GD.Print("= Registering panic callback");
         [DllImport("blastcap", SetLastError = true)]
         static extern unsafe int register_panic_callback(OnPanic func);
         try {
             register_panic_callback(GD.PrintErr);
         } catch (Exception e) {
-            GD.Print($"Failed registering hook: {e}");
+            GD.PrintErr($"= Registering panic callback: failed registering hook: {e}");
         }
-        GD.Print("= Done registering panic callback =");
+        GD.Print("= Registering panic callback: done");
         // var assembly = Assembly.GetExecutingAssembly();
         // NativeLibrary.SetDllImportResolver(assembly, DllImportResolver);
     }
