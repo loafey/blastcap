@@ -20,6 +20,7 @@
     "dotnet.backgroundAnalysis.analyzerDiagnosticsScope": "fullSolution",
     "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution",
     "cSpell.words": [
+        "impls",
         "oneshot"
     ]
 }

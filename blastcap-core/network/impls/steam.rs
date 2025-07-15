@@ -10,7 +10,13 @@ use futures::channel::oneshot;
 use steamworks::{Client, LobbyCreated, LobbyEnter, SteamId};
 use tokio::sync::mpsc::Receiver;
 
-pub(super) struct SteamClient {}
+pub struct SteamClient {}
+impl SteamClient {
+    #[allow(clippy::new_ret_no_self)]
+    pub fn new() -> Box<dyn NetworkClientExt> {
+        Box::new(SteamClient {})
+    }
+}
 #[async_trait]
 impl NetworkClientExt for SteamClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
@@ -20,7 +26,7 @@ impl NetworkClientExt for SteamClient {
         todo!()
     }
 }
-pub(super) struct SteamHost {
+pub struct SteamHost {
     metadata: Metadata,
     metadata_recv: Receiver<MetadataTask>,
     lobby_id: u64,
@@ -76,7 +82,7 @@ impl NetworkHostExt for SteamHost {
     }
 }
 
-pub(super) struct SteamMetadata {
+pub struct SteamMetadata {
     client: Client,
 }
 impl SteamMetadata {

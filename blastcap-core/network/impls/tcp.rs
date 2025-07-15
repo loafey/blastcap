@@ -11,12 +11,13 @@ use tokio::{
     sync::mpsc::{Receiver, Sender, channel},
 };
 
-pub(super) struct TcpClient {
+pub struct TcpClient {
     write: WriteHalf<TcpStream>,
     recv: Receiver<ServerMessage>,
 }
 impl TcpClient {
-    pub async fn new<A: ToSocketAddrs>(addr: A) -> anyhow::Result<Self> {
+    #[allow(clippy::new_ret_no_self)]
+    pub async fn new<A: ToSocketAddrs>(addr: A) -> anyhow::Result<Box<dyn NetworkClientExt>> {
         let stream = TcpStream::connect(addr).await?;
         let (send, recv) = channel(1000);
         let (mut read, write) = split(stream);
@@ -34,7 +35,7 @@ impl TcpClient {
             Ok(())
         };
         tokio::spawn(async move { closure.await.unwrap() });
-        Ok(Self { write, recv })
+        Ok(Box::new(Self { write, recv }))
     }
 }
 
@@ -60,7 +61,7 @@ impl NetworkClientExt for TcpClient {
     }
 }
 
-pub(super) struct TcpHost {
+pub struct TcpHost {
     listener: TcpListener,
     clients: HashMap<SocketAddr, WriteHalf<TcpStream>>,
     recv: Receiver<(SocketAddr, ClientRequest)>,
@@ -178,7 +179,7 @@ impl NetworkHostExt for TcpHost {
     }
 }
 
-pub(super) struct TcpMetadata {
+pub struct TcpMetadata {
     id: u64,
 }
 impl TcpMetadata {
