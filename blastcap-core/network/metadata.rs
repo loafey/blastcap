@@ -12,18 +12,23 @@ use tokio::sync::{
 use crate::network::{
     NetworkClient, NetworkHost,
     impls::{steam::SteamMetadata, tcp::TcpMetadata},
-    tick, use_tcp,
+    tick,
 };
 
 #[allow(clippy::type_complexity)]
 static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
     let (send, mut recv) = channel::<MetadataTask>(10);
-    let mut m = Metadata {
-        inner: match use_tcp() {
-            true => Box::new(TcpMetadata::new()),
-            false => Box::new(SteamMetadata::new()),
-        },
+    let inner: Box<dyn MetadataExt + Send + Sync> = match SteamMetadata::new() {
+        Ok(o) => Box::new(o),
+        #[cfg(debug_assertions)]
+        Err(e) => {
+            eprintln!("failed connecting to Steam: {e}");
+            Box::new(TcpMetadata::new())
+        }
+        #[cfg(not(debug_assertions))]
+        Err(e) => panic!("please restart the game in Steam!"),
     };
+    let mut m = Metadata { inner };
     std::thread::spawn(move || {
         let rt = tokio::runtime::Builder::new_current_thread()
             .enable_all()

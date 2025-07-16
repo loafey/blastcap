@@ -68,10 +68,10 @@ pub struct SteamMetadata {
     client: Client,
 }
 impl SteamMetadata {
-    pub fn new() -> Self {
-        let client = steamworks::Client::init_app(480).unwrap();
+    pub fn new() -> anyhow::Result<Self> {
+        let client = steamworks::Client::init_app(480)?;
         client.networking_utils().init_relay_network_access();
-        Self { client }
+        Ok(Self { client })
     }
 }
 
