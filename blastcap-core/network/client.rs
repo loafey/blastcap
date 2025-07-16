@@ -22,14 +22,17 @@ impl DerefMut for NetworkClient {
     }
 }
 impl NetworkClient {
-    pub async fn create(addr: String) -> anyhow::Result<Self> {
-        Ok(Self {
-            inner: match super::use_tcp() {
-                true => TcpClient::new(format!("{addr}:8000")).await?,
-                false => SteamClient::new(),
-            },
-        })
+    pub fn new<T: NetworkClientExt + 'static>(t: T) -> Self {
+        Self { inner: Box::new(t) }
     }
+    // pub async fn create(addr: String) -> anyhow::Result<Self> {
+    //     Ok(Self {
+    //         inner: match super::use_tcp() {
+    //             true => TcpClient::new(format!("{addr}:8000")).await?,
+    //             false => SteamClient::new(),
+    //         },
+    //     })
+    // }
 }
 
 pub enum ClientPoll {

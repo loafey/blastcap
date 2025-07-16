@@ -1,5 +1,6 @@
 use crate::network::{
-    ClientPoll, HostPoll, MetadataExt, NetworkClientExt, NetworkHost, NetworkHostExt,
+    ClientPoll, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
+    NetworkHostExt,
     messages::{ClientRequest, ServerMessage},
     metadata, tick,
 };
@@ -39,7 +40,7 @@ impl NetworkHostExt for SteamHost {
         todo!("mock")
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
-        self.listen_socket.events();
+        // self.listen_socket.events();
         tokio::select! {
             _ = tick() => Ok(HostPoll::Tick)
         }
@@ -72,6 +73,7 @@ pub struct SteamMetadata {
 impl SteamMetadata {
     pub fn new() -> Self {
         let client = steamworks::Client::init_app(480).unwrap();
+        client.networking_utils().init_relay_network_access();
         Self { client }
     }
 }
@@ -104,6 +106,10 @@ impl MetadataExt for SteamMetadata {
             .map(|a| (a, 64, 64))
     }
 
+    async fn create_client(&self, _id: u64) -> anyhow::Result<NetworkClient> {
+        todo!("steam client")
+    }
+
     async fn create_lobby(&self) -> anyhow::Result<NetworkHost> {
         let (send, recv) = std::sync::mpsc::channel();
         self.client
@@ -112,10 +118,10 @@ impl MetadataExt for SteamMetadata {
                 let Err(e) = send.send(r) else { return };
                 panic!("{e}");
             });
-        let listen_socket = self.client.networking_sockets().create_listen_socket_ip(
-            SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), 8000)),
-            [],
-        )?;
+        let listen_socket = self
+            .client
+            .networking_sockets()
+            .create_listen_socket_p2p(8000, [])?;
         let lobby_id = loop {
             self.client.run_callbacks();
             if let Ok(id) = recv.try_recv() {
@@ -127,6 +133,17 @@ impl MetadataExt for SteamMetadata {
         std::thread::spawn(move || {
             loop {
                 let ev = listen_socket.receive_event();
+                match ev {
+                    steamworks::networking_types::ListenSocketEvent::Connecting(
+                        connection_request,
+                    ) => todo!(),
+                    steamworks::networking_types::ListenSocketEvent::Connected(connected_event) => {
+                        todo!()
+                    }
+                    steamworks::networking_types::ListenSocketEvent::Disconnected(
+                        disconnected_event,
+                    ) => todo!(),
+                }
             }
         });
         Ok(NetworkHost::new(SteamHost {

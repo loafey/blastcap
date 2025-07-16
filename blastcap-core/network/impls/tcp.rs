@@ -1,6 +1,6 @@
 use crate::network::{
-    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, MetadataExt, NetworkClientExt, NetworkHost,
-    NetworkHostExt, ServerMessage, channel::Channel, tick,
+    ClientPoll, ClientRequest, HostPoll, LOCAL_ADDR, MetadataExt, NetworkClient, NetworkClientExt,
+    NetworkHost, NetworkHostExt, ServerMessage, channel::Channel, tick,
 };
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
@@ -17,7 +17,7 @@ pub struct TcpClient {
 }
 impl TcpClient {
     #[allow(clippy::new_ret_no_self)]
-    pub async fn new<A: ToSocketAddrs>(addr: A) -> anyhow::Result<Box<dyn NetworkClientExt>> {
+    pub async fn new<A: ToSocketAddrs>(addr: A) -> anyhow::Result<TcpClient> {
         let stream = TcpStream::connect(addr).await?;
         let (send, recv) = channel(1000);
         let (mut read, write) = split(stream);
@@ -35,7 +35,7 @@ impl TcpClient {
             Ok(())
         };
         tokio::spawn(async move { closure.await.unwrap() });
-        Ok(Box::new(Self { write, recv }))
+        Ok(Self { write, recv })
     }
 }
 
@@ -207,6 +207,10 @@ impl MetadataExt for TcpMetadata {
 
     async fn tick(&self) -> anyhow::Result<()> {
         Ok(())
+    }
+
+    async fn create_client(&self, _lobby: u64) -> anyhow::Result<NetworkClient> {
+        Ok(NetworkClient::new(TcpClient::new("0.0.0.0:8000").await?))
     }
 
     async fn create_lobby(&self) -> anyhow::Result<NetworkHost> {

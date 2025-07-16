@@ -181,7 +181,7 @@ impl ClientHandle {
             mut client_req_recv: Receiver<ClientRequest>,
         ) -> anyhow::Result<()> {
             println!("CLIENT - connecting to {addr:?}");
-            let mut client = NetworkClient::create(addr).await?;
+            let mut client = metadata(async |m| m.create_client(0).await).await?;
             let mut tick_counter: usize = 0;
             loop {
                 let poll = tokio::select! {
