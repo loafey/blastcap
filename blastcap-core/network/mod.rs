@@ -9,7 +9,8 @@ mod metadata;
 pub use metadata::*;
 mod socket_addr_ext;
 
-static LOCAL_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
+static BOT_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:1".parse().unwrap());
+static HOST_ADDR: LazyLock<SocketAddr> = LazyLock::new(|| "0.0.0.0:0".parse().unwrap());
 
 use crate::network::messages::{ClientRequest, ServerMessage};
 pub use socket_addr_ext::*;

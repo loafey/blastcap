@@ -1,6 +1,7 @@
 use crate::network::messages::{ClientRequest, ServerMessage};
 use async_trait::async_trait;
 use std::ops::{Deref, DerefMut};
+use tokio::sync::mpsc;
 
 pub struct NetworkClient {
     inner: Box<dyn NetworkClientExt>,

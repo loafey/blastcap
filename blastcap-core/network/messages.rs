@@ -4,7 +4,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 
 #[repr(C, i32)]
 #[sharpify::client_poll]
-#[derive(Archive, Deserialize, Serialize, Debug, PartialEq)]
+#[derive(Archive, Deserialize, Serialize, Debug, PartialEq, Clone)]
 pub enum ServerMessage {
     Pong,
     ChatMessage(String, String),

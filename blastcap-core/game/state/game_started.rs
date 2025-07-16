@@ -337,7 +337,7 @@ impl State for GameStartedState {
                 Ok(None)
             }
             ClientRequest::Action(act, x, y, z)
-                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_host())
+                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
                     && !self.waiting
                     && self.current_actor().abilities.contains(&act) =>
             {
@@ -375,7 +375,7 @@ impl State for GameStartedState {
                 }
             }
             ClientRequest::EndTurn
-                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_host())
+                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
                     && !self.waiting =>
             {
                 self.next_actor(arg.host).await?;
