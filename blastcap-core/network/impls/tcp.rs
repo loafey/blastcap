@@ -84,28 +84,22 @@ struct TcpHost {
     clients: HashMap<SocketAddr, WriteHalf<TcpStream>>,
     own_client_send: Sender<ServerMessage>,
     own_client_recv: Receiver<ClientRequest>,
-    recv: Receiver<(SocketAddr, ClientRequest)>,
-    send: Sender<(SocketAddr, ClientRequest)>,
-    kill_recv: Receiver<SocketAddr>,
-    kill_send: Sender<SocketAddr>,
+    client_req: Channel<(SocketAddr, ClientRequest)>,
+    kill: Channel<SocketAddr>,
     mock: Channel<ClientRequest>,
 }
 impl TcpHost {
     pub async fn new(
         port: u16,
     ) -> anyhow::Result<(Self, Receiver<ServerMessage>, Sender<ClientRequest>)> {
-        let (send, recv) = channel(1000);
-        let (kill_send, kill_recv) = channel(10);
         let (client_send, own_client_recv) = channel(100);
         let (own_client_send, client_recv) = channel(100);
         Ok((
             Self {
                 first_poll: true,
                 listener: TcpListener::bind(format!("0.0.0.0:{port}")).await?,
-                send,
-                recv,
-                kill_send,
-                kill_recv,
+                client_req: Channel::new(100),
+                kill: Channel::new(10),
                 clients: Default::default(),
                 mock: Channel::new(10),
                 own_client_send,
@@ -117,8 +111,8 @@ impl TcpHost {
     }
 
     async fn acc(&mut self, (stream, addr): (TcpStream, SocketAddr)) {
-        let send = self.send.clone();
-        let kill_send = self.kill_send.clone();
+        let send = self.client_req.send.clone();
+        let kill_send = self.kill.send.clone();
         let (mut read, write) = split(stream);
         self.clients.insert(addr, write);
         let closure: impl Future<Output = anyhow::Result<!>> = async move {
@@ -159,7 +153,7 @@ impl NetworkHostExt for TcpHost {
                 self.acc((stream, addr)).await;
                 Ok(HostPoll::ClientConnected(addr))
             },
-            remove = self.kill_recv.recv() => {
+            remove = self.kill.recv.recv() => {
                 let Some(addr) = remove else { unreachable!() };
                 Ok(HostPoll::RemoveClient(addr))
             },
@@ -171,7 +165,7 @@ impl NetworkHostExt for TcpHost {
                 let Some(req) = mocked else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr: *BOT_ADDR, req })
             }
-            msg = self.recv.recv() => {
+            msg = self.client_req.recv.recv() => {
                 let Some((addr, req)) = msg else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr, req })
             }
