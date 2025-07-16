@@ -258,10 +258,9 @@ impl MetadataExt for TcpMetadata {
     }
 
     async fn create_client(&mut self, _lobby: u64) -> anyhow::Result<NetworkClient> {
-        let client = if let Some((write, recv)) = self.host_channel.take() {
-            TcpClient::Channel { write, recv }
-        } else {
-            TcpClient::new("0.0.0.0:8000").await?
+        let client = match self.host_channel.take() {
+            Some((write, recv)) => TcpClient::Channel { write, recv },
+            _ => TcpClient::new("0.0.0.0:8000").await?,
         };
         Ok(NetworkClient::new(client))
     }
