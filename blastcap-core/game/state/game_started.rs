@@ -189,7 +189,7 @@ impl GameStartedState {
         time: Duration,
         func: I,
     ) {
-        let sender = self.callbacks.send.clone();
+        let sender = self.callbacks.sender();
         tokio::spawn(async move {
             tokio::time::sleep(time).await;
             _ = sender
@@ -311,7 +311,7 @@ impl State for GameStartedState {
             actor.bot_act(self, unsafe { arg.clone() }).await?;
         }
 
-        while let Ok(fut) = self.callbacks.recv.try_recv() {
+        while let Ok(fut) = self.callbacks.try_recv() {
             unsafe {
                 fut(
                     std::mem::transmute::<&mut GameStartedState, &mut GameStartedState>(self),

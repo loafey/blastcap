@@ -111,8 +111,8 @@ impl TcpHost {
     }
 
     async fn acc(&mut self, (stream, addr): (TcpStream, SocketAddr)) {
-        let send = self.client_req.send.clone();
-        let kill_send = self.kill.send.clone();
+        let send = self.client_req.sender();
+        let kill_send = self.kill.sender();
         let (mut read, write) = split(stream);
         self.clients.insert(addr, write);
         let closure: impl Future<Output = anyhow::Result<!>> = async move {
@@ -139,7 +139,7 @@ impl TcpHost {
 #[async_trait]
 impl NetworkHostExt for TcpHost {
     async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
-        self.mock.send.send(req).await?;
+        self.mock.send(req).await?;
         Ok(())
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
@@ -153,7 +153,7 @@ impl NetworkHostExt for TcpHost {
                 self.acc((stream, addr)).await;
                 Ok(HostPoll::ClientConnected(addr))
             },
-            remove = self.kill.recv.recv() => {
+            remove = self.kill.recv() => {
                 let Some(addr) = remove else { unreachable!() };
                 Ok(HostPoll::RemoveClient(addr))
             },
@@ -161,11 +161,11 @@ impl NetworkHostExt for TcpHost {
                 let Some(req) = own else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr: *HOST_ADDR, req })
             }
-            mocked = self.mock.recv.recv() => {
+            mocked = self.mock.recv() => {
                 let Some(req) = mocked else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr: *BOT_ADDR, req })
             }
-            msg = self.client_req.recv.recv() => {
+            msg = self.client_req.recv() => {
                 let Some((addr, req)) = msg else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr, req })
             }
