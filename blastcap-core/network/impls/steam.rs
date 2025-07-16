@@ -2,14 +2,11 @@ use crate::network::{
     ClientPoll, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
     NetworkHostExt,
     messages::{ClientRequest, ServerMessage},
-    metadata, tick,
+    tick,
 };
 use async_trait::async_trait;
-use std::net::{Ipv4Addr, SocketAddr, SocketAddrV4};
-use steamworks::{
-    Client, LobbyCreated, LobbyEnter, SteamId, networking_sockets::ListenSocket,
-    networking_types::NetworkingConfigEntry,
-};
+use std::net::SocketAddr;
+use steamworks::{Client, SteamId};
 use tokio::sync::{mpsc, oneshot};
 
 pub struct SteamClient {}
@@ -106,11 +103,11 @@ impl MetadataExt for SteamMetadata {
             .map(|a| (a, 64, 64))
     }
 
-    async fn create_client(&self, _id: u64) -> anyhow::Result<NetworkClient> {
+    async fn create_client(&mut self, _id: u64) -> anyhow::Result<NetworkClient> {
         todo!("steam client")
     }
 
-    async fn create_lobby(&self) -> anyhow::Result<NetworkHost> {
+    async fn create_lobby(&mut self) -> anyhow::Result<NetworkHost> {
         let (send, recv) = std::sync::mpsc::channel();
         self.client
             .matchmaking()

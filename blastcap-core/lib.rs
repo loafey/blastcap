@@ -11,7 +11,7 @@ use crate::{
         state::{LobbyState, State},
     },
     network::{
-        ClientPoll, NetworkClient, NetworkHost,
+        ClientPoll,
         messages::{ClientRequest, ServerMessage},
         metadata, metadata_block,
     },

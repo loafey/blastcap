@@ -1,7 +1,4 @@
-use crate::network::{
-    impls::{steam::SteamClient, tcp::TcpClient},
-    messages::{ClientRequest, ServerMessage},
-};
+use crate::network::messages::{ClientRequest, ServerMessage};
 use async_trait::async_trait;
 use std::ops::{Deref, DerefMut};
 

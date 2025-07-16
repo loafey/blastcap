@@ -209,11 +209,11 @@ impl MetadataExt for TcpMetadata {
         Ok(())
     }
 
-    async fn create_client(&self, _lobby: u64) -> anyhow::Result<NetworkClient> {
+    async fn create_client(&mut self, _lobby: u64) -> anyhow::Result<NetworkClient> {
         Ok(NetworkClient::new(TcpClient::new("0.0.0.0:8000").await?))
     }
 
-    async fn create_lobby(&self) -> anyhow::Result<NetworkHost> {
+    async fn create_lobby(&mut self) -> anyhow::Result<NetworkHost> {
         Ok(NetworkHost::new(TcpHost::new(8000).await?))
     }
 }
