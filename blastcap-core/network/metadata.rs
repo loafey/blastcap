@@ -26,7 +26,7 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
             Box::new(TcpMetadata::new())
         }
         #[cfg(not(debug_assertions))]
-        Err(e) => panic!("please restart the game in Steam!"),
+        Err(e) => panic!("please restart the game in Steam: {e}"),
     };
     let mut m = Metadata { inner };
     std::thread::spawn(move || {
