@@ -6,7 +6,7 @@ use crate::network::{
 };
 use async_trait::async_trait;
 use std::net::SocketAddr;
-use steamworks::{Client, SteamId};
+use steamworks::{Client, SteamId, networking_types::ListenSocketEvent};
 use tokio::sync::{mpsc, oneshot};
 
 pub struct SteamClient {}
@@ -29,6 +29,8 @@ pub struct SteamHost {
     lobby_id: u64,
     kill_send: oneshot::Sender<()>,
     msg_recv: mpsc::Receiver<()>,
+    own_recv: mpsc::Receiver<ClientRequest>,
+    own_send: mpsc::Sender<ServerMessage>,
 }
 
 #[async_trait]
@@ -66,12 +68,16 @@ impl NetworkHostExt for SteamHost {
 
 pub struct SteamMetadata {
     client: Client,
+    own_client: Option<(mpsc::Receiver<ServerMessage>, mpsc::Sender<ClientRequest>)>,
 }
 impl SteamMetadata {
     pub fn new() -> anyhow::Result<Self> {
         let client = steamworks::Client::init_app(480)?;
         client.networking_utils().init_relay_network_access();
-        Ok(Self { client })
+        Ok(Self {
+            client,
+            own_client: None,
+        })
     }
 }
 
@@ -127,19 +133,19 @@ impl MetadataExt for SteamMetadata {
         };
         let (kill_send, kill_recv) = oneshot::channel();
         let (msg_send, msg_recv) = mpsc::channel(1000);
+
+        let (mes_send, mes_recv) = mpsc::channel(100);
+        let (req_send, req_recv) = mpsc::channel(100);
+        self.own_client = Some((mes_recv, req_send));
         std::thread::spawn(move || {
             loop {
                 let ev = listen_socket.receive_event();
                 match ev {
-                    steamworks::networking_types::ListenSocketEvent::Connecting(
-                        connection_request,
-                    ) => todo!(),
-                    steamworks::networking_types::ListenSocketEvent::Connected(connected_event) => {
+                    ListenSocketEvent::Connecting(connection_request) => todo!(),
+                    ListenSocketEvent::Connected(connected_event) => {
                         todo!()
                     }
-                    steamworks::networking_types::ListenSocketEvent::Disconnected(
-                        disconnected_event,
-                    ) => todo!(),
+                    ListenSocketEvent::Disconnected(disconnected_event) => todo!(),
                 }
             }
         });
@@ -147,6 +153,8 @@ impl MetadataExt for SteamMetadata {
             lobby_id,
             kill_send,
             msg_recv,
+            own_recv: req_recv,
+            own_send: mes_send,
         }))
     }
 }
