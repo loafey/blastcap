@@ -7,10 +7,10 @@ use std::{pin::Pin, task::Poll};
 
 #[macro_export]
 macro_rules! repeat {
-    ($($y:expr),*,) => {
+    ($(async $y:expr),*,) => {
         repeat!($($y),*)
     };
-    ($($y:expr),*) => {
+    ($(async $y:expr),*) => {
         {
             let mut a = select::select();
             $(a = a.add(async || $y));*;
