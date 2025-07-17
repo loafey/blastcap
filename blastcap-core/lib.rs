@@ -34,7 +34,10 @@ sharpify::constants!(
 #[unsafe(no_mangle)]
 pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi::c_char)) {
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Runtime::new().unwrap();
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap();
         let _enter = rt.enter();
         let Err(err): anyhow::Result<()> = rt.block_on(async move {
             let mut host = metadata(async |a| a.create_lobby().await).await?;
@@ -215,7 +218,10 @@ impl ClientHandle {
             return;
         };
         std::thread::spawn(move || {
-            let rt = tokio::runtime::Runtime::new().expect("Unable to create Runtime");
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .expect("Unable to create Runtime");
             let _enter = rt.enter();
             let Err(err) = rt.block_on(client_func(addr, server_send, client_recv)) else {
                 return;
