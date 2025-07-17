@@ -31,6 +31,7 @@ impl<S, R> DisjointChannel<S, R> {
     pub async fn recv(&mut self) -> Option<R> {
         self.recv.recv().await
     }
+    #[allow(unused)]
     pub fn try_recv(&mut self) -> Result<R, tokio::sync::mpsc::error::TryRecvError> {
         self.recv.try_recv()
     }

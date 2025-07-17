@@ -5,7 +5,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use std::{any::type_name, net::SocketAddr};
+use std::any::type_name;
 use tokio::time::Instant;
 
 mod game_started;

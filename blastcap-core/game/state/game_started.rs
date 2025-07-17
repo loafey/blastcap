@@ -7,7 +7,7 @@ use crate::{
         state::{Res, State},
     },
     network::{
-        IdentityExt, NetworkHost, SocketAddrExt,
+        IdentityExt, NetworkHost,
         channel::Channel,
         messages::{ClientRequest, ServerMessage},
     },
