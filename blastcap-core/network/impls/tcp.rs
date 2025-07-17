@@ -1,6 +1,7 @@
 use crate::network::{
     BOT_ADDR, ClientPoll, ClientRequest, HOST_ADDR, HostPoll, MetadataExt, NetworkClient,
-    NetworkClientExt, NetworkHost, NetworkHostExt, ServerMessage, SocketAddrExt, channel::Channel,
+    NetworkClientExt, NetworkHost, NetworkHostExt, ServerMessage, SocketAddrExt,
+    channel::{Channel, DisjointChannel, disjoint},
     tick,
 };
 use async_trait::async_trait;
@@ -9,7 +10,7 @@ use std::{collections::HashMap, net::SocketAddr};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, WriteHalf, split},
     net::{TcpListener, TcpStream, ToSocketAddrs},
-    sync::mpsc::{Receiver, Sender, channel},
+    sync::mpsc::{Receiver, channel},
 };
 
 enum TcpClient {
@@ -17,10 +18,7 @@ enum TcpClient {
         write: WriteHalf<TcpStream>,
         recv: Receiver<ServerMessage>,
     },
-    Channel {
-        write: Sender<ClientRequest>,
-        recv: Receiver<ServerMessage>,
-    },
+    Channel(DisjointChannel<ClientRequest, ServerMessage>),
 }
 
 impl TcpClient {
@@ -50,12 +48,14 @@ impl TcpClient {
 #[async_trait]
 impl NetworkClientExt for TcpClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
-        let fut = match self {
-            TcpClient::Real { recv, .. } => recv,
-            TcpClient::Channel { recv, .. } => recv,
+        let fut = async {
+            match self {
+                TcpClient::Real { recv, .. } => recv.recv().await,
+                TcpClient::Channel(dis) => dis.recv().await,
+            }
         };
         tokio::select! {
-            msg = fut.recv() => {
+            msg = fut => {
                 let Some(msg) = msg else { panic!("no clients somehow") };
                 Ok(ClientPoll::Message(msg))
             }
@@ -72,7 +72,7 @@ impl NetworkClientExt for TcpClient {
                 write.write_u32(bytes.len() as u32).await?;
                 write.write_all(&bytes).await?;
             }
-            TcpClient::Channel { write, .. } => write.send(req).await?,
+            TcpClient::Channel(dis) => dis.send(req).await?,
         }
         Ok(())
     }
@@ -82,8 +82,7 @@ struct TcpHost {
     first_poll: bool,
     listener: TcpListener,
     clients: HashMap<SocketAddr, WriteHalf<TcpStream>>,
-    own_client_send: Sender<ServerMessage>,
-    own_client_recv: Receiver<ClientRequest>,
+    own: DisjointChannel<ServerMessage, ClientRequest>,
     client_req: Channel<(SocketAddr, ClientRequest)>,
     kill: Channel<SocketAddr>,
     mock: Channel<ClientRequest>,
@@ -91,9 +90,8 @@ struct TcpHost {
 impl TcpHost {
     pub async fn new(
         port: u16,
-    ) -> anyhow::Result<(Self, Receiver<ServerMessage>, Sender<ClientRequest>)> {
-        let (client_send, own_client_recv) = channel(100);
-        let (own_client_send, client_recv) = channel(100);
+    ) -> anyhow::Result<(Self, DisjointChannel<ClientRequest, ServerMessage>)> {
+        let (a, b) = disjoint(100);
         Ok((
             Self {
                 first_poll: true,
@@ -102,11 +100,9 @@ impl TcpHost {
                 kill: Channel::new(10),
                 clients: Default::default(),
                 mock: Channel::new(10),
-                own_client_send,
-                own_client_recv,
+                own: a,
             },
-            client_recv,
-            client_send,
+            b,
         ))
     }
 
@@ -157,7 +153,7 @@ impl NetworkHostExt for TcpHost {
                 let Some(addr) = remove else { unreachable!() };
                 Ok(HostPoll::RemoveClient(addr))
             },
-            own = self.own_client_recv.recv() => {
+            own = self.own.recv() => {
                 let Some(req) = own else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr: *HOST_ADDR, req })
             }
@@ -177,7 +173,7 @@ impl NetworkHostExt for TcpHost {
 
     async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()> {
         if addr.is_host() {
-            self.own_client_send.send(req).await?;
+            self.own.send(req).await?;
         } else {
             let Some(writer) = self.clients.get_mut(&addr) else {
                 let msg = format!("SERVER - client {addr} does not exist");
@@ -191,7 +187,7 @@ impl NetworkHostExt for TcpHost {
     }
 
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
-        _ = self.own_client_send.send(req.clone()).await;
+        _ = self.own.send(req.clone()).await;
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&req)?;
         let mut tasks = FuturesOrdered::new();
         for writer in self.clients.values_mut() {
@@ -221,7 +217,7 @@ impl NetworkHostExt for TcpHost {
 
 pub struct TcpMetadata {
     _id: u64,
-    host_channel: Option<(Sender<ClientRequest>, Receiver<ServerMessage>)>,
+    host_channel: Option<DisjointChannel<ClientRequest, ServerMessage>>,
 }
 impl TcpMetadata {
     pub fn new() -> Self {
@@ -253,15 +249,15 @@ impl MetadataExt for TcpMetadata {
 
     async fn create_client(&mut self, _lobby: u64) -> anyhow::Result<NetworkClient> {
         let client = match self.host_channel.take() {
-            Some((write, recv)) => TcpClient::Channel { write, recv },
+            Some(dis) => TcpClient::Channel(dis),
             _ => TcpClient::new("0.0.0.0:8000").await?,
         };
         Ok(NetworkClient::new(client))
     }
 
     async fn create_lobby(&mut self) -> anyhow::Result<NetworkHost> {
-        let (host, recv, send) = TcpHost::new(8000).await?;
-        self.host_channel = Some((send, recv));
+        let (host, dis) = TcpHost::new(8000).await?;
+        self.host_channel = Some(dis);
         Ok(NetworkHost::new(host))
     }
 }
