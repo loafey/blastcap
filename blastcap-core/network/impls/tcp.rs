@@ -1,6 +1,6 @@
 use crate::network::{
-    BOT_ADDR, ClientPoll, ClientRequest, HOST_ADDR, HostPoll, MetadataExt, NetworkClient,
-    NetworkClientExt, NetworkHost, NetworkHostExt, ServerMessage, SocketAddrExt,
+    BOT_ADDR, ClientPoll, ClientRequest, HOST_ADDR, HostPoll, IdentityExt, MetadataExt,
+    NetworkClient, NetworkClientExt, NetworkHost, NetworkHostExt, ServerMessage, SocketAddrExt,
     channel::{Channel, DisjointChannel, disjoint},
     tick,
 };
@@ -141,29 +141,29 @@ impl NetworkHostExt for TcpHost {
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
         if self.first_poll {
             self.first_poll = false;
-            return Ok(HostPoll::ClientConnected(*HOST_ADDR));
+            return Ok(HostPoll::ClientConnected(HOST_ADDR));
         }
         tokio::select! {
             acc = self.listener.accept() => {
                 let (stream, addr) = acc?;
                 self.acc((stream, addr)).await;
-                Ok(HostPoll::ClientConnected(addr))
+                Ok(HostPoll::ClientConnected(addr.raw()))
             },
             remove = self.kill.recv() => {
                 let Some(addr) = remove else { unreachable!() };
-                Ok(HostPoll::RemoveClient(addr))
+                Ok(HostPoll::RemoveClient(addr.raw()))
             },
             own = self.own.recv() => {
                 let Some(req) = own else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: *HOST_ADDR, req })
+                Ok(HostPoll::ClientRequest { addr: HOST_ADDR, req })
             }
             mocked = self.mock.recv() => {
                 let Some(req) = mocked else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: *BOT_ADDR, req })
+                Ok(HostPoll::ClientRequest { addr: BOT_ADDR, req })
             }
             msg = self.client_req.recv() => {
                 let Some((addr, req)) = msg else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr, req })
+                Ok(HostPoll::ClientRequest { addr: addr.raw(), req })
             }
             _ = tick() => {
                 Ok(HostPoll::Tick)
@@ -171,8 +171,9 @@ impl NetworkHostExt for TcpHost {
         }
     }
 
-    async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()> {
-        if addr.is_host() {
+    async fn send(&mut self, addr: u64, req: ServerMessage) -> anyhow::Result<()> {
+        let addr = SocketAddr::from_raw(addr);
+        if addr.raw().is_host() {
             self.own.send(req).await?;
         } else {
             let Some(writer) = self.clients.get_mut(&addr) else {
@@ -200,13 +201,18 @@ impl NetworkHostExt for TcpHost {
         Ok(())
     }
 
-    fn remove_client(&mut self, addr: SocketAddr) {
-        self.clients.remove(&addr);
+    fn remove_client(&mut self, addr: u64) {
+        self.clients.remove(&SocketAddr::from_raw(addr));
     }
 
-    fn get_clients(&self) -> Vec<SocketAddr> {
-        let mut clients = self.clients.keys().copied().collect::<Vec<_>>();
-        clients.push(*HOST_ADDR);
+    fn get_clients(&self) -> Vec<u64> {
+        let mut clients = self
+            .clients
+            .keys()
+            .copied()
+            .map(|s| s.raw())
+            .collect::<Vec<_>>();
+        clients.push(HOST_ADDR);
         clients
     }
 

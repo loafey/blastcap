@@ -1,5 +1,5 @@
 use crate::network::NetworkHost;
-use std::{mem::MaybeUninit, net::SocketAddr};
+use std::mem::MaybeUninit;
 use tokio::time::Instant;
 
 mod actor;
@@ -8,7 +8,7 @@ pub mod state;
 
 #[derive(Default)]
 pub struct ServerData {
-    host_player: Option<SocketAddr>,
+    host_player: Option<u64>,
     tick: usize,
 }
 

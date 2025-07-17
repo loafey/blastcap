@@ -1,6 +1,5 @@
 use math::Vec3;
 use serde::Deserialize;
-use std::net::SocketAddr;
 
 mod resources;
 pub use resources::*;
@@ -15,7 +14,7 @@ use crate::{
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Controller {
-    Player(SocketAddr),
+    Player(u64),
     #[default]
     Bot,
 }

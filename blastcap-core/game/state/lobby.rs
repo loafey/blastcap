@@ -17,7 +17,7 @@ impl LobbyState {
 impl State for LobbyState {
     async fn client_req<'l>(
         &mut self,
-        addr: std::net::SocketAddr,
+        addr: u64,
         req: ClientRequest,
         Arg {
             data,

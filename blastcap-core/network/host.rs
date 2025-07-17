@@ -1,9 +1,6 @@
 use crate::network::messages::{ClientRequest, ServerMessage};
 use async_trait::async_trait;
-use std::{
-    net::SocketAddr,
-    ops::{Deref, DerefMut},
-};
+use std::ops::{Deref, DerefMut};
 
 pub struct NetworkHost {
     inner: Box<dyn NetworkHostExt>,
@@ -28,12 +25,9 @@ impl DerefMut for NetworkHost {
 }
 
 pub enum HostPoll {
-    RemoveClient(SocketAddr),
-    ClientConnected(SocketAddr),
-    ClientRequest {
-        addr: SocketAddr,
-        req: ClientRequest,
-    },
+    RemoveClient(u64),
+    ClientConnected(u64),
+    ClientRequest { addr: u64, req: ClientRequest },
     Tick,
 }
 
@@ -41,9 +35,9 @@ pub enum HostPoll {
 pub trait NetworkHostExt {
     async fn poll(&mut self) -> anyhow::Result<HostPoll>;
     async fn mock(&mut self, msg: ClientRequest) -> anyhow::Result<()>;
-    async fn send(&mut self, addr: SocketAddr, req: ServerMessage) -> anyhow::Result<()>;
+    async fn send(&mut self, addr: u64, req: ServerMessage) -> anyhow::Result<()>;
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()>;
-    fn remove_client(&mut self, addr: SocketAddr);
-    fn get_clients(&self) -> Vec<SocketAddr>;
+    fn remove_client(&mut self, addr: u64);
+    fn get_clients(&self) -> Vec<u64>;
     fn get_client_count(&self) -> u32;
 }

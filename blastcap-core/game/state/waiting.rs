@@ -7,14 +7,14 @@ use crate::{
     network::messages::{ClientRequest, ServerMessage},
 };
 use math::Vec3;
-use std::{collections::HashSet, net::SocketAddr};
+use std::collections::HashSet;
 
 pub struct WaitingState {
-    waiting_for: HashSet<SocketAddr>,
-    players: HashSet<SocketAddr>,
+    waiting_for: HashSet<u64>,
+    players: HashSet<u64>,
 }
 impl WaitingState {
-    pub fn new<I: IntoIterator<Item = SocketAddr>>(waiting_for: I) -> Box<Self> {
+    pub fn new<I: IntoIterator<Item = u64>>(waiting_for: I) -> Box<Self> {
         Box::new(Self {
             waiting_for: HashSet::from_iter(waiting_for),
             players: Default::default(),
@@ -23,7 +23,7 @@ impl WaitingState {
 }
 #[async_trait::async_trait]
 impl State for WaitingState {
-    async fn client_req<'l>(&mut self, addr: SocketAddr, req: ClientRequest, arg: Arg<'l>) -> Res {
+    async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         match req {
             ClientRequest::NotifyReady => {
                 if self.waiting_for.remove(&addr) {

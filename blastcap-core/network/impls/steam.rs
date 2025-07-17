@@ -56,13 +56,13 @@ impl NetworkHostExt for SteamHost {
         tokio::select! {
             own = self.own.recv() => {
                 let Some(req) = own else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: *HOST_ADDR, req })
+                Ok(HostPoll::ClientRequest { addr: HOST_ADDR, req })
             }
             _ = tick() => Ok(HostPoll::Tick)
         }
     }
 
-    async fn send(&mut self, _addr: SocketAddr, _req: ServerMessage) -> anyhow::Result<()> {
+    async fn send(&mut self, _addr: u64, _req: ServerMessage) -> anyhow::Result<()> {
         todo!("send")
     }
 
@@ -70,11 +70,11 @@ impl NetworkHostExt for SteamHost {
         todo!("broadcast")
     }
 
-    fn remove_client(&mut self, _addr: SocketAddr) {
+    fn remove_client(&mut self, _addr: u64) {
         todo!("remove_client")
     }
 
-    fn get_clients(&self) -> Vec<SocketAddr> {
+    fn get_clients(&self) -> Vec<u64> {
         todo!("get_clients")
     }
 

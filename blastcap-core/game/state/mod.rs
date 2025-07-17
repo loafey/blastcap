@@ -35,11 +35,7 @@ pub trait State: Send + Sync {
         Ok(None)
     }
 
-    async fn host_poll_remove_client<'l>(
-        &mut self,
-        Arg { host, .. }: Arg<'l>,
-        addr: SocketAddr,
-    ) -> Res {
+    async fn host_poll_remove_client<'l>(&mut self, Arg { host, .. }: Arg<'l>, addr: u64) -> Res {
         host.remove_client(addr);
         host.broadcast(ServerMessage::UserLeft(format!("{addr}")))
             .await?;
@@ -48,7 +44,7 @@ pub trait State: Send + Sync {
 
     async fn host_poll_client_connected<'l>(
         &mut self,
-        addr: SocketAddr,
+        addr: u64,
         Arg { data, host, .. }: Arg<'l>,
     ) -> Res {
         println!("SERVER - A user at {addr} connected");
@@ -72,12 +68,12 @@ pub trait State: Send + Sync {
         Ok(None)
     }
 
-    async fn client_req<'l>(&mut self, addr: SocketAddr, req: ClientRequest, arg: Arg<'l>) -> Res {
+    async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         self.default_client_request(addr, req, arg).await
     }
     async fn default_client_request<'l>(
         &mut self,
-        addr: SocketAddr,
+        addr: u64,
         req: ClientRequest,
         arg: Arg<'l>,
     ) -> Res {

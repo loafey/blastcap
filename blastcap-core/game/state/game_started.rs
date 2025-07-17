@@ -7,7 +7,7 @@ use crate::{
         state::{Res, State},
     },
     network::{
-        NetworkHost, SocketAddrExt,
+        IdentityExt, NetworkHost, SocketAddrExt,
         channel::Channel,
         messages::{ClientRequest, ServerMessage},
     },
@@ -323,12 +323,7 @@ impl State for GameStartedState {
         Ok(None)
     }
 
-    async fn client_req<'l>(
-        &mut self,
-        addr: std::net::SocketAddr,
-        req: ClientRequest,
-        arg: Arg<'l>,
-    ) -> Res {
+    async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         match req {
             ClientRequest::ChatMessage(msg) => {
                 arg.host
