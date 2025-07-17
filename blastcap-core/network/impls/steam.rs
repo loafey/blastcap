@@ -1,14 +1,18 @@
 use crate::network::{
-    ClientPoll, HOST_ADDR, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
+    BOT_ADDR, ClientPoll, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
     NetworkHostExt,
-    channel::{DisjointChannel, disjoint},
+    channel::{Channel, DisjointChannel, disjoint},
     messages::{ClientRequest, ServerMessage},
     tick,
 };
 use async_trait::async_trait;
-use std::net::SocketAddr;
+use futures::{StreamExt, stream::FuturesOrdered};
+use std::{collections::HashMap, net::SocketAddr};
 use steamworks::{Client, SteamId, networking_types::ListenSocketEvent};
-use tokio::sync::{mpsc, oneshot};
+use tokio::{
+    io::{AsyncWrite, AsyncWriteExt},
+    sync::{mpsc, oneshot},
+};
 
 pub enum SteamClient {
     Real,
@@ -43,31 +47,61 @@ pub struct SteamHost {
     lobby_id: u64,
     kill_send: oneshot::Sender<()>,
     msg_recv: mpsc::Receiver<()>,
+    first_poll: bool,
+    host_id: u64,
+    clients: HashMap<u64, ()>,
     own: DisjointChannel<ServerMessage, ClientRequest>,
+    mock: Channel<ClientRequest>,
 }
 
 #[async_trait]
 impl NetworkHostExt for SteamHost {
-    async fn mock(&mut self, _req: ClientRequest) -> anyhow::Result<()> {
-        todo!("mock")
+    async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
+        self.mock.send(req).await?;
+        Ok(())
     }
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
         // self.listen_socket.events();
+        if self.first_poll {
+            self.first_poll = false;
+            return Ok(HostPoll::ClientConnected(self.host_id));
+        }
         tokio::select! {
             own = self.own.recv() => {
                 let Some(req) = own else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: HOST_ADDR, req })
+                Ok(HostPoll::ClientRequest { addr: self.host_id , req })
+            }
+            mocked = self.mock.recv() => {
+                let Some(req) = mocked else { unreachable!() };
+                Ok(HostPoll::ClientRequest { addr: BOT_ADDR, req })
             }
             _ = tick() => Ok(HostPoll::Tick)
         }
     }
 
-    async fn send(&mut self, _addr: u64, _req: ServerMessage) -> anyhow::Result<()> {
-        todo!("send")
+    async fn send(&mut self, addr: u64, req: ServerMessage) -> anyhow::Result<()> {
+        if addr == self.host_id {
+            self.own.send(req).await?;
+        } else {
+            todo!("send")
+        }
+        Ok(())
     }
 
-    async fn broadcast(&mut self, _req: ServerMessage) -> anyhow::Result<()> {
-        todo!("broadcast")
+    async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
+        self.own.send(req.clone()).await?;
+        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&req)?;
+        let mut tasks = FuturesOrdered::new();
+        for writer in self.clients.values_mut() {
+            tasks.push_back(async {
+                // let _ = writer.write_u32(bytes.len() as u32).await;
+                // let _ = writer.write_all(&bytes).await;
+            });
+            todo!("{writer:?} <- {bytes:?}");
+        }
+        while (tasks.next().await).is_some() {}
+
+        Ok(())
     }
 
     fn remove_client(&mut self, _addr: u64) {
@@ -75,11 +109,13 @@ impl NetworkHostExt for SteamHost {
     }
 
     fn get_clients(&self) -> Vec<u64> {
-        todo!("get_clients")
+        let mut clients = self.clients.keys().copied().collect::<Vec<_>>();
+        clients.push(self.host_id);
+        clients
     }
 
     fn get_client_count(&self) -> u32 {
-        todo!("get_client_count")
+        (self.clients.len() + 1) as u32
     }
 }
 
@@ -172,6 +208,10 @@ impl MetadataExt for SteamMetadata {
             kill_send,
             msg_recv,
             own: b,
+            first_poll: true,
+            mock: Channel::new(100),
+            host_id: self.get_my_id(),
+            clients: HashMap::new(),
         }))
     }
 }
