@@ -8,15 +8,12 @@ use crate::network::{
 use anyhow::Context;
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
-use std::{collections::HashMap, net::SocketAddr, time::Duration};
+use std::{collections::HashMap, time::Duration};
 use steamworks::{
-    Client, SteamId,
+    Client, LobbyEnter, SteamId,
     networking_types::{ListenSocketEvent, SendFlags},
 };
-use tokio::{
-    io::{AsyncWrite, AsyncWriteExt},
-    sync::{mpsc, oneshot},
-};
+use tokio::sync::mpsc;
 
 pub enum SteamClient {
     Real,
@@ -206,6 +203,7 @@ impl SteamMetadata {
     pub fn new() -> anyhow::Result<Self> {
         let client = steamworks::Client::init_app(480)?;
         client.networking_utils().init_relay_network_access();
+        client.register_callback(|l: LobbyEnter| println!("lobby enter: {l:?}"));
         Ok(Self {
             client,
             own_client: None,
