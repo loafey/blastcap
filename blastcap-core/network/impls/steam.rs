@@ -81,7 +81,7 @@ impl SteamHost {
                         let messages = match conn.receive_messages(100) {
                             Ok(o) => o,
                             Err(e) => {
-                                eprintln!("error getting client({id}) messages: {e}");
+                                error!("error getting client({id}) messages: {e}");
                                 tick();
                                 continue;
                             }
@@ -93,7 +93,7 @@ impl SteamHost {
                             ) {
                                 Ok(o) => o,
                                 Err(e) => {
-                                    eprintln!("error deserializing client request: {e}");
+                                    error!("error deserializing client request: {e}");
                                     tick();
                                     continue;
                                 }
@@ -104,7 +104,7 @@ impl SteamHost {
                             sleep = false;
                             let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&msg).unwrap();
                             if let Err(e) = conn.send_message(&bytes, SendFlags::RELIABLE) {
-                                eprintln!("failed sending client({id}) message: {e}");
+                                error!("failed sending client({id}) message: {e}");
                                 break;
                             }
                         }
@@ -203,7 +203,7 @@ impl SteamMetadata {
     pub fn new() -> anyhow::Result<Self> {
         let client = steamworks::Client::init_app(480)?;
         client.networking_utils().init_relay_network_access();
-        client.register_callback(|l: LobbyEnter| println!("lobby enter: {l:?}"));
+        client.register_callback(|l: LobbyEnter| trace!("lobby enter: {l:?}"));
         Ok(Self {
             client,
             own_client: None,

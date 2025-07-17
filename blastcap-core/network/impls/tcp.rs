@@ -34,7 +34,7 @@ impl TcpClient {
                 let _ = read.read(&mut buf).await?;
                 let msg = rkyv::from_bytes::<ServerMessage, rkyv::rancor::Error>(&buf)?;
                 if let Err(e) = send.send(msg).await {
-                    eprintln!("CLIENT - error getting message: {e}");
+                    error!("CLIENT - error getting message: {e}");
                     break;
                 };
             }
@@ -115,7 +115,7 @@ impl TcpHost {
             loop {
                 let len = read.read_u32().await? as usize;
                 if len > 10000 {
-                    eprintln!("large message from {addr}!");
+                    warn!("large message from {addr}!");
                     continue;
                 }
                 let mut buf = vec![0; len];
@@ -126,7 +126,7 @@ impl TcpHost {
         };
         tokio::spawn(async move {
             let Err(e) = closure.await;
-            eprintln!("SERVER - recv loop for {addr} crashed: {e}");
+            warn!("SERVER - recv loop for {addr} crashed: {e}");
             kill_send.send(addr).await.expect("server is dead");
         });
     }

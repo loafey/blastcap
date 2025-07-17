@@ -22,7 +22,7 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
         Ok(o) => Box::new(o),
         #[cfg(debug_assertions)]
         Err(e) => {
-            eprintln!("failed connecting to Steam: {e}");
+            error!("failed connecting to Steam: {e}");
             Box::new(TcpMetadata::new())
         }
         #[cfg(not(debug_assertions))]

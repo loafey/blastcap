@@ -80,7 +80,7 @@ pub trait State: Send + Sync {
         if let ClientRequest::Ping = req {
             arg.host.send(addr, ServerMessage::Pong).await?;
         } else {
-            eprintln!(
+            error!(
                 "SERVER - please implement \"{req:?}\" for {}",
                 type_name::<Self>()
             );

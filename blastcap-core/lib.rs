@@ -4,6 +4,10 @@
     vec_into_raw_parts,
     arbitrary_self_types_pointers
 )]
+#![warn(clippy::print_stdout, clippy::print_stderr)]
+
+#[macro_use]
+extern crate tracing;
 
 use crate::{
     game::{
@@ -79,9 +83,48 @@ include!("lib_poll.rs");
 ///
 /// # Safety
 #[unsafe(no_mangle)]
-pub unsafe extern "C" fn register_panic_callback(
-    callback: unsafe extern "C" fn(*const std::ffi::c_char),
+pub unsafe extern "C" fn register_logging(
+    print: unsafe extern "C" fn(*const std::ffi::c_char),
+    print_error: unsafe extern "C" fn(*const std::ffi::c_char),
 ) {
+    struct CustomWriter {
+        print: unsafe extern "C" fn(*const std::ffi::c_char),
+        print_error: unsafe extern "C" fn(*const std::ffi::c_char),
+    }
+    impl std::io::Write for CustomWriter {
+        #[allow(clippy::print_stderr)]
+        fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+            let text = String::from_utf8_lossy(buf).to_string();
+            let stripped = format!("🦀 {}", strip_ansi_escapes::strip_str(&text).trim());
+            let is_err = stripped
+                .split_whitespace()
+                .nth(2)
+                .map(|s| matches!(s, "WARN" | "ERROR" | "DEBUG"))
+                .unwrap_or_default();
+            let Ok(cstr) = CString::new(stripped) else {
+                eprintln!("trace contained invalid chars: {text}");
+                return Ok(0);
+            };
+            unsafe {
+                if is_err {
+                    (self.print_error)(cstr.as_ptr());
+                } else {
+                    (self.print)(cstr.as_ptr());
+                }
+            }
+            Ok(text.len())
+        }
+
+        fn flush(&mut self) -> std::io::Result<()> {
+            Ok(())
+        }
+    }
+    let subscriber = tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::TRACE)
+        .with_writer(move || CustomWriter { print, print_error })
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).unwrap();
+
     std::panic::set_hook(Box::new(move |e| {
         let thread = std::thread::current()
             .name()
@@ -115,17 +158,18 @@ pub unsafe extern "C" fn register_panic_callback(
             "{0}\n{top}\n{location}\n{payload}{end}",
             "=".repeat(payload.lines().map(|l| l.len()).max().unwrap_or(4).min(60))
         );
+        #[allow(clippy::print_stderr)]
         unsafe {
             let Ok(cstr) = CString::new(final_string.clone()) else {
                 eprintln!("= Error string contained multiple null!");
                 eprintln!("{final_string}");
                 let err_str =
                     c"Error contains multiple null! Please look at the terminal output!".as_ptr();
-                callback(err_str);
+                print_error(err_str);
                 return;
             };
             let raw = cstr.as_ptr();
-            callback(raw);
+            print_error(raw);
         }
     }));
 }
@@ -159,7 +203,7 @@ impl ClientHandle {
     #[unsafe(no_mangle)]
     pub unsafe extern "C" fn client_drop_handle(self: *mut Self) {
         unsafe {
-            println!("CLIENT - being dropped!");
+            warn!("CLIENT - being dropped!");
             drop(Box::from_raw(self));
         }
     }
@@ -183,7 +227,7 @@ impl ClientHandle {
             server_send: Sender<ServerMessage>,
             mut client_req_recv: Receiver<ClientRequest>,
         ) -> anyhow::Result<()> {
-            println!("CLIENT - connecting to {addr:?}");
+            trace!("CLIENT - connecting to {addr:?}");
             let mut client = metadata(async |m| m.create_client(0).await).await?;
             let mut tick_counter: usize = 0;
             loop {
