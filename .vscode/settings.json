@@ -23,6 +23,7 @@
         "impls",
         "oneshot",
         "Perlin",
+        "smol",
         "Uninit"
     ]
 }
