@@ -104,8 +104,6 @@ impl MetadataExt for SteamMetadata {
         self.client.user().steam_id().raw()
     }
 
-    fn register_callbacks(&self) {}
-
     fn get_name(&self, id: u64) -> anyhow::Result<String> {
         Ok(self
             .client

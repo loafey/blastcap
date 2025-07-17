@@ -120,7 +120,6 @@ pub trait MetadataExt {
     fn get_my_id(&self) -> u64;
     fn get_name(&self, id: u64) -> anyhow::Result<String>;
     fn get_avatar(&self, id: u64) -> Option<(Vec<u8>, u16, u16)>;
-    fn register_callbacks(&self);
     async fn create_lobby(&mut self) -> anyhow::Result<NetworkHost>;
     async fn create_client(&mut self, lobby: u64) -> anyhow::Result<NetworkClient>;
     async fn tick(&self) -> anyhow::Result<()>;
