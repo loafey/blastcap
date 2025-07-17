@@ -1,5 +1,5 @@
 use crate::network::{
-    ClientPoll, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
+    ClientPoll, HOST_ADDR, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
     NetworkHostExt,
     messages::{ClientRequest, ServerMessage},
     tick,
@@ -9,20 +9,36 @@ use std::net::SocketAddr;
 use steamworks::{Client, SteamId, networking_types::ListenSocketEvent};
 use tokio::sync::{mpsc, oneshot};
 
-pub struct SteamClient {}
-impl SteamClient {
-    #[allow(clippy::new_ret_no_self)]
-    pub fn new() -> Box<dyn NetworkClientExt> {
-        Box::new(SteamClient {})
-    }
+pub enum SteamClient {
+    Real,
+    Channel {
+        read: mpsc::Receiver<ServerMessage>,
+        write: mpsc::Sender<ClientRequest>,
+    },
 }
 #[async_trait]
 impl NetworkClientExt for SteamClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
-        todo!("client poll")
+        let fut = match self {
+            SteamClient::Real => todo!("steam real poll"),
+            SteamClient::Channel { read, .. } => read,
+        };
+        tokio::select! {
+            msg = fut.recv() => {
+                let Some(msg) = msg else { panic!("no clients somehow") };
+                Ok(ClientPoll::Message(msg))
+            }
+            _ = tick() => {
+                Ok(ClientPoll::Tick)
+            }
+        }
     }
-    async fn send(&mut self, _req: ClientRequest) -> anyhow::Result<()> {
-        todo!("client send")
+    async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
+        match self {
+            SteamClient::Real => todo!("steam real send"),
+            SteamClient::Channel { write, .. } => write.send(req).await?,
+        };
+        Ok(())
     }
 }
 pub struct SteamHost {
@@ -41,6 +57,10 @@ impl NetworkHostExt for SteamHost {
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
         // self.listen_socket.events();
         tokio::select! {
+            own = self.own_recv.recv() => {
+                let Some(req) = own else { unreachable!() };
+                Ok(HostPoll::ClientRequest { addr: *HOST_ADDR, req })
+            }
             _ = tick() => Ok(HostPoll::Tick)
         }
     }
@@ -110,7 +130,11 @@ impl MetadataExt for SteamMetadata {
     }
 
     async fn create_client(&mut self, _id: u64) -> anyhow::Result<NetworkClient> {
-        todo!("steam client")
+        if let Some((read, write)) = self.own_client.take() {
+            Ok(NetworkClient::new(SteamClient::Channel { read, write }))
+        } else {
+            Ok(NetworkClient::new(SteamClient::Real))
+        }
     }
 
     async fn create_lobby(&mut self) -> anyhow::Result<NetworkHost> {
