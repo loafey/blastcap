@@ -1,5 +1,61 @@
-use smol::{future::FutureExt, stream::Stream};
+use futures_concurrency::{stream::Merge, vec};
+use smol::{
+    future::FutureExt,
+    stream::{Stream, StreamExt},
+};
 use std::{pin::Pin, task::Poll};
+
+#[macro_export]
+macro_rules! repeat {
+    ($($y:expr),*,) => {
+        repeat!($($y),*)
+    };
+    ($($y:expr),*) => {
+        {
+            let mut a = select::select();
+            $(a = a.add(async || $y));*;
+            a.finish()
+        }
+    };
+}
+
+pub struct SelectBuilder<'l, T> {
+    inner: Vec<Repeat<'l, T>>,
+}
+impl<'l, T> SelectBuilder<'l, T> {
+    #[allow(clippy::should_implement_trait)]
+    #[must_use]
+    pub fn add<P: FnMut() -> R + 'l + 'static, R: Future<Output = T> + 'l>(
+        mut self,
+        func: P,
+    ) -> Self {
+        self.inner.push(Repeat::new(func));
+        self
+    }
+    #[must_use]
+    pub fn finish(self) -> Select<'l, T> {
+        Select {
+            inner: self.inner.merge(),
+        }
+    }
+}
+pub struct Select<'l, T> {
+    inner: vec::Merge<Repeat<'l, T>>,
+}
+impl<'l, T> Stream for Select<'l, T> {
+    type Item = T;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        self.inner.poll_next(cx)
+    }
+}
+
+pub fn select<'l, T>() -> SelectBuilder<'l, T> {
+    SelectBuilder { inner: Vec::new() }
+}
 
 pub struct Repeat<'l, T: 'l> {
     func: Box<dyn FnMut() -> Pin<Box<dyn Future<Output = T> + 'l>>>,

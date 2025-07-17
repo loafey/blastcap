@@ -1,19 +1,20 @@
-use futures_concurrency::stream::Merge;
-use select::Repeat;
+use select::repeat;
 use smol::{Timer, stream::StreamExt as _};
 use std::time::{Duration, Instant};
 
 fn main() {
     smol::block_on(async {
-        let rep1 = Repeat::new(async || {
-            Timer::after(Duration::from_secs(1)).await;
-            1
-        });
-        let rep2 = Repeat::new(async || {
-            Timer::after(Duration::from_secs(2)).await;
-            2
-        });
-        let mut streams = (rep1, rep2).merge();
+        let mut streams = repeat!(
+            {
+                Timer::after(Duration::from_secs(1)).await;
+                1
+            },
+            {
+                Timer::after(Duration::from_secs(2)).await;
+                2
+            }
+        );
+
         let time = Instant::now();
         let mut sum = 0;
         while let Some(p) = streams.next().await {
