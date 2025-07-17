@@ -1,6 +1,7 @@
 use crate::network::{
     ClientPoll, HOST_ADDR, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
     NetworkHostExt,
+    channel::{DisjointChannel, disjoint},
     messages::{ClientRequest, ServerMessage},
     tick,
 };
@@ -11,20 +12,17 @@ use tokio::sync::{mpsc, oneshot};
 
 pub enum SteamClient {
     Real,
-    Channel {
-        read: mpsc::Receiver<ServerMessage>,
-        write: mpsc::Sender<ClientRequest>,
-    },
+    Channel(DisjointChannel<ClientRequest, ServerMessage>),
 }
 #[async_trait]
 impl NetworkClientExt for SteamClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
         let fut = match self {
             SteamClient::Real => todo!("steam real poll"),
-            SteamClient::Channel { read, .. } => read,
+            SteamClient::Channel(dis) => dis.recv(),
         };
         tokio::select! {
-            msg = fut.recv() => {
+            msg = fut => {
                 let Some(msg) = msg else { panic!("no clients somehow") };
                 Ok(ClientPoll::Message(msg))
             }
@@ -36,7 +34,7 @@ impl NetworkClientExt for SteamClient {
     async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
         match self {
             SteamClient::Real => todo!("steam real send"),
-            SteamClient::Channel { write, .. } => write.send(req).await?,
+            SteamClient::Channel(dis) => dis.send(req).await?,
         };
         Ok(())
     }
@@ -45,8 +43,7 @@ pub struct SteamHost {
     lobby_id: u64,
     kill_send: oneshot::Sender<()>,
     msg_recv: mpsc::Receiver<()>,
-    own_recv: mpsc::Receiver<ClientRequest>,
-    own_send: mpsc::Sender<ServerMessage>,
+    own: DisjointChannel<ServerMessage, ClientRequest>,
 }
 
 #[async_trait]
@@ -57,7 +54,7 @@ impl NetworkHostExt for SteamHost {
     async fn poll(&mut self) -> anyhow::Result<HostPoll> {
         // self.listen_socket.events();
         tokio::select! {
-            own = self.own_recv.recv() => {
+            own = self.own.recv() => {
                 let Some(req) = own else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr: *HOST_ADDR, req })
             }
@@ -88,7 +85,7 @@ impl NetworkHostExt for SteamHost {
 
 pub struct SteamMetadata {
     client: Client,
-    own_client: Option<(mpsc::Receiver<ServerMessage>, mpsc::Sender<ClientRequest>)>,
+    own_client: Option<DisjointChannel<ClientRequest, ServerMessage>>,
 }
 impl SteamMetadata {
     pub fn new() -> anyhow::Result<Self> {
@@ -130,8 +127,8 @@ impl MetadataExt for SteamMetadata {
     }
 
     async fn create_client(&mut self, _id: u64) -> anyhow::Result<NetworkClient> {
-        if let Some((read, write)) = self.own_client.take() {
-            Ok(NetworkClient::new(SteamClient::Channel { read, write }))
+        if let Some(dis) = self.own_client.take() {
+            Ok(NetworkClient::new(SteamClient::Channel(dis)))
         } else {
             Ok(NetworkClient::new(SteamClient::Real))
         }
@@ -158,9 +155,8 @@ impl MetadataExt for SteamMetadata {
         let (kill_send, kill_recv) = oneshot::channel();
         let (msg_send, msg_recv) = mpsc::channel(1000);
 
-        let (mes_send, mes_recv) = mpsc::channel(100);
-        let (req_send, req_recv) = mpsc::channel(100);
-        self.own_client = Some((mes_recv, req_send));
+        let (a, b) = disjoint(100);
+        self.own_client = Some(a);
         std::thread::spawn(move || {
             loop {
                 let ev = listen_socket.receive_event();
@@ -177,8 +173,7 @@ impl MetadataExt for SteamMetadata {
             lobby_id,
             kill_send,
             msg_recv,
-            own_recv: req_recv,
-            own_send: mes_send,
+            own: b,
         }))
     }
 }

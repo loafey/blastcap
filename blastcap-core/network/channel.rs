@@ -23,18 +23,18 @@ impl<T> Channel<T> {
     }
 }
 
-pub struct DisjointChannel<A, B> {
-    send: Sender<A>,
-    recv: Receiver<B>,
+pub struct DisjointChannel<S, R> {
+    send: Sender<S>,
+    recv: Receiver<R>,
 }
-impl<A, B> DisjointChannel<A, B> {
-    pub async fn recv(&mut self) -> Option<B> {
+impl<S, R> DisjointChannel<S, R> {
+    pub async fn recv(&mut self) -> Option<R> {
         self.recv.recv().await
     }
-    pub fn try_recv(&mut self) -> Result<B, tokio::sync::mpsc::error::TryRecvError> {
+    pub fn try_recv(&mut self) -> Result<R, tokio::sync::mpsc::error::TryRecvError> {
         self.recv.try_recv()
     }
-    pub async fn send(&self, t: A) -> Result<(), tokio::sync::mpsc::error::SendError<A>> {
+    pub async fn send(&self, t: S) -> Result<(), tokio::sync::mpsc::error::SendError<S>> {
         self.send.send(t).await
     }
 }
