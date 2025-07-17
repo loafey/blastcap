@@ -94,6 +94,7 @@ pub trait State: Send + Sync {
             HostPoll::ClientRequest { addr, req } => self.client_req(addr, req, arg).await,
             HostPoll::RemoveClient(addr) => self.host_poll_remove_client(arg, addr).await,
             HostPoll::Tick => self.host_poll_tick(arg).await,
+            HostPoll::Nothing => Ok(None),
         }
     }
 }

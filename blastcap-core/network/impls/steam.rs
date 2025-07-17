@@ -5,6 +5,7 @@ use crate::network::{
     messages::{ClientRequest, ServerMessage},
     tick,
 };
+use anyhow::Context;
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
 use std::{collections::HashMap, net::SocketAddr};
@@ -43,15 +44,42 @@ impl NetworkClientExt for SteamClient {
         Ok(())
     }
 }
-pub struct SteamHost {
+struct SteamHost {
     lobby_id: u64,
-    kill_send: oneshot::Sender<()>,
-    msg_recv: mpsc::Receiver<()>,
     first_poll: bool,
     host_id: u64,
     clients: HashMap<u64, ()>,
+    listener: Channel<ListenSocketEvent>,
     own: DisjointChannel<ServerMessage, ClientRequest>,
     mock: Channel<ClientRequest>,
+}
+impl SteamHost {
+    async fn handle_listen(&mut self, ev: ListenSocketEvent) -> anyhow::Result<HostPoll> {
+        match ev {
+            ListenSocketEvent::Connecting(req) => {
+                req.accept()?;
+                Ok(HostPoll::Nothing)
+            }
+            ListenSocketEvent::Connected(conn) => {
+                let id = conn
+                    .remote()
+                    .steam_id()
+                    .with_context(|| "missing Steam id")?
+                    .raw();
+                self.clients.insert(id, ());
+                Ok(HostPoll::ClientConnected(id))
+            }
+            ListenSocketEvent::Disconnected(ev) => {
+                let id = ev
+                    .remote()
+                    .steam_id()
+                    .with_context(|| "missing Steam id")?
+                    .raw();
+                self.clients.remove(&id);
+                Ok(HostPoll::RemoveClient(id))
+            }
+        }
+    }
 }
 
 #[async_trait]
@@ -67,6 +95,10 @@ impl NetworkHostExt for SteamHost {
             return Ok(HostPoll::ClientConnected(self.host_id));
         }
         tokio::select! {
+            ev = self.listener.recv() => {
+                let Some(ev) = ev else { unreachable!() };
+                self.handle_listen(ev).await
+            }
             own = self.own.recv() => {
                 let Some(req) = own else { unreachable!() };
                 Ok(HostPoll::ClientRequest { addr: self.host_id , req })
@@ -186,32 +218,26 @@ impl MetadataExt for SteamMetadata {
                 break id?.raw();
             }
         };
-        let (kill_send, kill_recv) = oneshot::channel();
-        let (msg_send, msg_recv) = mpsc::channel(1000);
 
-        let (a, b) = disjoint(100);
-        self.own_client = Some(a);
+        let (own_client, own) = disjoint(100);
+        self.own_client = Some(own_client);
+
+        let listener = Channel::new(10);
+        let listener_send = listener.sender();
         std::thread::spawn(move || {
             loop {
                 let ev = listen_socket.receive_event();
-                match ev {
-                    ListenSocketEvent::Connecting(connection_request) => todo!(),
-                    ListenSocketEvent::Connected(connected_event) => {
-                        todo!()
-                    }
-                    ListenSocketEvent::Disconnected(disconnected_event) => todo!(),
-                }
+                listener_send.blocking_send(ev).unwrap();
             }
         });
         Ok(NetworkHost::new(SteamHost {
             lobby_id,
-            kill_send,
-            msg_recv,
-            own: b,
+            own,
             first_poll: true,
             mock: Channel::new(100),
             host_id: self.get_my_id(),
             clients: HashMap::new(),
+            listener,
         }))
     }
 }

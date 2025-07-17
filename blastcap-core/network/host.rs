@@ -29,6 +29,7 @@ pub enum HostPoll {
     ClientConnected(u64),
     ClientRequest { addr: u64, req: ClientRequest },
     Tick,
+    Nothing,
 }
 
 #[async_trait]
