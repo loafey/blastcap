@@ -1,6 +1,6 @@
 use crate::network::{
     BOT_ADDR, ClientPoll, HostPoll, MetadataExt, NetworkClient, NetworkClientExt, NetworkHost,
-    NetworkHostExt,
+    NetworkHostExt, TICK_RATE,
     channel::{Channel, DisjointChannel, disjoint},
     messages::{ClientRequest, ServerMessage},
     tick,
@@ -8,8 +8,11 @@ use crate::network::{
 use anyhow::Context;
 use async_trait::async_trait;
 use futures::{StreamExt, stream::FuturesOrdered};
-use std::{collections::HashMap, net::SocketAddr};
-use steamworks::{Client, SteamId, networking_types::ListenSocketEvent};
+use std::{collections::HashMap, net::SocketAddr, time::Duration};
+use steamworks::{
+    Client, SteamId,
+    networking_types::{ListenSocketEvent, SendFlags},
+};
 use tokio::{
     io::{AsyncWrite, AsyncWriteExt},
     sync::{mpsc, oneshot},
@@ -45,10 +48,11 @@ impl NetworkClientExt for SteamClient {
     }
 }
 struct SteamHost {
-    lobby_id: u64,
+    _lobby_id: u64,
     first_poll: bool,
     host_id: u64,
-    clients: HashMap<u64, ()>,
+    clients: HashMap<u64, mpsc::Sender<ServerMessage>>,
+    client_req: Channel<(u64, ClientRequest)>,
     listener: Channel<ListenSocketEvent>,
     own: DisjointChannel<ServerMessage, ClientRequest>,
     mock: Channel<ClientRequest>,
@@ -66,7 +70,52 @@ impl SteamHost {
                     .steam_id()
                     .with_context(|| "missing Steam id")?
                     .raw();
-                self.clients.insert(id, ());
+                let (client_send, mut client_recv) = mpsc::channel(100);
+                let req_send = self.client_req.sender();
+                self.clients.insert(id, client_send);
+                let mut conn = conn.take_connection();
+                tokio::task::spawn_blocking(move || {
+                    fn tick() {
+                        std::thread::sleep(Duration::from_secs_f64(
+                            const { 1.0 / TICK_RATE as f64 },
+                        ));
+                    }
+                    loop {
+                        let messages = match conn.receive_messages(100) {
+                            Ok(o) => o,
+                            Err(e) => {
+                                eprintln!("error getting client({id}) messages: {e}");
+                                tick();
+                                continue;
+                            }
+                        };
+                        let mut sleep = messages.is_empty();
+                        for message in messages {
+                            let message = match rkyv::from_bytes::<ClientRequest, rkyv::rancor::Error>(
+                                message.data(),
+                            ) {
+                                Ok(o) => o,
+                                Err(e) => {
+                                    eprintln!("error deserializing client request: {e}");
+                                    tick();
+                                    continue;
+                                }
+                            };
+                            req_send.blocking_send((id, message)).unwrap();
+                        }
+                        if let Ok(msg) = client_recv.try_recv() {
+                            sleep = false;
+                            let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&msg).unwrap();
+                            if let Err(e) = conn.send_message(&bytes, SendFlags::RELIABLE) {
+                                eprintln!("failed sending client({id}) message: {e}");
+                                break;
+                            }
+                        }
+                        if sleep {
+                            tick()
+                        }
+                    }
+                });
                 Ok(HostPoll::ClientConnected(id))
             }
             ListenSocketEvent::Disconnected(ev) => {
@@ -115,21 +164,19 @@ impl NetworkHostExt for SteamHost {
         if addr == self.host_id {
             self.own.send(req).await?;
         } else {
-            todo!("send")
+            let Some(cli) = self.clients.get(&addr) else {
+                return Ok(());
+            };
+            cli.send(req).await?;
         }
         Ok(())
     }
 
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
         self.own.send(req.clone()).await?;
-        let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&req)?;
         let mut tasks = FuturesOrdered::new();
         for writer in self.clients.values_mut() {
-            tasks.push_back(async {
-                // let _ = writer.write_u32(bytes.len() as u32).await;
-                // let _ = writer.write_all(&bytes).await;
-            });
-            todo!("{writer:?} <- {bytes:?}");
+            tasks.push_back(async { _ = writer.send(req.clone()).await });
         }
         while (tasks.next().await).is_some() {}
 
@@ -231,12 +278,13 @@ impl MetadataExt for SteamMetadata {
             }
         });
         Ok(NetworkHost::new(SteamHost {
-            lobby_id,
+            _lobby_id: lobby_id,
             own,
             first_poll: true,
             mock: Channel::new(100),
             host_id: self.get_my_id(),
             clients: HashMap::new(),
+            client_req: Channel::new(100),
             listener,
         }))
     }
