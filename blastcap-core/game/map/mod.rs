@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use math::{Vec2, Vec3};
+use noise::{NoiseFn, Perlin};
 
 fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     let mut z_vec = Vec::with_capacity(size.z);
@@ -50,15 +51,30 @@ impl Default for Map {
             size,
         };
 
-        map.sparse_floor(0);
-        map.sparse_floor(10);
-        map.sparse_floor(20);
+        map.gen_caves(Vec3::new(0, 0, 0), Vec3::new(20, 20, 20));
+        map.gen_sparse_floor(0);
+        map.gen_sparse_floor(10);
+        map.gen_sparse_floor(20);
 
         map
     }
 }
 impl Map {
-    fn sparse_floor(&mut self, y: usize) {
+    fn gen_caves(&mut self, min: Vec3, max: Vec3) {
+        let noise = Perlin::new(rand::random());
+        for x in min.x.min(max.x)..min.x.max(max.x) {
+            for y in min.y.min(max.y)..min.y.max(max.y) {
+                for z in min.z.min(max.z)..min.z.max(max.z) {
+                    let f = noise.get([x as f64 * 10.0, y as f64 * 10.0, z as f64 * 10.0]);
+                    trace!("{f}");
+                    if f > 0.5 {
+                        self.set(Vec3::new(x, y, z), Piece::Ground);
+                    }
+                }
+            }
+        }
+    }
+    fn gen_sparse_floor(&mut self, y: usize) {
         let mut boxes: HashMap<usize, (Box, Vec<usize>)> = Default::default();
         for i in 0..6 {
             let x_size = rand::random_range(4..=16);
