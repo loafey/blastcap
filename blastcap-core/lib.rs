@@ -20,9 +20,10 @@ use crate::{
         metadata, metadata_block,
     },
 };
-use std::ffi::{CStr, CString};
-use tokio::{
-    sync::mpsc::{Receiver, Sender},
+use select::Select;
+use smol::{channel, stream::StreamExt};
+use std::{
+    ffi::{CStr, CString},
     time::Instant,
 };
 
@@ -38,12 +39,7 @@ sharpify::constants!(
 #[unsafe(no_mangle)]
 pub extern "C" fn start_host_loop(on_fail: unsafe extern "C" fn(*const std::ffi::c_char)) {
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-        let _enter = rt.enter();
-        let Err(err): anyhow::Result<()> = rt.block_on(async move {
+        let Err(err): anyhow::Result<()> = smol::block_on(async move {
             let mut host = metadata(async |a| a.create_lobby().await).await?;
             let mut data = ServerData::default();
             let mut state: Box<dyn State> = LobbyState::new();
@@ -174,10 +170,10 @@ pub unsafe extern "C" fn register_logging(
     }));
 }
 pub struct ClientHandle {
-    recv: Receiver<ServerMessage>,
-    send: Sender<ClientRequest>,
-    server_send: Option<Sender<ServerMessage>>,
-    client_recv: Option<Receiver<ClientRequest>>,
+    recv: channel::Receiver<ServerMessage>,
+    send: channel::Sender<ClientRequest>,
+    server_send: Option<channel::Sender<ServerMessage>>,
+    client_recv: Option<channel::Receiver<ClientRequest>>,
     on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
 }
 impl ClientHandle {
@@ -187,8 +183,8 @@ impl ClientHandle {
     pub unsafe extern "C" fn create_client(
         on_fail: unsafe extern "C" fn(*const std::ffi::c_char),
     ) -> *mut Self {
-        let (server_send, server_recv) = tokio::sync::mpsc::channel(1000);
-        let (client_send, client_recv) = tokio::sync::mpsc::channel(1000);
+        let (server_send, server_recv) = channel::unbounded();
+        let (client_send, client_recv) = channel::unbounded();
         Box::leak(Box::new(ClientHandle {
             recv: server_recv,
             send: client_send,
@@ -224,30 +220,34 @@ impl ClientHandle {
 
         async fn client_func(
             addr: String,
-            server_send: Sender<ServerMessage>,
-            mut client_req_recv: Receiver<ClientRequest>,
+            server_send: channel::Sender<ServerMessage>,
+            mut client_req_recv: channel::Receiver<ClientRequest>,
         ) -> anyhow::Result<()> {
             trace!("CLIENT - connecting to {addr:?}");
             let mut client = metadata(async |m| m.create_client(0).await).await?;
             let mut tick_counter: usize = 0;
-            loop {
-                let poll = select! {
-                    res = client.poll() => {
-                        let Ok(res) = res else { break };
-                        Some(res)
-                    }
-                    msg = client_req_recv.recv() => {
-                        let Some(msg) = msg else { break };
-                        client.send(msg).await?;
-                        None
-                    }
-                };
-                let Some(res) = poll else { continue };
-                match res {
-                    ClientPoll::Message(client_message) => server_send.send(client_message).await?,
-                    ClientPoll::Tick => {
-                        tick_counter = tick_counter.wrapping_add(1);
-                    }
+            let mut stream: Select<anyhow::Result<_>> = select::repeat!(
+                async {
+                    let res = client.poll().await?;
+                    Ok(Ok(res))
+                },
+                async {
+                    let msg = client_req_recv.recv().await?;
+                    Ok(Err(msg))
+                }
+            );
+            while let Some(poll) = stream.next().await {
+                let poll = poll? else { continue };
+                match poll {
+                    Ok(res) => match res {
+                        ClientPoll::Message(client_message) => {
+                            server_send.send(client_message).await?
+                        }
+                        ClientPoll::Tick => {
+                            tick_counter = tick_counter.wrapping_add(1);
+                        }
+                    },
+                    Err(msg) => client.send(msg).await?,
                 }
             }
             Ok(())
@@ -262,12 +262,7 @@ impl ClientHandle {
             return;
         };
         std::thread::spawn(move || {
-            let rt = tokio::runtime::Builder::new_current_thread()
-                .enable_all()
-                .build()
-                .expect("Unable to create Runtime");
-            let _enter = rt.enter();
-            let Err(err) = rt.block_on(client_func(addr, server_send, client_recv)) else {
+            let Err(err) = smol::block_on(client_func(addr, server_send, client_recv)) else {
                 return;
             };
             unsafe {

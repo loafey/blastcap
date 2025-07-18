@@ -224,7 +224,7 @@ pub unsafe extern \"C\" fn {rust_name}({rust_arg_string}) {{
     {rust_pre_process}
     let Err(err) = client
         .send
-        .blocking_send(ClientRequest::{name}{rust_args})
+        .send_blocking(ClientRequest::{name}{rust_args})
         else {{ return; }};
     unsafe {{
         let str = CString::new(format!(\"{{err}}\")).unwrap().into_raw();

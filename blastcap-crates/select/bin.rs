@@ -98,7 +98,7 @@ fn main() {
             s.add(|| async { inc + 1 });
             s.add(|| async { inc + 2 });
         });
-        repeat!(async { inc + 1 }, async { inc + 2 });
+        // repeat!(async { inc + 1 }, async { inc + 2 });
         // let mut stream = {
         //     let mut a = select::select();
         //     let a_fun = || {

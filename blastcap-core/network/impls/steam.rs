@@ -7,13 +7,13 @@ use crate::network::{
 };
 use anyhow::Context;
 use async_trait::async_trait;
-use futures::{StreamExt, stream::FuturesOrdered};
+use futures_concurrency::future::Join;
+use smol::channel;
 use std::{collections::HashMap, time::Duration};
 use steamworks::{
     Client, LobbyEnter, SteamId,
     networking_types::{ListenSocketEvent, SendFlags},
 };
-use tokio::sync::mpsc;
 
 pub enum SteamClient {
     Real,
@@ -48,7 +48,7 @@ struct SteamHost {
     _lobby_id: u64,
     first_poll: bool,
     host_id: u64,
-    clients: HashMap<u64, mpsc::Sender<ServerMessage>>,
+    clients: HashMap<u64, channel::Sender<ServerMessage>>,
     client_req: Channel<(u64, ClientRequest)>,
     listener: Channel<ListenSocketEvent>,
     own: DisjointChannel<ServerMessage, ClientRequest>,
@@ -67,11 +67,11 @@ impl SteamHost {
                     .steam_id()
                     .with_context(|| "missing Steam id")?
                     .raw();
-                let (client_send, mut client_recv) = mpsc::channel(100);
+                let (client_send, mut client_recv) = channel::unbounded();
                 let req_send = self.client_req.sender();
                 self.clients.insert(id, client_send);
                 let mut conn = conn.take_connection();
-                tokio::task::spawn_blocking(move || {
+                smol::unblock(move || {
                     fn tick() {
                         std::thread::sleep(Duration::from_secs_f64(
                             const { 1.0 / TICK_RATE as f64 },
@@ -98,7 +98,7 @@ impl SteamHost {
                                     continue;
                                 }
                             };
-                            req_send.blocking_send((id, message)).unwrap();
+                            req_send.send_blocking((id, message)).unwrap();
                         }
                         if let Ok(msg) = client_recv.try_recv() {
                             sleep = false;
@@ -171,11 +171,11 @@ impl NetworkHostExt for SteamHost {
 
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
         self.own.send(req.clone()).await?;
-        let mut tasks = FuturesOrdered::new();
+        let mut tasks = Vec::new();
         for writer in self.clients.values_mut() {
-            tasks.push_back(async { _ = writer.send(req.clone()).await });
+            tasks.push(async { _ = writer.send(req.clone()).await });
         }
-        while (tasks.next().await).is_some() {}
+        tasks.join();
 
         Ok(())
     }
@@ -264,25 +264,25 @@ impl MetadataExt for SteamMetadata {
             }
         };
 
-        let (own_client, own) = disjoint(100);
+        let (own_client, own) = disjoint();
         self.own_client = Some(own_client);
 
-        let listener = Channel::new(10);
+        let listener = Channel::new();
         let listener_send = listener.sender();
         std::thread::spawn(move || {
             loop {
                 let ev = listen_socket.receive_event();
-                listener_send.blocking_send(ev).unwrap();
+                listener_send.send_blocking(ev).unwrap();
             }
         });
         Ok(NetworkHost::new(SteamHost {
             _lobby_id: lobby_id,
             own,
             first_poll: true,
-            mock: Channel::new(100),
+            mock: Channel::new(),
             host_id: self.get_my_id(),
             clients: HashMap::new(),
-            client_req: Channel::new(100),
+            client_req: Channel::new(),
             listener,
         }))
     }

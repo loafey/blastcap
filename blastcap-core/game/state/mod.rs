@@ -5,8 +5,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use std::any::type_name;
-use tokio::time::Instant;
+use std::{any::type_name, time::Instant};
 
 mod game_started;
 pub use game_started::GameStartedState;
