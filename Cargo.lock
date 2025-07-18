@@ -177,6 +177,7 @@ dependencies = [
  "math",
  "noise",
  "oneshot",
+ "paste",
  "pathfinding",
  "rand 0.9.1",
  "rkyv",

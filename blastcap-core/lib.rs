@@ -2,7 +2,8 @@
     impl_trait_in_bindings,
     never_type,
     vec_into_raw_parts,
-    arbitrary_self_types_pointers
+    arbitrary_self_types_pointers,
+    macro_metavar_expr
 )]
 #![warn(clippy::print_stdout, clippy::print_stderr)]
 
@@ -221,23 +222,16 @@ impl ClientHandle {
         async fn client_func(
             addr: String,
             server_send: channel::Sender<ServerMessage>,
-            mut client_req_recv: channel::Receiver<ClientRequest>,
+            client_req_recv: channel::Receiver<ClientRequest>,
         ) -> anyhow::Result<()> {
             trace!("CLIENT - connecting to {addr:?}");
             let mut client = metadata(async |m| m.create_client(0).await).await?;
             let mut tick_counter: usize = 0;
-            let mut stream: Select<anyhow::Result<_>> = select::repeat!(
-                async {
-                    let res = client.poll().await?;
-                    Ok(Ok(res))
-                },
-                async {
-                    let msg = client_req_recv.recv().await?;
-                    Ok(Err(msg))
-                }
-            );
-            while let Some(poll) = stream.next().await {
-                let poll = poll? else { continue };
+            loop {
+                let poll = select::select!(
+                    (client.poll(), |res| { Ok(res?) }),
+                    (client_req_recv.recv(), |msg| { Err(msg?) })
+                );
                 match poll {
                     Ok(res) => match res {
                         ClientPoll::Message(client_message) => {
@@ -250,7 +244,6 @@ impl ClientHandle {
                     Err(msg) => client.send(msg).await?,
                 }
             }
-            Ok(())
         }
         let addr = unsafe { CStr::from_ptr(addr) }
             .to_string_lossy()

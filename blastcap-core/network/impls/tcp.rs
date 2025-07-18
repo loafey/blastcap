@@ -56,15 +56,15 @@ impl NetworkClientExt for TcpClient {
                 TcpClient::Channel(dis) => dis.recv().await,
             }
         };
-        select! {
-            msg = fut => {
-                let Some(msg) = msg else { panic!("no clients somehow") };
+        select::select!(
+            (fut, |msg| {
+                let Some(msg) = msg else {
+                    panic!("no clients somehow")
+                };
                 Ok(ClientPoll::Message(msg))
-            }
-            _ = tick() => {
-                Ok(ClientPoll::Tick)
-            }
-        }
+            }),
+            (tick(), |_| { Ok(ClientPoll::Tick) })
+        )
     }
 
     async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
@@ -147,32 +147,41 @@ impl NetworkHostExt for TcpHost {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(HOST_ADDR));
         }
-        select! {
-            acc = self.listener.accept() => {
+        select::select!(
+            (self.listener.accept(), |acc| {
                 let (stream, addr) = acc?;
                 self.acc((stream, addr)).await;
                 Ok(HostPoll::ClientConnected(addr.raw()))
-            },
-            remove = self.kill.recv() => {
+            }),
+            (self.kill.recv(), |remove| {
                 let Some(addr) = remove else { unreachable!() };
                 Ok(HostPoll::RemoveClient(addr.raw()))
-            },
-            own = self.own.recv() => {
+            }),
+            (self.own.recv(), |own| {
                 let Some(req) = own else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: HOST_ADDR, req })
-            }
-            mocked = self.mock.recv() => {
+                Ok(HostPoll::ClientRequest {
+                    addr: HOST_ADDR,
+                    req,
+                })
+            }),
+            (self.mock.recv(), |mocked| {
                 let Some(req) = mocked else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: BOT_ADDR, req })
-            }
-            msg = self.client_req.recv() => {
-                let Some((addr, req)) = msg else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: addr.raw(), req })
-            }
-            _ = tick() => {
-                Ok(HostPoll::Tick)
-            }
-        }
+                Ok(HostPoll::ClientRequest {
+                    addr: BOT_ADDR,
+                    req,
+                })
+            }),
+            (self.client_req.recv(), |msg| {
+                let Some((addr, req)) = msg else {
+                    unreachable!()
+                };
+                Ok(HostPoll::ClientRequest {
+                    addr: addr.raw(),
+                    req,
+                })
+            }),
+            (tick(), |_| { Ok(HostPoll::Tick) })
+        )
     }
 
     async fn send(&mut self, addr: u64, req: ServerMessage) -> anyhow::Result<()> {

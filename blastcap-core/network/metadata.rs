@@ -28,30 +28,18 @@ static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
     let mut m = Metadata { inner };
     std::thread::spawn(move || {
         smol::block_on(async {
-            let mut stream = select::repeat!(
-                async {
-                    let Ok(act) = recv.recv().await else {
-                        return ControlFlow::Break(());
-                    };
-                    let Err(e) = act(unsafe {
-                        std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)
+            loop {
+                select::select! {
+                    (recv.recv(), |msg| {
+                        let act = msg.unwrap();
+                        let Err(e) = act(unsafe{std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)}).await else { continue };
+                        panic!("metadata panic: {e}")
+                    }),
+                    (tick(), |_| {
+                        let Err(e) = m.tick().await else { continue };
+                        panic!("metadata tick panic: {e}")
                     })
-                    .await
-                    else {
-                        return ControlFlow::Continue(());
-                    };
-                    panic!("metadata panic: {e}")
-                },
-                async {
-                    tick().await;
-                    let Err(e) = m.tick().await else {
-                        return ControlFlow::Continue(());
-                    };
-                    panic!("metadata tick panic: {e}")
                 }
-            );
-            while let Some(msg) = stream.next().await {
-                msg;
             }
         });
         panic!("metadata early exit");

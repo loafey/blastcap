@@ -27,15 +27,15 @@ impl NetworkClientExt for SteamClient {
             SteamClient::Real => todo!("steam real poll"),
             SteamClient::Channel(dis) => dis.recv(),
         };
-        select! {
-            msg = fut => {
-                let Some(msg) = msg else { panic!("no clients somehow") };
+        select::select!(
+            (fut, |msg| {
+                let Some(msg) = msg else {
+                    panic!("no clients somehow")
+                };
                 Ok(ClientPoll::Message(msg))
-            }
-            _ = tick() => {
-                Ok(ClientPoll::Tick)
-            }
-        }
+            }),
+            (tick(), |_| { Ok(ClientPoll::Tick) })
+        )
     }
     async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
         match self {
@@ -142,21 +142,27 @@ impl<'a> NetworkHostExt for SteamHost<'a> {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(self.host_id));
         }
-        select! {
-            ev = self.listener.recv() => {
+        select::select!(
+            (self.listener.recv(), |ev| {
                 let Some(ev) = ev else { unreachable!() };
                 self.handle_listen(ev).await
-            }
-            own = self.own.recv() => {
+            }),
+            (self.own.recv(), |own| {
                 let Some(req) = own else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: self.host_id , req })
-            }
-            mocked = self.mock.recv() => {
+                Ok(HostPoll::ClientRequest {
+                    addr: self.host_id,
+                    req,
+                })
+            }),
+            (self.mock.recv(), |mocked| {
                 let Some(req) = mocked else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: BOT_ADDR, req })
-            }
-            _ = tick() => Ok(HostPoll::Tick)
-        }
+                Ok(HostPoll::ClientRequest {
+                    addr: BOT_ADDR,
+                    req,
+                })
+            }),
+            (tick(), |_| Ok(HostPoll::Tick))
+        )
     }
 
     async fn send(&mut self, addr: u64, req: ServerMessage) -> anyhow::Result<()> {
