@@ -1,7 +1,7 @@
 use async_trait::async_trait;
-use smol::channel;
+use smol::{channel, stream::StreamExt};
 use std::{
-    ops::{Deref, DerefMut},
+    ops::{ControlFlow, Deref, DerefMut},
     pin::Pin,
     sync::LazyLock,
 };
@@ -28,18 +28,30 @@ static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
     let mut m = Metadata { inner };
     std::thread::spawn(move || {
         smol::block_on(async {
-            loop {
-                select! {
-                    msg = recv.recv() => {
-                        let Some(act) = msg else { break };
-                        let Err(e) = act(unsafe{std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)}).await else { continue };
-                        panic!("metadata panic: {e}")
-                    }
-                    _ = tick() => {
-                        let Err(e) = m.tick().await else { continue };
-                        panic!("metadata tick panic: {e}")
-                    }
+            let mut stream = select::repeat!(
+                async {
+                    let Ok(act) = recv.recv().await else {
+                        return ControlFlow::Break(());
+                    };
+                    let Err(e) = act(unsafe {
+                        std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)
+                    })
+                    .await
+                    else {
+                        return ControlFlow::Continue(());
+                    };
+                    panic!("metadata panic: {e}")
+                },
+                async {
+                    tick().await;
+                    let Err(e) = m.tick().await else {
+                        return ControlFlow::Continue(());
+                    };
+                    panic!("metadata tick panic: {e}")
                 }
+            );
+            while let Some(msg) = stream.next().await {
+                msg;
             }
         });
         panic!("metadata early exit");

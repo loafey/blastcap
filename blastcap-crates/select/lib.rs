@@ -25,7 +25,7 @@ pub struct SelectBuilder<'l, T> {
 impl<'l, T> SelectBuilder<'l, T> {
     #[allow(clippy::should_implement_trait)]
     #[must_use]
-    pub fn add<P: FnMut() -> R + 'l + 'static, R: Future<Output = T> + 'l>(
+    pub fn add<P: FnMut() -> R + 'l + 'static + Send, R: Future<Output = T> + 'l + Send>(
         mut self,
         func: P,
     ) -> Self {
@@ -58,11 +58,13 @@ pub fn select<'l, T>() -> SelectBuilder<'l, T> {
 }
 
 pub struct Repeat<'l, T: 'l> {
-    func: Box<dyn FnMut() -> Pin<Box<dyn Future<Output = T> + 'l>>>,
+    func: Box<dyn FnMut() -> Pin<Box<dyn Future<Output = T> + 'l + Send>> + Send>,
     inner: RepeatInner<'l, T>,
 }
 impl<'l, T: 'l> Repeat<'l, T> {
-    pub fn new<P: FnMut() -> R + 'l + 'static, R: Future<Output = T> + 'l>(mut func: P) -> Self {
+    pub fn new<P: FnMut() -> R + 'l + 'static + Send, R: Future<Output = T> + 'l + Send>(
+        mut func: P,
+    ) -> Self {
         Self {
             func: Box::new(move || Box::pin(func())),
             inner: RepeatInner::NotSpawned,
@@ -106,5 +108,5 @@ impl<'l, T: 'l> Stream for Repeat<'l, T> {
 
 enum RepeatInner<'l, T> {
     NotSpawned,
-    Spawned(Pin<Box<dyn Future<Output = T> + 'l>>),
+    Spawned(Pin<Box<dyn Future<Output = T> + 'l + Send>>),
 }

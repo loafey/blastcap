@@ -8,7 +8,8 @@ use crate::network::{
 use anyhow::Context;
 use async_trait::async_trait;
 use futures_concurrency::future::Join;
-use smol::channel;
+use select::Select;
+use smol::{channel, stream::StreamExt};
 use std::{collections::HashMap, time::Duration};
 use steamworks::{
     Client, LobbyEnter, SteamId,
@@ -44,7 +45,7 @@ impl NetworkClientExt for SteamClient {
         Ok(())
     }
 }
-struct SteamHost {
+struct SteamHost<'a> {
     _lobby_id: u64,
     first_poll: bool,
     host_id: u64,
@@ -53,8 +54,9 @@ struct SteamHost {
     listener: Channel<ListenSocketEvent>,
     own: DisjointChannel<ServerMessage, ClientRequest>,
     mock: Channel<ClientRequest>,
+    poll: Select<'a, HostPoll>,
 }
-impl SteamHost {
+impl<'a> SteamHost<'a> {
     async fn handle_listen(&mut self, ev: ListenSocketEvent) -> anyhow::Result<HostPoll> {
         match ev {
             ListenSocketEvent::Connecting(req) => {
@@ -129,7 +131,7 @@ impl SteamHost {
 }
 
 #[async_trait]
-impl NetworkHostExt for SteamHost {
+impl<'a> NetworkHostExt for SteamHost<'a> {
     async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
         self.mock.send(req).await?;
         Ok(())
@@ -284,6 +286,7 @@ impl MetadataExt for SteamMetadata {
             clients: HashMap::new(),
             client_req: Channel::new(),
             listener,
+            poll: select::repeat!(),
         }))
     }
 }

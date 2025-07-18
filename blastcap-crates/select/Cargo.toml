@@ -5,6 +5,7 @@ edition = "2024"
 
 [dependencies]
 futures-concurrency.workspace = true
+paste = "1.0.15"
 smol.workspace = true
 
 [lib]

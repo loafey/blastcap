@@ -1,3 +1,5 @@
+#![feature(macro_metavar_expr)]
+
 use smol::{future::FutureExt, stream::Stream};
 use std::{
     cell::RefCell,
@@ -36,81 +38,58 @@ fn stream() {
     });
 }
 
-struct UnorderedInner<'l, T> {
-    inner: Option<Pin<Box<dyn Future<Output = T> + 'l>>>,
-}
-impl<'l, T> Stream for UnorderedInner<'l, T> {
-    type Item = T;
-
-    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        match &mut self.inner {
-            Some(i) => match i.poll(cx) {
-                Poll::Ready(f) => {
-                    self.inner = None;
-                    Poll::Ready(Some(f))
-                }
-                Poll::Pending => Poll::Pending,
-            },
-            None => Poll::Ready(None),
+macro_rules! select {
+    ($(($input:expr, |$pat:pat_param| $func:expr)),*) => {{
+        paste::paste! {
+            use futures_concurrency::future::Race as _;
+            use results::*;
+            mac
+            let futures = ($(async { [<SelectionResult ${count($input)}>]::[<Res ${index()}>] ($input.await)}),*).race();
+            match futures.await {
+                $([<SelectionResult ${len()}>]::[<Res ${index()}>]($pat) => $func),*
+            }
         }
-    }
-}
-pub struct Unordered<'l, T> {
-    _inner: futures_concurrency::vec::Merge<UnorderedInner<'l, T>>,
+    }};
 }
 
-#[allow(clippy::type_complexity)]
-struct Scope<'env, 'scope, T> {
-    inner: RefCell<Vec<Box<dyn FnMut() -> Pin<Box<dyn Future<Output = T> + 'env>> + 'env>>>,
-    scope: PhantomData<&'scope mut &'scope ()>,
-    env: PhantomData<&'env mut &'env ()>,
-}
-
-impl<'env, 'scope, T> Default for Scope<'env, 'scope, T> {
-    fn default() -> Self {
-        Self {
-            inner: Default::default(),
-            scope: Default::default(),
-            env: Default::default(),
-        }
+pub mod results {
+    pub enum SelectionResult1<A> {
+        Res1(A),
     }
-}
-impl<'scope, 'env, T> Scope<'scope, 'env, T> {
-    pub fn add<F, R>(&'env self, mut func: F)
-    where
-        F: FnMut() -> R + 'scope,
-        R: Future<Output = T> + 'scope,
-    {
-        self.inner
-            .borrow_mut()
-            .push(Box::new(move || Box::pin(func())));
+    pub enum SelectionResult2<A, B> {
+        Res1(A),
+        Res2(B),
     }
-}
-fn scope<'env, T, F: for<'scope> FnOnce(&'scope Scope<'env, 'scope, T>)>(func: F) {
-    let mut i = Scope::default();
-    func(&mut i);
+    pub enum SelectionResult3<A, B, C> {
+        Res1(A),
+        Res2(B),
+        Res3(C),
+    }
+    pub enum SelectionResult4<A, B, C, D> {
+        Res1(A),
+        Res2(B),
+        Res3(C),
+        Res4(D),
+    }
+    pub enum SelectionResult5<A, B, C, D, E> {
+        Res1(A),
+        Res2(B),
+        Res3(C),
+        Res4(D),
+        Res5(E),
+    }
 }
 
 fn main() {
     smol::block_on(async {
-        let inc = 0;
-        scope(|s| {
-            s.add(|| async { inc + 1 });
-            s.add(|| async { inc + 2 });
-        });
-        // repeat!(async { inc + 1 }, async { inc + 2 });
-        // let mut stream = {
-        //     let mut a = select::select();
-        //     let a_fun = || {
-        //         inc += 1;
-        //         async {}
-        //     };
-        //     a = a.add(a_fun);
-        //     // a = a.add(async || inc += 2);
-        //     a.finish()
-        // };
-        // while let Some(_) = stream.next().await {
-        //     println!("{inc}")
-        // }
-    })
+        select!(
+            (async { 1u32 }, |out| {}),
+            (async { 2u32 }, |out| {
+                println!("{out}");
+            }),
+            (async { 3u32 }, |out| {
+                println!("{out}");
+            })
+        )
+    });
 }
