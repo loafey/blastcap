@@ -1,3 +1,4 @@
+#![feature(macro_metavar_expr)]
 use futures_concurrency::{stream::Merge, vec};
 use smol::{
     future::FutureExt,
@@ -109,4 +110,20 @@ impl<'l, T: 'l> Stream for Repeat<'l, T> {
 enum RepeatInner<'l, T> {
     NotSpawned,
     Spawned(Pin<Box<dyn Future<Output = T> + 'l + Send>>),
+}
+
+pub mod results;
+
+#[macro_export]
+macro_rules! select {
+    ($(($input:expr, |$pat:pat_param| $func:expr)),*) => {{
+        paste::paste! {
+            use futures_concurrency::future::Race as _;
+            use select::results::[<SelectionResult ${count($input)}>] as __ReturnType;
+            let futures = ($(async { __ReturnType::[<Res ${index()}>] ($input.await)}),*).race();
+            match futures.await {
+                $(__ReturnType::[<Res ${index()}>]($pat) => $func),*
+            }
+        }
+    }};
 }
