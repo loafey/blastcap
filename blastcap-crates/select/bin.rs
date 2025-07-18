@@ -1,17 +1,14 @@
-use select::repeat;
-use smol::{
-    Timer, block_on,
-    future::FutureExt,
-    stream::{Stream, StreamExt as _},
-};
+use smol::{future::FutureExt, stream::Stream};
 use std::{
     pin::Pin,
     task::{Context, Poll},
-    time::{Duration, Instant},
 };
 
 #[test]
 fn stream() {
+    use select::repeat;
+    use smol::{Timer, stream::StreamExt as _};
+    use std::time::{Duration, Instant};
     smol::block_on(async {
         let mut streams = repeat!(
             async {
@@ -57,6 +54,6 @@ impl<'l, T> Stream for UnorderedInner<'l, T> {
     }
 }
 pub struct Unordered<'l, T> {
-    inner: futures_concurrency::vec::Merge<UnorderedInner<'l, T>>,
+    _inner: futures_concurrency::vec::Merge<UnorderedInner<'l, T>>,
 }
 fn main() {}
