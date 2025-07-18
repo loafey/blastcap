@@ -119,8 +119,10 @@ pub unsafe extern "C" fn register_logging(
     let subscriber = tracing_subscriber::fmt()
         .with_max_level(tracing::Level::TRACE)
         .with_writer(move || CustomWriter { print, print_error })
+        .with_env_filter("none,blastcap=trace")
         .finish();
     tracing::subscriber::set_global_default(subscriber).unwrap();
+    info!("logging running");
 
     std::panic::set_hook(Box::new(move |e| {
         let thread = std::thread::current()

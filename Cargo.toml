@@ -47,7 +47,7 @@ pathfinding = "4.14.0"
 math = { path = "blastcap-crates/math" }
 steamworks = "0.12.1"
 tracing = "0.1.41"
-tracing-subscriber = "0.3.19"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 strip-ansi-escapes = "0.2.1"
 noise = "0.9.0"
 smol = "2.0.2"
