@@ -37,7 +37,7 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
         let _enter = rt.enter();
         rt.block_on(async {
             loop {
-                tokio::select! {
+                select! {
                     msg = recv.recv() => {
                         let Some(act) = msg else { break };
                         let Err(e) = act(unsafe{std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)}).await else { continue };

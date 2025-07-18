@@ -54,7 +54,7 @@ impl NetworkClientExt for TcpClient {
                 TcpClient::Channel(dis) => dis.recv().await,
             }
         };
-        tokio::select! {
+        select! {
             msg = fut => {
                 let Some(msg) = msg else { panic!("no clients somehow") };
                 Ok(ClientPoll::Message(msg))
@@ -143,7 +143,7 @@ impl NetworkHostExt for TcpHost {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(HOST_ADDR));
         }
-        tokio::select! {
+        select! {
             acc = self.listener.accept() => {
                 let (stream, addr) = acc?;
                 self.acc((stream, addr)).await;

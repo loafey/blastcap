@@ -21,6 +21,7 @@
     "dotnet.backgroundAnalysis.compilerDiagnosticsScope": "fullSolution",
     "cSpell.words": [
         "impls",
+        "mpmc",
         "oneshot",
         "Perlin",
         "smol",

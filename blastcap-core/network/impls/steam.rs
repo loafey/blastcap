@@ -26,7 +26,7 @@ impl NetworkClientExt for SteamClient {
             SteamClient::Real => todo!("steam real poll"),
             SteamClient::Channel(dis) => dis.recv(),
         };
-        tokio::select! {
+        select! {
             msg = fut => {
                 let Some(msg) = msg else { panic!("no clients somehow") };
                 Ok(ClientPoll::Message(msg))
@@ -140,7 +140,7 @@ impl NetworkHostExt for SteamHost {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(self.host_id));
         }
-        tokio::select! {
+        select! {
             ev = self.listener.recv() => {
                 let Some(ev) = ev else { unreachable!() };
                 self.handle_listen(ev).await

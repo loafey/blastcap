@@ -231,7 +231,7 @@ impl ClientHandle {
             let mut client = metadata(async |m| m.create_client(0).await).await?;
             let mut tick_counter: usize = 0;
             loop {
-                let poll = tokio::select! {
+                let poll = select! {
                     res = client.poll() => {
                         let Ok(res) = res else { break };
                         Some(res)
