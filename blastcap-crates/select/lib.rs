@@ -116,7 +116,7 @@ pub mod results;
 
 #[macro_export]
 macro_rules! select {
-    ($(($input:expr, |$pat:pat_param| $func:expr)),*) => {{
+    ($(($input:expr, |$pat:pat_param| $func:expr)),+) => {{
         paste::paste! {
             use futures_concurrency::future::Race as _;
             use select::results::[<SelectionResult ${count($input)}>] as __ReturnType;
