@@ -1,5 +1,12 @@
 #![feature(macro_metavar_expr)]
 
+use smol::{
+    Timer,
+    future::FutureExt,
+    stream::{Stream, StreamExt},
+};
+use std::time::{Duration, Instant};
+
 #[test]
 fn stream() {
     use select::repeat;
@@ -32,10 +39,28 @@ fn stream() {
 
 fn main() {
     smol::block_on(async {
-        select::select!(
-            (async { 1u32 }, |out| { println!("{out}") }),
-            (async { 2u32 }, |out| { println!("{out}") }),
-            (async { 3u32 }, |out| { println!("{out}") })
-        )
+        let mut sec1 = select::Interval::new(Duration::from_secs(1));
+        let mut sec2 = select::Interval::new(Duration::from_secs(2));
+        let timer = Instant::now();
+        loop {
+            select::select!(
+                (sec1.next(), |d| {
+                    let d = d.unwrap();
+                    println!(
+                        "1 second - since_last: {:0.5}s, total_time: {:0.5}s",
+                        d.as_secs_f32(),
+                        timer.elapsed().as_secs_f32()
+                    );
+                }),
+                (sec2.next(), |d| {
+                    let d = d.unwrap();
+                    println!(
+                        "2 second - since_last: {:0.5}s, total_time: {:0.5}s",
+                        d.as_secs_f32(),
+                        timer.elapsed().as_secs_f32()
+                    );
+                })
+            );
+        }
     });
 }

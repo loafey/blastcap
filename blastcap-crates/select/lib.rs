@@ -1,10 +1,15 @@
 #![feature(macro_metavar_expr)]
 use futures_concurrency::{stream::Merge, vec};
 use smol::{
+    Timer,
     future::FutureExt,
     stream::{Stream, StreamExt},
 };
-use std::{pin::Pin, task::Poll};
+use std::{
+    pin::Pin,
+    task::Poll,
+    time::{Duration, Instant},
+};
 
 #[macro_export]
 macro_rules! repeat {
@@ -118,7 +123,7 @@ pub mod results;
 macro_rules! select {
     ($(($input:expr, |$pat:pat_param| $func:expr)),+) => {{
         paste::paste! {
-            use futures_concurrency::future::Race as _;
+            use futures_concurrency::future::{Race as _};
             use select::results::[<SelectionResult ${count($input)}>] as __ReturnType;
             let futures = ($(async { __ReturnType::[<Res ${index()}>] ($input.await)}),*).race();
             match futures.await {
@@ -126,4 +131,37 @@ macro_rules! select {
             }
         }
     }};
+}
+
+pub struct Interval {
+    time: Duration,
+    timer: Timer,
+    elapse: Instant,
+}
+impl Interval {
+    pub fn new(time: Duration) -> Self {
+        Self {
+            time,
+            timer: Timer::after(time),
+            elapse: Instant::now(),
+        }
+    }
+}
+impl Stream for Interval {
+    type Item = Duration;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        match self.timer.poll(cx) {
+            std::task::Poll::Ready(_) => {
+                self.timer = Timer::after(self.time);
+                let elapsed = self.elapse.elapsed();
+                self.elapse = Instant::now();
+                std::task::Poll::Ready(Some(elapsed))
+            }
+            std::task::Poll::Pending => std::task::Poll::Pending,
+        }
+    }
 }
