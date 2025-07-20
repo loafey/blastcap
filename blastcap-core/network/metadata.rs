@@ -1,7 +1,7 @@
 use async_trait::async_trait;
 use smol::{channel, stream::StreamExt};
 use std::{
-    ops::{ControlFlow, Deref, DerefMut},
+    ops::{Deref, DerefMut},
     pin::Pin,
     sync::LazyLock,
 };
@@ -14,7 +14,7 @@ use crate::network::{
 
 #[allow(clippy::type_complexity)]
 static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
-    let (send, mut recv) = channel::unbounded::<MetadataTask>();
+    let (send, recv) = channel::unbounded::<MetadataTask>();
     let inner: Box<dyn MetadataExt + Send + Sync> = match SteamMetadata::new() {
         Ok(o) => Box::new(o),
         #[cfg(debug_assertions)]
@@ -28,6 +28,7 @@ static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
     let mut m = Metadata { inner };
     std::thread::spawn(move || {
         smol::block_on(async {
+            let mut interval = tick();
             loop {
                 select::select! {
                     (recv.recv(), |msg| {
@@ -35,7 +36,7 @@ static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
                         let Err(e) = act(unsafe{std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)}).await else { continue };
                         panic!("metadata panic: {e}")
                     }),
-                    (tick(), |_| {
+                    (interval.next(), |_| {
                         let Err(e) = m.tick().await else { continue };
                         panic!("metadata tick panic: {e}")
                     })

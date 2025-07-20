@@ -198,7 +198,8 @@ impl GameStartedState {
                     Box::pin(async move { func(state, arg).await })
                 }))
                 .await;
-        });
+        })
+        .detach();
     }
 
     async fn move_current_actor(

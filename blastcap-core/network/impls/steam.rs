@@ -8,7 +8,7 @@ use crate::network::{
 use anyhow::Context;
 use async_trait::async_trait;
 use futures_concurrency::future::Join;
-use select::Select;
+use select::Interval;
 use smol::{channel, stream::StreamExt};
 use std::{collections::HashMap, time::Duration};
 use steamworks::{
@@ -18,14 +18,14 @@ use steamworks::{
 
 pub enum SteamClient {
     Real,
-    Channel(DisjointChannel<ClientRequest, ServerMessage>),
+    Channel(DisjointChannel<ClientRequest, ServerMessage>, Interval),
 }
 #[async_trait]
 impl NetworkClientExt for SteamClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
-        let fut = match self {
+        let (fut, tick) = match self {
             SteamClient::Real => todo!("steam real poll"),
-            SteamClient::Channel(dis) => dis.recv(),
+            SteamClient::Channel(dis, interval) => (dis.recv(), interval.next()),
         };
         select::select!(
             (fut, |msg| {
@@ -34,18 +34,18 @@ impl NetworkClientExt for SteamClient {
                 };
                 Ok(ClientPoll::Message(msg))
             }),
-            (tick(), |_| { Ok(ClientPoll::Tick) })
+            (tick, |_| { Ok(ClientPoll::Tick) })
         )
     }
     async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
         match self {
             SteamClient::Real => todo!("steam real send"),
-            SteamClient::Channel(dis) => dis.send(req).await?,
+            SteamClient::Channel(dis, _) => dis.send(req).await?,
         };
         Ok(())
     }
 }
-struct SteamHost<'a> {
+struct SteamHost {
     _lobby_id: u64,
     first_poll: bool,
     host_id: u64,
@@ -54,9 +54,9 @@ struct SteamHost<'a> {
     listener: Channel<ListenSocketEvent>,
     own: DisjointChannel<ServerMessage, ClientRequest>,
     mock: Channel<ClientRequest>,
-    poll: Select<'a, HostPoll>,
+    tick: Interval,
 }
-impl<'a> SteamHost<'a> {
+impl SteamHost {
     async fn handle_listen(&mut self, ev: ListenSocketEvent) -> anyhow::Result<HostPoll> {
         match ev {
             ListenSocketEvent::Connecting(req) => {
@@ -69,7 +69,7 @@ impl<'a> SteamHost<'a> {
                     .steam_id()
                     .with_context(|| "missing Steam id")?
                     .raw();
-                let (client_send, mut client_recv) = channel::unbounded();
+                let (client_send, client_recv) = channel::unbounded();
                 let req_send = self.client_req.sender();
                 self.clients.insert(id, client_send);
                 let mut conn = conn.take_connection();
@@ -114,7 +114,7 @@ impl<'a> SteamHost<'a> {
                             tick()
                         }
                     }
-                });
+                }).detach();
                 Ok(HostPoll::ClientConnected(id))
             }
             ListenSocketEvent::Disconnected(ev) => {
@@ -131,7 +131,7 @@ impl<'a> SteamHost<'a> {
 }
 
 #[async_trait]
-impl<'a> NetworkHostExt for SteamHost<'a> {
+impl NetworkHostExt for SteamHost {
     async fn mock(&mut self, req: ClientRequest) -> anyhow::Result<()> {
         self.mock.send(req).await?;
         Ok(())
@@ -161,7 +161,7 @@ impl<'a> NetworkHostExt for SteamHost<'a> {
                     req,
                 })
             }),
-            (tick(), |_| Ok(HostPoll::Tick))
+            (self.tick.next(), |_| Ok(HostPoll::Tick))
         )
     }
 
@@ -183,7 +183,7 @@ impl<'a> NetworkHostExt for SteamHost<'a> {
         for writer in self.clients.values_mut() {
             tasks.push(async { _ = writer.send(req.clone()).await });
         }
-        tasks.join();
+        tasks.join().await;
 
         Ok(())
     }
@@ -247,7 +247,7 @@ impl MetadataExt for SteamMetadata {
 
     async fn create_client(&mut self, _id: u64) -> anyhow::Result<NetworkClient> {
         if let Some(dis) = self.own_client.take() {
-            Ok(NetworkClient::new(SteamClient::Channel(dis)))
+            Ok(NetworkClient::new(SteamClient::Channel(dis, tick())))
         } else {
             Ok(NetworkClient::new(SteamClient::Real))
         }
@@ -292,7 +292,7 @@ impl MetadataExt for SteamMetadata {
             clients: HashMap::new(),
             client_req: Channel::new(),
             listener,
-            poll: select::repeat!(),
+            tick: tick(),
         }))
     }
 }

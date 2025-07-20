@@ -1,10 +1,6 @@
 #![feature(macro_metavar_expr)]
 
-use smol::{
-    Timer,
-    future::FutureExt,
-    stream::{Stream, StreamExt},
-};
+use smol::stream::StreamExt;
 use std::time::{Duration, Instant};
 
 #[test]

@@ -10,6 +10,8 @@
 #[macro_use]
 extern crate tracing;
 
+use smol::channel;
+
 use crate::{
     game::{
         Arg, ServerData,
@@ -21,8 +23,6 @@ use crate::{
         metadata, metadata_block,
     },
 };
-use select::Select;
-use smol::{channel, stream::StreamExt};
 use std::{
     ffi::{CStr, CString},
     time::Instant,

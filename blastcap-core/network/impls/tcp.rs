@@ -6,19 +6,22 @@ use crate::network::{
 };
 use async_trait::async_trait;
 use futures_concurrency::future::Join;
+use select::Interval;
 use smol::{
     channel,
     io::{AsyncReadExt, AsyncWriteExt, WriteHalf, split},
     net::{AsyncToSocketAddrs, TcpListener, TcpStream},
+    stream::StreamExt,
 };
-use std::{collections::HashMap, net::SocketAddr};
+use std::{collections::HashMap, net::SocketAddr, pin::Pin};
 
 enum TcpClient {
     Real {
         write: WriteHalf<TcpStream>,
         recv: channel::Receiver<ServerMessage>,
+        tick: Interval,
     },
-    Channel(DisjointChannel<ClientRequest, ServerMessage>),
+    Channel(DisjointChannel<ClientRequest, ServerMessage>, Interval),
 }
 
 impl TcpClient {
@@ -42,19 +45,26 @@ impl TcpClient {
             }
             Ok(())
         };
-        smol::spawn(async move { closure.await.unwrap() });
-        Ok(Self::Real { write, recv })
+        smol::spawn(async move { closure.await.unwrap() }).detach();
+        Ok(Self::Real {
+            write,
+            recv,
+            tick: tick(),
+        })
     }
 }
 
 #[async_trait]
 impl NetworkClientExt for TcpClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
-        let fut = async {
-            match self {
-                TcpClient::Real { recv, .. } => recv.recv().await.ok(),
-                TcpClient::Channel(dis) => dis.recv().await,
+        let (fut, tick): (
+            Pin<Box<dyn Future<Output = Option<ServerMessage>> + Send>>,
+            _,
+        ) = match self {
+            TcpClient::Real { recv, tick, .. } => {
+                (Box::pin(async { recv.recv().await.ok() }), tick.next())
             }
+            TcpClient::Channel(dis, tick) => (Box::pin(async { dis.recv().await }), tick.next()),
         };
         select::select!(
             (fut, |msg| {
@@ -63,7 +73,7 @@ impl NetworkClientExt for TcpClient {
                 };
                 Ok(ClientPoll::Message(msg))
             }),
-            (tick(), |_| { Ok(ClientPoll::Tick) })
+            (tick, |_| { Ok(ClientPoll::Tick) })
         )
     }
 
@@ -74,7 +84,7 @@ impl NetworkClientExt for TcpClient {
                 write.write_all(&(bytes.len() as u32).to_ne_bytes()).await?;
                 write.write_all(&bytes).await?;
             }
-            TcpClient::Channel(dis) => dis.send(req).await?,
+            TcpClient::Channel(dis, _) => dis.send(req).await?,
         }
         Ok(())
     }
@@ -88,6 +98,7 @@ struct TcpHost {
     client_req: Channel<(SocketAddr, ClientRequest)>,
     kill: Channel<SocketAddr>,
     mock: Channel<ClientRequest>,
+    tick: Interval,
 }
 impl TcpHost {
     pub async fn new(
@@ -103,6 +114,7 @@ impl TcpHost {
                 clients: Default::default(),
                 mock: Channel::new(),
                 own: a,
+                tick: tick(),
             },
             b,
         ))
@@ -132,7 +144,8 @@ impl TcpHost {
             let Err(e) = closure.await;
             warn!("SERVER - recv loop for {addr} crashed: {e}");
             kill_send.send(addr).await.expect("server is dead");
-        });
+        })
+        .detach();
     }
 }
 
@@ -180,7 +193,7 @@ impl NetworkHostExt for TcpHost {
                     req,
                 })
             }),
-            (tick(), |_| { Ok(HostPoll::Tick) })
+            (self.tick.next(), |_| { Ok(HostPoll::Tick) })
         )
     }
 
@@ -268,7 +281,7 @@ impl MetadataExt for TcpMetadata {
 
     async fn create_client(&mut self, _lobby: u64) -> anyhow::Result<NetworkClient> {
         let client = match self.host_channel.take() {
-            Some(dis) => TcpClient::Channel(dis),
+            Some(dis) => TcpClient::Channel(dis, tick()),
             _ => TcpClient::new("0.0.0.0:8000").await?,
         };
         Ok(NetworkClient::new(client))
