@@ -5,31 +5,36 @@ use crate::network::{
     tick,
 };
 use async_trait::async_trait;
-use futures::{StreamExt, stream::FuturesOrdered};
-use std::{collections::HashMap, net::SocketAddr};
-use tokio::{
+use futures_concurrency::future::Join;
+use select::Interval;
+use smol::{
+    channel,
     io::{AsyncReadExt, AsyncWriteExt, WriteHalf, split},
-    net::{TcpListener, TcpStream, ToSocketAddrs},
-    sync::mpsc::{Receiver, channel},
+    net::{AsyncToSocketAddrs, TcpListener, TcpStream},
+    stream::StreamExt,
 };
+use std::{collections::HashMap, net::SocketAddr, pin::Pin};
 
 enum TcpClient {
     Real {
         write: WriteHalf<TcpStream>,
-        recv: Receiver<ServerMessage>,
+        recv: channel::Receiver<ServerMessage>,
+        tick: Interval,
     },
-    Channel(DisjointChannel<ClientRequest, ServerMessage>),
+    Channel(DisjointChannel<ClientRequest, ServerMessage>, Interval),
 }
 
 impl TcpClient {
     #[allow(clippy::new_ret_no_self)]
-    pub async fn new<A: ToSocketAddrs>(addr: A) -> anyhow::Result<TcpClient> {
+    pub async fn new<A: AsyncToSocketAddrs>(addr: A) -> anyhow::Result<TcpClient> {
         let stream = TcpStream::connect(addr).await?;
-        let (send, recv) = channel(1000);
+        let (send, recv) = channel::unbounded();
         let (mut read, write) = split(stream);
         let closure: impl Future<Output = anyhow::Result<()>> = async move {
             loop {
-                let len = read.read_u32().await? as usize;
+                let mut len = [0u8; 4];
+                read.read_exact(&mut len).await?;
+                let len = u32::from_ne_bytes(len) as usize;
                 let mut buf = vec![0; len];
                 let _ = read.read(&mut buf).await?;
                 let msg = rkyv::from_bytes::<ServerMessage, rkyv::rancor::Error>(&buf)?;
@@ -40,39 +45,46 @@ impl TcpClient {
             }
             Ok(())
         };
-        tokio::spawn(async move { closure.await.unwrap() });
-        Ok(Self::Real { write, recv })
+        smol::spawn(async move { closure.await.unwrap() }).detach();
+        Ok(Self::Real {
+            write,
+            recv,
+            tick: tick(),
+        })
     }
 }
 
 #[async_trait]
 impl NetworkClientExt for TcpClient {
     async fn poll(&mut self) -> anyhow::Result<ClientPoll> {
-        let fut = async {
-            match self {
-                TcpClient::Real { recv, .. } => recv.recv().await,
-                TcpClient::Channel(dis) => dis.recv().await,
+        let (fut, tick): (
+            Pin<Box<dyn Future<Output = Option<ServerMessage>> + Send>>,
+            _,
+        ) = match self {
+            TcpClient::Real { recv, tick, .. } => {
+                (Box::pin(async { recv.recv().await.ok() }), tick.next())
             }
+            TcpClient::Channel(dis, tick) => (Box::pin(async { dis.recv().await }), tick.next()),
         };
-        tokio::select! {
-            msg = fut => {
-                let Some(msg) = msg else { panic!("no clients somehow") };
+        select::select!(
+            (fut, |msg| {
+                let Some(msg) = msg else {
+                    panic!("no clients somehow")
+                };
                 Ok(ClientPoll::Message(msg))
-            }
-            _ = tick() => {
-                Ok(ClientPoll::Tick)
-            }
-        }
+            }),
+            (tick, |_| { Ok(ClientPoll::Tick) })
+        )
     }
 
     async fn send(&mut self, req: ClientRequest) -> anyhow::Result<()> {
         match self {
             TcpClient::Real { write, .. } => {
                 let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&req)?;
-                write.write_u32(bytes.len() as u32).await?;
+                write.write_all(&(bytes.len() as u32).to_ne_bytes()).await?;
                 write.write_all(&bytes).await?;
             }
-            TcpClient::Channel(dis) => dis.send(req).await?,
+            TcpClient::Channel(dis, _) => dis.send(req).await?,
         }
         Ok(())
     }
@@ -86,21 +98,23 @@ struct TcpHost {
     client_req: Channel<(SocketAddr, ClientRequest)>,
     kill: Channel<SocketAddr>,
     mock: Channel<ClientRequest>,
+    tick: Interval,
 }
 impl TcpHost {
     pub async fn new(
         port: u16,
     ) -> anyhow::Result<(Self, DisjointChannel<ClientRequest, ServerMessage>)> {
-        let (a, b) = disjoint(100);
+        let (a, b) = disjoint();
         Ok((
             Self {
                 first_poll: true,
                 listener: TcpListener::bind(format!("0.0.0.0:{port}")).await?,
-                client_req: Channel::new(100),
-                kill: Channel::new(10),
+                client_req: Channel::new(),
+                kill: Channel::new(),
                 clients: Default::default(),
-                mock: Channel::new(10),
+                mock: Channel::new(),
                 own: a,
+                tick: tick(),
             },
             b,
         ))
@@ -113,7 +127,9 @@ impl TcpHost {
         self.clients.insert(addr, write);
         let closure: impl Future<Output = anyhow::Result<!>> = async move {
             loop {
-                let len = read.read_u32().await? as usize;
+                let mut len = [0u8; 4];
+                read.read_exact(&mut len).await?;
+                let len = u32::from_ne_bytes(len) as usize;
                 if len > 10000 {
                     warn!("large message from {addr}!");
                     continue;
@@ -124,11 +140,12 @@ impl TcpHost {
                 send.send((addr, msg)).await.expect("server has died!");
             }
         };
-        tokio::spawn(async move {
+        smol::spawn(async move {
             let Err(e) = closure.await;
             warn!("SERVER - recv loop for {addr} crashed: {e}");
             kill_send.send(addr).await.expect("server is dead");
-        });
+        })
+        .detach();
     }
 }
 
@@ -143,32 +160,41 @@ impl NetworkHostExt for TcpHost {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(HOST_ADDR));
         }
-        tokio::select! {
-            acc = self.listener.accept() => {
+        select::select!(
+            (self.listener.accept(), |acc| {
                 let (stream, addr) = acc?;
                 self.acc((stream, addr)).await;
                 Ok(HostPoll::ClientConnected(addr.raw()))
-            },
-            remove = self.kill.recv() => {
+            }),
+            (self.kill.recv(), |remove| {
                 let Some(addr) = remove else { unreachable!() };
                 Ok(HostPoll::RemoveClient(addr.raw()))
-            },
-            own = self.own.recv() => {
+            }),
+            (self.own.recv(), |own| {
                 let Some(req) = own else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: HOST_ADDR, req })
-            }
-            mocked = self.mock.recv() => {
+                Ok(HostPoll::ClientRequest {
+                    addr: HOST_ADDR,
+                    req,
+                })
+            }),
+            (self.mock.recv(), |mocked| {
                 let Some(req) = mocked else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: BOT_ADDR, req })
-            }
-            msg = self.client_req.recv() => {
-                let Some((addr, req)) = msg else { unreachable!() };
-                Ok(HostPoll::ClientRequest { addr: addr.raw(), req })
-            }
-            _ = tick() => {
-                Ok(HostPoll::Tick)
-            }
-        }
+                Ok(HostPoll::ClientRequest {
+                    addr: BOT_ADDR,
+                    req,
+                })
+            }),
+            (self.client_req.recv(), |msg| {
+                let Some((addr, req)) = msg else {
+                    unreachable!()
+                };
+                Ok(HostPoll::ClientRequest {
+                    addr: addr.raw(),
+                    req,
+                })
+            }),
+            (self.tick.next(), |_| { Ok(HostPoll::Tick) })
+        )
     }
 
     async fn send(&mut self, addr: u64, req: ServerMessage) -> anyhow::Result<()> {
@@ -181,7 +207,9 @@ impl NetworkHostExt for TcpHost {
                 return Err(anyhow::Error::msg(msg));
             };
             let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&req)?;
-            writer.write_u32(bytes.len() as u32).await?;
+            writer
+                .write_all(&(bytes.len() as u32).to_ne_bytes())
+                .await?;
             writer.write_all(&bytes).await?;
         }
         Ok(())
@@ -190,14 +218,14 @@ impl NetworkHostExt for TcpHost {
     async fn broadcast(&mut self, req: ServerMessage) -> anyhow::Result<()> {
         _ = self.own.send(req.clone()).await;
         let bytes = rkyv::to_bytes::<rkyv::rancor::Error>(&req)?;
-        let mut tasks = FuturesOrdered::new();
+        let mut tasks = Vec::new();
         for writer in self.clients.values_mut() {
-            tasks.push_back(async {
-                let _ = writer.write_u32(bytes.len() as u32).await;
+            tasks.push(async {
+                let _ = writer.write(&(bytes.len() as u32).to_ne_bytes()).await;
                 let _ = writer.write_all(&bytes).await;
             });
         }
-        while (tasks.next().await).is_some() {}
+        tasks.join().await;
         Ok(())
     }
 
@@ -253,7 +281,7 @@ impl MetadataExt for TcpMetadata {
 
     async fn create_client(&mut self, _lobby: u64) -> anyhow::Result<NetworkClient> {
         let client = match self.host_channel.take() {
-            Some(dis) => TcpClient::Channel(dis),
+            Some(dis) => TcpClient::Channel(dis, tick()),
             _ => TcpClient::new("0.0.0.0:8000").await?,
         };
         Ok(NetworkClient::new(client))

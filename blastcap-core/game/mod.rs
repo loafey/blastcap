@@ -1,6 +1,5 @@
 use crate::network::NetworkHost;
-use std::mem::MaybeUninit;
-use tokio::time::Instant;
+use std::{mem::MaybeUninit, time::Instant};
 
 mod actor;
 mod map;

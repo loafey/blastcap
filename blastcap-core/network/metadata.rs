@@ -1,12 +1,9 @@
 use async_trait::async_trait;
+use smol::{channel, stream::StreamExt};
 use std::{
     ops::{Deref, DerefMut},
     pin::Pin,
     sync::LazyLock,
-};
-use tokio::sync::{
-    mpsc::{Sender, channel},
-    oneshot::channel as oneshot,
 };
 
 use crate::network::{
@@ -16,8 +13,8 @@ use crate::network::{
 };
 
 #[allow(clippy::type_complexity)]
-static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
-    let (send, mut recv) = channel::<MetadataTask>(10);
+static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
+    let (send, recv) = channel::unbounded::<MetadataTask>();
     let inner: Box<dyn MetadataExt + Send + Sync> = match SteamMetadata::new() {
         Ok(o) => Box::new(o),
         #[cfg(debug_assertions)]
@@ -30,23 +27,19 @@ static METADATA: LazyLock<Sender<MetadataTask>> = LazyLock::new(|| {
     };
     let mut m = Metadata { inner };
     std::thread::spawn(move || {
-        let rt = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .expect("Unable to create Runtime");
-        let _enter = rt.enter();
-        rt.block_on(async {
+        smol::block_on(async {
+            let mut interval = tick();
             loop {
-                tokio::select! {
-                    msg = recv.recv() => {
-                        let Some(act) = msg else { break };
+                select::select! {
+                    (recv.recv(), |msg| {
+                        let act = msg.unwrap();
                         let Err(e) = act(unsafe{std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)}).await else { continue };
                         panic!("metadata panic: {e}")
-                    }
-                    _ = tick() => {
+                    }),
+                    (interval.next(), |_| {
                         let Err(e) = m.tick().await else { continue };
                         panic!("metadata tick panic: {e}")
-                    }
+                    })
                 }
             }
         });
@@ -64,7 +57,7 @@ pub async fn metadata<
 >(
     f: I,
 ) -> T {
-    let (send, recv) = oneshot();
+    let (send, recv) = oneshot::channel();
     METADATA
         .send(Box::new(move |m| {
             Box::pin(async move {
@@ -85,16 +78,16 @@ pub fn metadata_block<
 >(
     f: I,
 ) -> T {
-    let (send, recv) = oneshot();
+    let (send, recv) = oneshot::channel();
     METADATA
-        .blocking_send(Box::new(move |m| {
+        .send_blocking(Box::new(move |m| {
             Box::pin(async move {
                 _ = send.send(f(m).await);
                 Ok(())
             })
         }))
         .unwrap();
-    recv.blocking_recv().unwrap()
+    recv.recv().unwrap()
 }
 
 pub type MetadataTask = Box<

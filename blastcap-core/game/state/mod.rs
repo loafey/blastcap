@@ -5,8 +5,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use std::any::type_name;
-use tokio::time::Instant;
+use std::{any::type_name, time::Instant};
 
 mod game_started;
 pub use game_started::GameStartedState;
@@ -18,7 +17,7 @@ pub use waiting::WaitingState;
 pub type Res = anyhow::Result<Option<Box<dyn State>>>;
 
 #[async_trait::async_trait]
-pub trait State: Send + Sync {
+pub trait State: Sync + Send {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
         arg.data.tick = arg.data.tick.wrapping_add(1);
         const TICK_DELAY: usize = 1;

@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 futures-concurrency.workspace = true
 smol.workspace = true
+paste.workspace = true
 
 [lib]
 path = "lib.rs"

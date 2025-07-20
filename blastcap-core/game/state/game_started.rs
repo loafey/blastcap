@@ -13,6 +13,7 @@ use crate::{
     },
 };
 use math::Vec3;
+use smol::Timer;
 use std::{pin::Pin, time::Duration};
 
 type Callback = Box<
@@ -38,7 +39,7 @@ impl GameStartedState {
             map: Default::default(),
             current_turn: None,
             waiting: false,
-            callbacks: Channel::new(5),
+            callbacks: Channel::new(),
         })
     }
 
@@ -190,14 +191,15 @@ impl GameStartedState {
         func: I,
     ) {
         let sender = self.callbacks.sender();
-        tokio::spawn(async move {
-            tokio::time::sleep(time).await;
+        smol::spawn(async move {
+            Timer::after(time).await;
             _ = sender
                 .send(Box::new(move |state, arg| {
                     Box::pin(async move { func(state, arg).await })
                 }))
                 .await;
-        });
+        })
+        .detach();
     }
 
     async fn move_current_actor(
