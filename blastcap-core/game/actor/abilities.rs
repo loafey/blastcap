@@ -17,7 +17,7 @@ static ABILITY_MAP: LazyLock<HashMap<String, String>> = LazyLock::new(|| {
     )
 });
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Abilities(HashSet<String>);
 impl Abilities {
     pub fn get_map() -> &'static HashMap<String, String> {

@@ -19,7 +19,7 @@ pub enum Controller {
     Bot,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Actor {
     pub name: String,
     #[serde(skip)]

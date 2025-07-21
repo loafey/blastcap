@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::game::actor::Actor;
 
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct TurnResources {
     pub abilities: usize,
     pub _bonus_actions: usize,

@@ -47,32 +47,33 @@ impl State for WaitingState {
                             z: z_list,
                         })
                         .await?;
-                    // let mut posses = [
-                    //     Vec2::new(0, 0),
-                    //     Vec2::new(0, 15),
-                    //     Vec2::new(15, 0),
-                    //     Vec2::new(15, 15),
-                    // ]
-                    // .into_iter()
-                    // .cycle();
-                    // for (id, addr) in self.players.iter().copied().enumerate() {
-                    //     gs.spawn_actor(
-                    //         arg.host,
-                    //         Actor {
-                    //             name: format!("Player {id}"),
-                    //             controller: Controller::Player(addr),
-                    //             position: Vec3::new(15, 1, 15),
-                    //             abilities: Default::default(),
-                    //             health: 10,
-                    //             base_movement: 6,
-                    //             resources: Default::default(),
-                    //         },
-                    //     )
-                    //     .await?;
-                    // }
-                    let mut i = 0;
                     let map_size = gs.map.get_size();
-                    while i < 16 {
+                    for (id, addr) in self.players.iter().copied().enumerate() {
+                        let actor = Actor {
+                            name: format!("Player {id}"),
+                            controller: Controller::Player(addr),
+                            position: Vec3::new(15, 1, 15),
+                            abilities: Default::default(),
+                            health: 10,
+                            _base_movement: 6,
+                            resources: Default::default(),
+                        };
+                        while {
+                            let position = Vec3::new(
+                                rand::random_range(0..map_size.x),
+                                1,
+                                rand::random_range(0..map_size.z),
+                            );
+                            let clone = actor.clone();
+                            let res = gs
+                                .spawn_actor(arg.host, Actor { position, ..clone })
+                                .await?;
+                            !res
+                        } {}
+                    }
+                    info!("Players spawned");
+                    let mut i = 0;
+                    while i < 3 {
                         let position = Vec3::new(
                             rand::random_range(0..map_size.x),
                             1,
@@ -93,6 +94,7 @@ impl State for WaitingState {
                             i += 1;
                         }
                     }
+                    info!("Bots spawned");
                     gs.next_actor(arg.host).await?;
                     Ok(Some(gs))
                 } else {
