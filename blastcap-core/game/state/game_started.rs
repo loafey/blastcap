@@ -93,7 +93,7 @@ impl GameStartedState {
         while !self.actors.is_empty() && (self.actor_pointer != start || first) {
             first = false;
             self.actor_pointer = (self.actor_pointer + 1) % self.actors.len();
-            if let Some(actor) = self.actors.get(self.actor_pointer) {
+            if let Some(actor) = self.actors.get_mut(self.actor_pointer) {
                 if actor.health <= 0 {
                     continue;
                 }
@@ -108,7 +108,7 @@ impl GameStartedState {
                             cl,
                             ServerMessage::YourTurn {
                                 actor: self.actor_pointer,
-                                movement: self.current_actor().base_movement,
+                                movement: self.current_actor().resources.movement as u32,
                             },
                         )
                         .await?;
@@ -215,10 +215,18 @@ impl GameStartedState {
         };
         let old = self.actors[self.actor_pointer].position;
         let path = self.pathfind(old, pos);
-        let Some((path, _)) = path else {
+        let Some((path, cost)) = path else {
             self.waiting = false;
             return Ok(None);
         };
+        let mov = self.actors[self.actor_pointer].resources.movement;
+        info!("mov = {mov}");
+        if mov == 0 {
+            self.waiting = false;
+            return Ok(None);
+        }
+        let path = path[0..mov].to_vec();
+        self.actors[self.actor_pointer].resources.movement = mov.saturating_sub(cost);
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
         {
             let a = self.map.get(pos).unwrap();
@@ -226,7 +234,7 @@ impl GameStartedState {
             self.map.set(pos, b);
             self.map.set(old, a);
         }
-        self.actors[self.actor_pointer].position = pos;
+        self.actors[self.actor_pointer].position = path[path.len() - 1];
         let mut x_list = Vec::new();
         let mut y_list = Vec::new();
         let mut z_list = Vec::new();
