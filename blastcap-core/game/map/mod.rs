@@ -52,7 +52,7 @@ impl Default for Map {
         };
 
         // map.gen_caves(Vec3::new(0, 0, 0), Vec3::new(20, 20, 20));
-        map.gen_sparse_floor(0);
+        map.gen_sparse_floor(0, 10);
         // map.gen_sparse_floor(10);
         // map.gen_sparse_floor(20);
 
@@ -74,9 +74,9 @@ impl Map {
             }
         }
     }
-    fn gen_sparse_floor(&mut self, y: usize) {
+    fn gen_sparse_floor(&mut self, y: usize, floor_amount: usize) {
         let mut boxes: HashMap<usize, (Box, Vec<usize>)> = Default::default();
-        for i in 0..6 {
+        for i in 0..floor_amount {
             let x_size = rand::random_range(4..=16);
             let z_size = rand::random_range(4..=16);
             let x = rand::random_range(0..=self.size.x - x_size);

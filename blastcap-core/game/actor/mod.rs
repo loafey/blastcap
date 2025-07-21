@@ -44,7 +44,9 @@ impl Actor {
             .collect::<Vec<_>>();
         if self.resources.abilities == 0 {
             arg.host.mock(ClientRequest::EndTurn).await?;
-        } else if !neighs.is_empty() && rand::random_range(0..=1) == 0 {
+        } else if !neighs.is_empty()
+        /*&& rand::random_range(0..=1) == 0*/
+        {
             let pos = neighs[rand::random_range(0..neighs.len())];
             arg.host
                 .mock(ClientRequest::Action(
@@ -76,6 +78,13 @@ impl Actor {
                 arg.host.mock(ClientRequest::EndTurn).await?;
                 return Ok(());
             };
+
+            arg.host
+                .mock(ClientRequest::ChatMessage(format!(
+                    "{} targeting {}",
+                    self.name, random.name
+                )))
+                .await?;
 
             arg.host
                 .mock(ClientRequest::Action("Walk".to_string(), x, y, z))

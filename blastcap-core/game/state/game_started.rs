@@ -341,7 +341,7 @@ impl State for GameStartedState {
                 match &*act {
                     "Walk" => {
                         if let Some(t) = self.move_current_actor(arg, Vec3::new(x, y, z)).await? {
-                            self.timer(t, async |s, _| {
+                            self.timer(t + Duration::from_secs_f32(0.5), async |s, _| {
                                 s.waiting = false;
                                 Ok(())
                             });
