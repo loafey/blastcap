@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://objects/PlayerCamera.cs" id="1_11u5k"]
 [ext_resource type="PackedScene" uid="uid://bp7yq4iqifwrh" path="res://objects/GUI/TinyPopup.tscn" id="2_rckdw"]
 
-[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel")]
+[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel", "MovementBar", "MovementLabel")]
 script = ExtResource("1_11u5k")
 BoomArm = NodePath("BoomArm")
 Camera = NodePath("BoomArm/Camera")
@@ -13,6 +13,8 @@ TinyPopupScene = ExtResource("2_rckdw")
 EndTurnButton = NodePath("CanvasLayer/Panel/HBoxContainer/EndTurn")
 CurrentAbilityLabel = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/CurrentAbility")
 RTTLabel = NodePath("CanvasLayer/RTT")
+MovementBar = NodePath("CanvasLayer/Panel/HBoxContainer/Movement")
+MovementLabel = NodePath("CanvasLayer/Panel/HBoxContainer/Movement/MovementLabel")
 
 [node name="BoomArm" type="Node3D" parent="."]
 
@@ -66,6 +68,24 @@ layout_mode = 2
 tooltip_text = "Skip"
 text = "End
 Turn"
+
+[node name="Movement" type="ProgressBar" parent="CanvasLayer/Panel/HBoxContainer"]
+custom_minimum_size = Vector2(80, 100)
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 8
+fill_mode = 2
+show_percentage = false
+
+[node name="MovementLabel" type="Label" parent="CanvasLayer/Panel/HBoxContainer/Movement"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="TinyPopupHolder" type="Control" parent="CanvasLayer"]
 custom_minimum_size = Vector2(0, 50)

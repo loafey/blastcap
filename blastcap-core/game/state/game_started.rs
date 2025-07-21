@@ -77,6 +77,7 @@ impl GameStartedState {
                     yours: actor.controller == Controller::Player(addr),
                     health: actor.health,
                     max_health: actor.health,
+                    movement: actor.base_movement,
                 },
             )
             .await?;
@@ -107,6 +108,7 @@ impl GameStartedState {
                             cl,
                             ServerMessage::YourTurn {
                                 actor: self.actor_pointer,
+                                movement: self.current_actor().base_movement,
                             },
                         )
                         .await?;

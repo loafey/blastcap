@@ -5,6 +5,7 @@ public partial class Actor : Node3D {
     private string _actorName;
     private int _maxHealth;
     private int _health;
+    public uint BaseMovement;
     public int MaxHealth {
         get => this._maxHealth; set {
             this._maxHealth = value;

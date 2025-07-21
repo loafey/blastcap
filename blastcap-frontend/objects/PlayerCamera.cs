@@ -22,7 +22,19 @@ public partial class PlayerCamera : Node3D {
     public Label CurrentAbilityLabel;
     [Export]
     public Label RTTLabel;
+    [Export]
+    public ProgressBar MovementBar;
+    [Export]
+    public Label MovementLabel;
     public Actor MyActor;
+
+    public (uint, uint) Movement {
+        set {
+            this.MovementBar.Value = value.Item1;
+            this.MovementBar.MaxValue = value.Item2;
+            this.MovementLabel.Text = $"{value.Item1}/{value.Item2}";
+        }
+    }
 
     public (int, ulong) RTT {
         set => this.RTTLabel.Text = $"RTT: {value.Item1}ms ({value.Item2})";

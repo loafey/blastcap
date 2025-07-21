@@ -26,11 +26,13 @@ pub enum ServerMessage {
         y: usize,
         z: usize,
         abilities: Vec<String>,
+        movement: u32,
         health: i32,
         max_health: i32,
     },
     YourTurn {
         actor: usize,
+        movement: u32,
     },
     ActorTurn {
         actor: usize,

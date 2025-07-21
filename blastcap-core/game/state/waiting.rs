@@ -55,7 +55,7 @@ impl State for WaitingState {
                             position: Vec3::new(15, 1, 15),
                             abilities: Default::default(),
                             health: 10,
-                            _base_movement: 6,
+                            base_movement: 6,
                             resources: Default::default(),
                         };
                         while {
@@ -73,7 +73,7 @@ impl State for WaitingState {
                     }
                     info!("Players spawned");
                     let mut i = 0;
-                    while i < 3 {
+                    while i < 0 {
                         let position = Vec3::new(
                             rand::random_range(0..map_size.x),
                             1,
@@ -85,7 +85,7 @@ impl State for WaitingState {
                             controller: Controller::Bot,
                             position,
                             health: 15,
-                            _base_movement: 8,
+                            base_movement: 8,
                             abilities: Default::default(),
                             resources: Default::default(),
                         };

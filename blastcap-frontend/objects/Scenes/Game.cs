@@ -70,7 +70,7 @@ public partial class Game : Node3D {
             this.ChatBox.ShowMessage($"{user} left");
         };
 
-        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, z, abilities, health, maxHealth) => {
+        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, z, abilities, movement, health, maxHealth) => {
             var node = this.ActorScene.Instantiate<Actor>();
             node.Position = new Vector3(x, y, z);
             node.ActorName = name;
@@ -78,6 +78,7 @@ public partial class Game : Node3D {
             node.Abilities = abilities;
             node.MaxHealth = maxHealth;
             node.Health = health;
+            node.BaseMovement = movement;
             this.ActorHolder.AddChild(node);
             if (mine) {
                 this.PC.MyActor = node;
@@ -95,11 +96,13 @@ public partial class Game : Node3D {
             }
         };
 
-        this.nw.Inner.OnYourTurn += (id) => {
+        this.nw.Inner.OnYourTurn += (id, movement) => {
             // _chatBox.ShowMessage("YOUR TURN");
             this.PC.DisplayTinyPopup("YOUR TURN");
+            this.ChatBox.ShowMessage($"{movement}");
             this.PC.MyTurn = true;
             this._myTurn = true;
+            this.PC.Movement = (this.PC.MyActor.BaseMovement, movement);
         };
         this.nw.Inner.OnActorTurn += (id) => {
             var actor = this.ActorHolder.GetNode<Actor>(id.ToString()).ActorName;

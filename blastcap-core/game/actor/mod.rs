@@ -28,7 +28,7 @@ pub struct Actor {
     #[serde(skip)]
     pub position: Vec3,
     pub health: i32,
-    pub _base_movement: usize,
+    pub base_movement: u32,
     pub abilities: Abilities,
     pub resources: TurnResources,
 }
