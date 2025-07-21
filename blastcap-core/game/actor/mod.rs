@@ -1,4 +1,5 @@
 use math::Vec3;
+use rand::seq::IndexedRandom;
 use serde::Deserialize;
 
 mod resources;
@@ -54,11 +55,28 @@ impl Actor {
                 ))
                 .await?
         } else {
-            let Vec3 { x, y, z } = Vec3::new(
-                rand::random_range(0..16),
-                rand::random_range(0..16),
-                rand::random_range(0..16),
-            );
+            let others = state
+                .actors
+                .iter()
+                .filter(|a| a.position != self.position && a.health > 0)
+                .collect::<Vec<_>>();
+            if others.is_empty() {
+                arg.host.mock(ClientRequest::EndTurn).await?;
+                return Ok(());
+            }
+            let random = others[rand::random_range(0..others.len())];
+            let Some((Vec3 { x, y, z }, _, _)) = state
+                .get_neighbors(false, random.position)
+                .into_iter()
+                .filter(|(a, _)| matches!(a, Piece::Empty))
+                .map(|a| a.1)
+                .filter_map(|a| state.pathfind(self.position, a).map(|(b, c)| (a, b, c)))
+                .min_by_key(|(_, _, c)| *c)
+            else {
+                arg.host.mock(ClientRequest::EndTurn).await?;
+                return Ok(());
+            };
+
             arg.host
                 .mock(ClientRequest::Action("Walk".to_string(), x, y, z))
                 .await?
