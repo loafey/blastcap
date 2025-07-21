@@ -21,6 +21,6 @@ pub const TICK_RATE: usize = 30;
 pub fn tick() -> Interval {
     Interval::new(
         std::time::Duration::from_secs_f64(const { 1.0 / TICK_RATE as f64 }),
-        true,
+        false,
     )
 }

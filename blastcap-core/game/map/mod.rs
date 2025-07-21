@@ -51,10 +51,10 @@ impl Default for Map {
             size,
         };
 
-        map.gen_caves(Vec3::new(0, 0, 0), Vec3::new(20, 20, 20));
+        // map.gen_caves(Vec3::new(0, 0, 0), Vec3::new(20, 20, 20));
         map.gen_sparse_floor(0);
-        map.gen_sparse_floor(10);
-        map.gen_sparse_floor(20);
+        // map.gen_sparse_floor(10);
+        // map.gen_sparse_floor(20);
 
         map
     }
