@@ -13,7 +13,8 @@
 == Working title
 #inlineTodo[Your game’s title should communicate the gameplay and the style of the game.]
 
-Work in progress title: *Blastcap*
+Work in progress title: *BlastCap*
+
 
 == Concept statement
 #inlineTodo[The game in a tweet: one or two sentences at most that say what the game is and why it’s fun.]
@@ -21,6 +22,10 @@ Work in progress title: *Blastcap*
 
 == Genre(s)
 #inlineTodo[Single genre is clearer but often less interesting. Genre combinations can be risky. Beware of ‘tired’ genres.]
+
+=== Turn based PVE
+=== Rougelike
+=== Dungeon Crawling
 
 
 == Target audience
