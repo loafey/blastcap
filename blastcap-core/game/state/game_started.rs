@@ -226,7 +226,7 @@ impl GameStartedState {
             self.waiting = false;
             return Ok(None);
         }
-        let path = path[0..mov as usize].to_vec();
+        let path = path[0..(path.len().min(mov as usize))].to_vec();
         self.actors[self.actor_pointer].resources.movement = mov.saturating_sub(cost as u32);
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
         {
