@@ -32,7 +32,7 @@ impl State for WaitingState {
                 //
                 if self.waiting_for.is_empty() {
                     trace!(
-                        "SERVER - Starting game with player actor controllers: {:?}",
+                        "Starting game with player actor controllers: {:?}",
                         self.players
                     );
                     //

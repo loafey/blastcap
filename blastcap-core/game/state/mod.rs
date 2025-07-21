@@ -46,7 +46,7 @@ pub trait State: Sync + Send {
         addr: u64,
         Arg { data, host, .. }: Arg<'l>,
     ) -> Res {
-        println!("SERVER - A user at {addr} connected");
+        println!("A user at {addr} connected");
         if host.get_client_count() == 1 {
             data.host_player = Some(addr);
             host.send(addr, ServerMessage::NotifyHost).await?;
