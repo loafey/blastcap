@@ -109,7 +109,7 @@ impl GameStartedState {
                             cl,
                             ServerMessage::YourTurn {
                                 actor: self.actor_pointer,
-                                movement: self.current_actor().resources.movement as u32,
+                                movement: self.current_actor().resources.movement,
                             },
                         )
                         .await?;
@@ -226,8 +226,8 @@ impl GameStartedState {
             self.waiting = false;
             return Ok(None);
         }
-        let path = path[0..mov].to_vec();
-        self.actors[self.actor_pointer].resources.movement = mov.saturating_sub(cost);
+        let path = path[0..mov as usize].to_vec();
+        self.actors[self.actor_pointer].resources.movement = mov.saturating_sub(cost as u32);
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
         {
             let a = self.map.get(pos).unwrap();

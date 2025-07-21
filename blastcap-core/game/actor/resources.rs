@@ -6,14 +6,14 @@ use crate::game::actor::Actor;
 pub struct TurnResources {
     pub abilities: usize,
     pub _bonus_actions: usize,
-    pub movement: usize,
+    pub movement: u32,
 }
 impl Actor {
     pub fn reset_turn_resources(&mut self) {
         self.resources = TurnResources {
             abilities: 1,
             _bonus_actions: 1,
-            movement: 6,
+            movement: self.base_movement,
         };
     }
 }
