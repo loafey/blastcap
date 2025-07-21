@@ -83,13 +83,4 @@ Time to create is unknown, but probably long, as small team.
 
 #pagebreak()
 = Lore Compendium <LoreCompendium>
-The world contains many occult aspects, but most, if not all of these are kept hidden or believed to be
-superstition. The player will slowly uncover these, but maybe not all of them depending
-on their choices.
-
-The game will contain pagan and Christian offshoots to entirely custom religions.
-As with real world lore keeping, any lore the player encounters might conflict
-other lore in the game. The truth should always be somewhere in between, or nowhere at all.
-
-The lore specified here is not set in stone, and should not be treated as such.
-This document should "ideally" not demystify any lore in the game.
+#inlineTodo[Start writing lore :)]
