@@ -83,4 +83,4 @@ Time to create is unknown, but probably long, as small team.
 
 #pagebreak()
 = Lore Compendium <LoreCompendium>
-#inlineTodo[Start writing lore :)]
+#inlineTodo[Start scratching at some light lore :)]
