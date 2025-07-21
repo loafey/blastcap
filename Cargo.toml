@@ -25,8 +25,7 @@ noise.workspace = true
 smol.workspace = true
 futures-concurrency.workspace = true
 oneshot.workspace = true
-select.workspace = true
-paste.workspace = true
+smol-concurrency-tools.workspace = true
 
 [workspace]
 members = ["blastcap-crates/*"]
@@ -53,5 +52,6 @@ noise = "0.9.0"
 smol = "2.0.2"
 futures-concurrency = "7.6.3"
 oneshot = "0.1.11"
-select = { path = "blastcap-crates/select" }
-paste = "1.0.15"
+smol-concurrency-tools = { git = "https://github.com/loafey/smol-concurrency-tools.git", features = [
+    "select",
+] }

@@ -1,5 +1,6 @@
 use async_trait::async_trait;
 use smol::{channel, stream::StreamExt};
+use smol_concurrency_tools::select;
 use std::{
     ops::{Deref, DerefMut},
     pin::Pin,
@@ -30,7 +31,7 @@ static METADATA: LazyLock<channel::Sender<MetadataTask>> = LazyLock::new(|| {
         smol::block_on(async {
             let mut interval = tick();
             loop {
-                select::select! {
+                select! {
                     (recv.recv(), |msg| {
                         let act = msg.unwrap();
                         let Err(e) = act(unsafe{std::mem::transmute::<&mut Metadata, &'static mut Metadata>(&mut m)}).await else { continue };

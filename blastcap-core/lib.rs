@@ -11,6 +11,7 @@
 extern crate tracing;
 
 use smol::channel;
+use smol_concurrency_tools::select;
 
 use crate::{
     game::{
@@ -230,7 +231,7 @@ impl ClientHandle {
             let mut client = metadata(async |m| m.create_client(0).await).await?;
             let mut tick_counter: usize = 0;
             loop {
-                let poll = select::select!(
+                let poll = select!(
                     (client.poll(), |res| { Ok(res?) }),
                     (client_req_recv.recv(), |msg| { Err(msg?) })
                 );

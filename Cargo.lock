@@ -177,15 +177,14 @@ dependencies = [
  "math",
  "noise",
  "oneshot",
- "paste",
  "pathfinding",
  "rand 0.9.1",
  "rkyv",
  "rmp-serde",
- "select",
  "serde",
  "sharpify",
  "smol",
+ "smol-concurrency-tools",
  "steamworks",
  "strip-ansi-escapes",
  "tracing",
@@ -946,15 +945,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e1cf6437eb19a8f4a6cc0f7dca544973b0b78843adbfeb3683d1a94a0024a294"
 
 [[package]]
-name = "select"
-version = "0.1.0"
-dependencies = [
- "futures-concurrency",
- "paste",
- "smol",
-]
-
-[[package]]
 name = "semver"
 version = "1.0.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1047,6 +1037,16 @@ dependencies = [
  "async-process",
  "blocking",
  "futures-lite",
+]
+
+[[package]]
+name = "smol-concurrency-tools"
+version = "0.1.0"
+source = "git+https://github.com/loafey/smol-concurrency-tools.git#960c2a9e27e8e84c326e6420ca528c13afa88bf0"
+dependencies = [
+ "futures-concurrency",
+ "paste",
+ "smol",
 ]
 
 [[package]]

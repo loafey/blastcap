@@ -6,13 +6,13 @@ use crate::network::{
 };
 use async_trait::async_trait;
 use futures_concurrency::future::Join;
-use select::Interval;
 use smol::{
     channel,
     io::{AsyncReadExt, AsyncWriteExt, WriteHalf, split},
     net::{AsyncToSocketAddrs, TcpListener, TcpStream},
     stream::StreamExt,
 };
+use smol_concurrency_tools::{Interval, select};
 use std::{collections::HashMap, net::SocketAddr, pin::Pin};
 
 enum TcpClient {
@@ -66,7 +66,7 @@ impl NetworkClientExt for TcpClient {
             }
             TcpClient::Channel(dis, tick) => (Box::pin(async { dis.recv().await }), tick.next()),
         };
-        select::select!(
+        select!(
             (fut, |msg| {
                 let Some(msg) = msg else {
                     panic!("no clients somehow")
@@ -160,7 +160,7 @@ impl NetworkHostExt for TcpHost {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(HOST_ADDR));
         }
-        select::select!(
+        select!(
             (self.listener.accept(), |acc| {
                 let (stream, addr) = acc?;
                 self.acc((stream, addr)).await;

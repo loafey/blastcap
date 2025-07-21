@@ -8,8 +8,8 @@ use crate::network::{
 use anyhow::Context;
 use async_trait::async_trait;
 use futures_concurrency::future::Join;
-use select::Interval;
 use smol::{channel, stream::StreamExt};
+use smol_concurrency_tools::{Interval, select};
 use std::{collections::HashMap, time::Duration};
 use steamworks::{
     Client, LobbyEnter, SteamId,
@@ -27,7 +27,7 @@ impl NetworkClientExt for SteamClient {
             SteamClient::Real => todo!("steam real poll"),
             SteamClient::Channel(dis, interval) => (dis.recv(), interval.next()),
         };
-        select::select!(
+        select!(
             (fut, |msg| {
                 let Some(msg) = msg else {
                     panic!("no clients somehow")
@@ -142,7 +142,7 @@ impl NetworkHostExt for SteamHost {
             self.first_poll = false;
             return Ok(HostPoll::ClientConnected(self.host_id));
         }
-        select::select!(
+        select!(
             (self.listener.recv(), |ev| {
                 let Some(ev) = ev else { unreachable!() };
                 self.handle_listen(ev).await
