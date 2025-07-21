@@ -97,6 +97,7 @@ impl GameStartedState {
                 if actor.health <= 0 {
                     continue;
                 }
+                actor.reset_turn_resources();
                 let addr = match actor.controller {
                     Controller::Player(addr) => Some(addr),
                     Controller::Bot => None,
@@ -386,7 +387,6 @@ impl State for GameStartedState {
                     && !self.waiting =>
             {
                 self.next_actor(arg.host).await?;
-                self.current_actor_mut().reset_turn_resources();
                 Ok(None)
             }
             req => self.default_client_request(addr, req, arg).await,
