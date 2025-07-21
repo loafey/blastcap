@@ -73,7 +73,7 @@ impl State for WaitingState {
                     }
                     info!("Players spawned");
                     let mut i = 0;
-                    while i < 0 {
+                    while i < 50 {
                         let position = Vec3::new(
                             rand::random_range(0..map_size.x),
                             1,
