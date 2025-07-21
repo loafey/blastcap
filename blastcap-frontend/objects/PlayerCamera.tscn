@@ -74,7 +74,7 @@ custom_minimum_size = Vector2(80, 100)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8
-fill_mode = 2
+fill_mode = 3
 show_percentage = false
 
 [node name="MovementLabel" type="Label" parent="CanvasLayer/Panel/HBoxContainer/Movement"]

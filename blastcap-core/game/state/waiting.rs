@@ -55,7 +55,7 @@ impl State for WaitingState {
                             position: Vec3::new(15, 1, 15),
                             abilities: Default::default(),
                             health: 10,
-                            base_movement: 6,
+                            base_movement: rand::random_range(10..20),
                             resources: Default::default(),
                         };
                         while {
@@ -85,7 +85,7 @@ impl State for WaitingState {
                             controller: Controller::Bot,
                             position,
                             health: 15,
-                            base_movement: 8,
+                            base_movement: rand::random_range(10..20),
                             abilities: Default::default(),
                             resources: Default::default(),
                         };

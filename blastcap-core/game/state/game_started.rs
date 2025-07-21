@@ -221,12 +221,11 @@ impl GameStartedState {
             return Ok(None);
         };
         let mov = self.actors[self.actor_pointer].resources.movement;
-        info!("mov = {mov}");
         if mov == 0 {
             self.waiting = false;
             return Ok(None);
         }
-        let path = path[0..(path.len().min(mov as usize))].to_vec();
+        let path = path[0..path.len().min(mov as usize)].to_vec();
         self.actors[self.actor_pointer].resources.movement = mov.saturating_sub(cost as u32);
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
         {
@@ -247,6 +246,7 @@ impl GameStartedState {
         arg.host
             .broadcast(ServerMessage::MoveActor {
                 actor: self.actor_pointer,
+                movement: self.actors[self.actor_pointer].resources.movement,
                 x: x_list,
                 y: y_list,
                 z: z_list,

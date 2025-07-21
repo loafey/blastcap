@@ -99,10 +99,9 @@ public partial class Game : Node3D {
         this.nw.Inner.OnYourTurn += (id, movement) => {
             // _chatBox.ShowMessage("YOUR TURN");
             this.PC.DisplayTinyPopup("YOUR TURN");
-            this.ChatBox.ShowMessage($"{movement}");
             this.PC.MyTurn = true;
             this._myTurn = true;
-            this.PC.Movement = (this.PC.MyActor.BaseMovement, movement);
+            this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);
         };
         this.nw.Inner.OnActorTurn += (id) => {
             var actor = this.ActorHolder.GetNode<Actor>(id.ToString()).ActorName;
@@ -112,7 +111,7 @@ public partial class Game : Node3D {
             this._myTurn = false;
         };
 
-        this.nw.Inner.OnMoveActor += (id, xList, yList, zList) => {
+        this.nw.Inner.OnMoveActor += (id, movement, xList, yList, zList) => {
             var actor = this.ActorHolder.GetNode<Actor>(id.ToString());
             var goals = new List<Vector3I>();
             for (var i = 0; i < xList.Count; i++) {
@@ -122,6 +121,9 @@ public partial class Game : Node3D {
                 goals.Add(new Vector3I((int)x, (int)y, (int)z));
             }
             actor.MoveTo(goals);
+            if (this._myTurn) {
+                this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);
+            }
         };
 
         this.nw.Inner.OnAction += (action, actorIndex, targetIndex, targetDamage, time) => {
