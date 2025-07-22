@@ -52,9 +52,6 @@ name.
 == Game World Fiction
 See the #link(<LoreCompendium>, "Lore Compendium") chapter for more details.
 
-== Monetization
-#inlineTodo[How will the game make money? Premium purchase? F2P? How do you justify this within the design?]
-
 == Platform(s), Technology, and Scope (brief)
 #inlineTodo[PC or mobile? Table or phone? 2D or 3D? Unity or Javascript? How long to make, and how big a team?
   How long to first-playable? How long to complete the game? Major risks?]
