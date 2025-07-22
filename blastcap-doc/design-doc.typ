@@ -80,6 +80,8 @@ Time to create is unknown, but probably long, as small team.
 == Game Systems
 #inlineTodo[What systems are needed to make this game? Which ones are internal (simulation, etc.) and which does the
   player interact with?]
+=== RPG System
+
 
 == Interactivity
 #inlineTodo[How are different kinds of interactivity used? (Action/Feedback, ST Cog, LT Cog, Emotional, Social, Cultural)
