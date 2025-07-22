@@ -12,9 +12,10 @@
 
 = High Level Concept/Design
 == Working title
-#inlineTodo[Your game’s title should communicate the gameplay and the style of the game.]
-
 Work in progress title: *BlastCap*
+
+Do not know if this name will stick, but thought it was a suitable action sounding
+name.
 
 
 == Concept statement
