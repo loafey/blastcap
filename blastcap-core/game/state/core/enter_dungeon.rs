@@ -1,19 +1,21 @@
-use super::Arg;
+use std::collections::HashSet;
+
+use math::Vec3;
+
 use crate::{
     game::{
+        Arg,
         actor::{Actor, Controller},
         state::{ClearRoomState, Res, State},
     },
     network::messages::{ClientRequest, ServerMessage},
 };
-use math::Vec3;
-use std::collections::HashSet;
 
-pub struct WaitingState {
+pub struct EnterDungeonState {
     waiting_for: HashSet<u64>,
     players: HashSet<u64>,
 }
-impl WaitingState {
+impl EnterDungeonState {
     pub fn new<I: IntoIterator<Item = u64>>(waiting_for: I) -> Box<Self> {
         Box::new(Self {
             waiting_for: HashSet::from_iter(waiting_for),
@@ -22,7 +24,7 @@ impl WaitingState {
     }
 }
 #[async_trait::async_trait]
-impl State for WaitingState {
+impl State for EnterDungeonState {
     async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         match req {
             ClientRequest::NotifyReady => {

@@ -1,7 +1,7 @@
-use super::Arg;
 use crate::{
     constants::TILES_PER_SECOND,
     game::{
+        Arg,
         actor::{Actor, Controller},
         map::{Map, Piece},
         state::{Res, State},

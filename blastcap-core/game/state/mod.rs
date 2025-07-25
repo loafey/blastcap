@@ -8,13 +8,10 @@ use crate::{
 use std::{any::type_name, time::Instant};
 
 mod core;
+pub use core::*;
 
-mod clear_room;
-pub use clear_room::ClearRoomState;
 mod lobby;
 pub use lobby::LobbyState;
-mod waiting;
-pub use waiting::WaitingState;
 
 pub type Res = anyhow::Result<Option<Box<dyn State>>>;
 

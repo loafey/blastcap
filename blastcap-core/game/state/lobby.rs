@@ -2,7 +2,7 @@ use super::Arg;
 use crate::{
     game::{
         actor::Abilities,
-        state::{Res, State, WaitingState},
+        state::{EnterDungeonState, Res, State},
     },
     network::messages::{ClientRequest, ServerMessage},
 };
@@ -43,7 +43,7 @@ impl State for LobbyState {
                 host.broadcast(ServerMessage::StartMap(map)).await?;
                 host.broadcast(ServerMessage::AbilityMap(Abilities::get_map().clone()))
                     .await?;
-                Ok(Some(WaitingState::new(host.get_clients())))
+                Ok(Some(EnterDungeonState::new(host.get_clients())))
             }
             req => {
                 self.default_client_request(
