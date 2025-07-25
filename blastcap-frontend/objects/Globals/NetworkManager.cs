@@ -1,11 +1,13 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
 public partial class NetworkManager : Node {
     public NetworkClient Inner { get; private set; }
+    public HashSet<ulong> Players = [];
 
     public bool IsHost => NetworkClient.IsHost;
 

@@ -4,7 +4,10 @@ use crate::{
         actor::Abilities,
         state::{EnterDungeonState, Res, State},
     },
-    network::messages::{ClientRequest, ServerMessage},
+    network::{
+        IdentityExt as _,
+        messages::{ClientRequest, ServerMessage},
+    },
 };
 
 pub struct LobbyState;
@@ -26,11 +29,6 @@ impl State for LobbyState {
         }: Arg<'l>,
     ) -> Res {
         match req {
-            ClientRequest::ChatMessage(msg) => {
-                host.broadcast(ServerMessage::ChatMessage(format!("{addr}"), msg))
-                    .await?;
-                Ok(None)
-            }
             ClientRequest::RequestMapList if Some(addr) == data.host_player => {
                 host.send(
                     addr,
@@ -43,6 +41,10 @@ impl State for LobbyState {
                 host.broadcast(ServerMessage::StartMap(map)).await?;
                 host.broadcast(ServerMessage::AbilityMap(Abilities::get_map().clone()))
                     .await?;
+                Ok(Some(EnterDungeonState::new(host.get_clients())))
+            }
+            ClientRequest::ChangeToEnterDungeon if Some(addr) == data.host_player => {
+                host.broadcast(ServerMessage::EnterDungeonState).await?;
                 Ok(Some(EnterDungeonState::new(host.get_clients())))
             }
             req => {

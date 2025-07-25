@@ -285,7 +285,7 @@ impl ClearRoomState {
         let dmg = 15;
         arg.host
             .broadcast(ServerMessage::ChatMessage(
-                self.current_actor().name.clone(),
+                0,
                 format!("punched {:?} at {distance}B", hit.name),
             ))
             .await?;
@@ -338,12 +338,6 @@ impl State for ClearRoomState {
 
     async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         match req {
-            ClientRequest::ChatMessage(msg) => {
-                arg.host
-                    .broadcast(ServerMessage::ChatMessage(format!("{addr}"), msg))
-                    .await?;
-                Ok(None)
-            }
             ClientRequest::Action(act, x, y, z)
                 if (Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
                     && !self.waiting
@@ -372,10 +366,7 @@ impl State for ClearRoomState {
                         arg.host
                             .send(
                                 addr,
-                                ServerMessage::ChatMessage(
-                                    "SERVER".to_string(),
-                                    format!("unknown ability: {act:?}"),
-                                ),
+                                ServerMessage::ChatMessage(0, format!("unknown ability: {act:?}")),
                             )
                             .await?;
                         Ok(None)

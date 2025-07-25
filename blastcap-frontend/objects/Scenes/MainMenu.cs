@@ -4,8 +4,6 @@ using Godot;
 public partial class MainMenu : Node3D {
     private NetworkManager nw;
 
-    private readonly HashSet<string> players = [];
-
     [Export]
     public ChatBox ChatBox;
 
@@ -27,14 +25,20 @@ public partial class MainMenu : Node3D {
     [Export]
     public TextureRect UserAvatar;
 
+    [Export]
+    public Control MainMenuNode;
+
+    [Export]
+    public Button LaunchGameButton;
+
     private void DrawPlayerList() {
         foreach (var child in this.PlayerList.GetChildren()) {
             child.QueueFree();
         }
 
-        foreach (var player in this.players) {
+        foreach (var player in this.nw.Players) {
             var lab = new Label {
-                Text = player
+                Text = $"{player}"
             };
             this.PlayerList.AddChild(lab);
         }
@@ -44,25 +48,28 @@ public partial class MainMenu : Node3D {
         this.nw.Inner.OnChatMessage += (user, msg) => this.ChatBox.ShowMessage($"{user}: {msg}");
         this.nw.Inner.OnNewUser += (user) => {
             this.ChatBox.ShowMessage($"{user} joined");
-            this.players.Add(user);
+            this.nw.Players.Add(user);
             this.DrawPlayerList();
         };
         this.nw.Inner.OnUserLeft += (user) => {
             this.ChatBox.ShowMessage($"{user} left");
-            this.players.Remove(user);
+            this.nw.Players.Remove(user);
             this.DrawPlayerList();
         };
         this.nw.Inner.OnStatus += (count, diff) => { };
         this.nw.Inner.OnAbilityMap += (map) => { Data.Abilities = map; };
         this.nw.Inner.OnPlayerList += (playerList) => {
-            this.players.Clear();
+            this.nw.Players.Clear();
             foreach (var player in playerList) {
-                this.players.Add(player);
+                this.nw.Players.Add(player);
             }
 
             this.DrawPlayerList();
         };
-        this.nw.Inner.OnNotifyHost += this.nw.Inner.SendRequestMapList;
+        this.nw.Inner.OnNotifyHost += () => {
+            this.LaunchGameButton.Visible = true;
+        };
+        this.LaunchGameButton.Pressed += this.nw.Inner.SendChangeToEnterDungeon;
         this.nw.Inner.OnMapList += (list) => {
             this.MapList.Visible = true;
             foreach (var map in list) {
@@ -74,6 +81,9 @@ public partial class MainMenu : Node3D {
                 };
                 this.MapList.AddChild(button);
             }
+        };
+        this.nw.Inner.OnEnterDungeonState += () => {
+            this.GetTree().ChangeSceneToFile("uid://f1axvwf5favr");
         };
         this.nw.Inner.OnStartMap += (map) => {
             GD.Print($"Starting map: {map}");

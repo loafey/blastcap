@@ -3,6 +3,7 @@ use crate::{
     network::{
         HostPoll, TICK_RATE,
         messages::{ClientRequest, ServerMessage},
+        metadata,
     },
 };
 use std::{any::type_name, time::Instant};
@@ -35,8 +36,7 @@ pub trait State: Sync + Send {
 
     async fn host_poll_remove_client<'l>(&mut self, Arg { host, .. }: Arg<'l>, addr: u64) -> Res {
         host.remove_client(addr);
-        host.broadcast(ServerMessage::UserLeft(format!("{addr}")))
-            .await?;
+        host.broadcast(ServerMessage::UserLeft(addr)).await?;
         Ok(None)
     }
 
@@ -51,14 +51,10 @@ pub trait State: Sync + Send {
             host.send(addr, ServerMessage::NotifyHost).await?;
         }
         let raw_clients = host.get_clients();
-        let clients = raw_clients
-            .iter()
-            .map(|v| format!("{v}"))
-            .collect::<Vec<_>>();
+        let clients = raw_clients.clone();
         for client in raw_clients {
             if client != addr {
-                host.send(client, ServerMessage::NewUser(format!("{addr}")))
-                    .await?;
+                host.send(client, ServerMessage::NewUser(addr)).await?;
             }
         }
         host.send(addr, ServerMessage::PlayerList(clients)).await?;
@@ -75,13 +71,21 @@ pub trait State: Sync + Send {
         req: ClientRequest,
         arg: Arg<'l>,
     ) -> Res {
-        if let ClientRequest::Ping = req {
-            arg.host.send(addr, ServerMessage::Pong).await?;
-        } else {
-            error!(
-                "SERVER - please implement \"{req:?}\" for {}",
-                type_name::<Self>()
-            );
+        match req {
+            ClientRequest::Ping => {
+                arg.host.send(addr, ServerMessage::Pong).await?;
+            }
+            ClientRequest::ChatMessage(msg) => {
+                arg.host
+                    .broadcast(ServerMessage::ChatMessage(addr, msg))
+                    .await?
+            }
+            req => {
+                error!(
+                    "SERVER - please implement \"{req:?}\" for {}",
+                    type_name::<Self>()
+                );
+            }
         }
         Ok(None)
     }

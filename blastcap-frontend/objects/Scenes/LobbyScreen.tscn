@@ -1,0 +1,157 @@
+[gd_scene load_steps=12 format=3 uid="uid://f1axvwf5favr"]
+
+[ext_resource type="Texture2D" uid="uid://bynqq3gi3gdtv" path="res://icon.svg" id="1_0rcyg"]
+[ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="1_k0ebd"]
+[ext_resource type="Script" uid="uid://b1jdvgik7c83u" path="res://objects/Scenes/LobbyScreen.cs" id="1_ry6v8"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ry6v8"]
+bg_color = Color(0.165656, 0.165656, 0.165656, 1)
+border_width_left = 4
+border_width_right = 4
+border_color = Color(1, 1, 1, 1)
+expand_margin_left = 10.0
+expand_margin_right = 10.0
+shadow_color = Color(0, 0, 0, 0.317647)
+shadow_size = 25
+
+[sub_resource type="LabelSettings" id="LabelSettings_ry6v8"]
+font_size = 24
+
+[sub_resource type="ViewportTexture" id="ViewportTexture_ry6v8"]
+viewport_path = NodePath("Scene")
+
+[sub_resource type="StyleBoxTexture" id="StyleBoxTexture_p4g3h"]
+resource_local_to_scene = true
+texture = SubResource("ViewportTexture_ry6v8")
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ry6v8"]
+sky_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+ground_horizon_color = Color(0.662243, 0.671743, 0.686743, 1)
+
+[sub_resource type="Sky" id="Sky_p4g3h"]
+sky_material = SubResource("ProceduralSkyMaterial_ry6v8")
+
+[sub_resource type="Environment" id="Environment_sukb3"]
+background_mode = 2
+sky = SubResource("Sky_p4g3h")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_ry6v8"]
+
+[node name="LobbyScreen" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "Viewport")]
+script = ExtResource("1_ry6v8")
+ChatBox = NodePath("CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/ChatBox")
+PlayerList = NodePath("CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/PlayerList")
+Viewport = NodePath("Scene")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Control" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel2" type="Panel" parent="CanvasLayer/Control/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_ry6v8")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/HBoxContainer/Panel2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer/Panel2/VBoxContainer"]
+layout_mode = 2
+text = "Pick your loadout!"
+label_settings = SubResource("LabelSettings_ry6v8")
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Panel3" type="Panel" parent="CanvasLayer/Control/HBoxContainer"]
+z_index = -1
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+size_flags_stretch_ratio = 2.0
+theme_override_styles/panel = SubResource("StyleBoxTexture_p4g3h")
+
+[node name="Panel" type="Panel" parent="CanvasLayer/Control/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_ry6v8")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/HBoxContainer/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Players:"
+label_settings = SubResource("LabelSettings_ry6v8")
+horizontal_alignment = 1
+
+[node name="PlayerList" type="VBoxContainer" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer"]
+custom_minimum_size = Vector2(0, 268)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/PlayerList"]
+custom_minimum_size = Vector2(32, 64)
+layout_mode = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/PlayerList/HBoxContainer"]
+layout_mode = 2
+texture = ExtResource("1_0rcyg")
+expand_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/PlayerList/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Name"
+
+[node name="Label2" type="Label" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/PlayerList/HBoxContainer"]
+layout_mode = 2
+text = "Not Ready"
+horizontal_alignment = 2
+
+[node name="ChatBox" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer" instance=ExtResource("1_k0ebd")]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Scene" type="SubViewport" parent="."]
+size = Vector2i(400, 800)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="Scene"]
+environment = SubResource("Environment_sukb3")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Scene"]
+mesh = SubResource("CapsuleMesh_ry6v8")
+skeleton = NodePath("")
+
+[node name="Camera3D" type="Camera3D" parent="Scene"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.9895)
+current = true
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Scene"]
+transform = Transform3D(-0.681672, -0.539522, 0.494205, 0.688535, -0.244572, 0.682719, -0.247473, 0.805668, 0.538197, 1.37798, 1.36017, 2.26217)
+shadow_enabled = true

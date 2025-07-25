@@ -8,18 +8,38 @@ use crate::{
         actor::{Actor, Controller},
         state::{ClearRoomState, Res, State},
     },
-    network::messages::{ClientRequest, ServerMessage},
+    network::{
+        IdentityExt,
+        messages::{ClientRequest, ServerMessage},
+    },
 };
+
+enum DungeonSettings {
+    BotAmount,
+}
+impl TryFrom<u32> for DungeonSettings {
+    type Error = u32;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        use DungeonSettings::*;
+        match value {
+            0 => Ok(BotAmount),
+            _ => Err(value),
+        }
+    }
+}
 
 pub struct EnterDungeonState {
     waiting_for: HashSet<u64>,
     players: HashSet<u64>,
+    bot_amount: u32,
 }
 impl EnterDungeonState {
     pub fn new<I: IntoIterator<Item = u64>>(waiting_for: I) -> Box<Self> {
         Box::new(Self {
             waiting_for: HashSet::from_iter(waiting_for),
             players: Default::default(),
+            bot_amount: 0,
         })
     }
 }
@@ -27,17 +47,31 @@ impl EnterDungeonState {
 impl State for EnterDungeonState {
     async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         match req {
+            ClientRequest::ChangeDungeonSetting(setting, value)
+                if Some(addr) == arg.data.host_player =>
+            {
+                let setting = match DungeonSettings::try_from(value) {
+                    Ok(s) => s,
+                    Err(_) => {
+                        error!("unknown setting {setting}");
+                        return Ok(None);
+                    }
+                };
+                match setting {
+                    DungeonSettings::BotAmount => self.bot_amount = value,
+                }
+                //
+                Ok(None)
+            }
             ClientRequest::NotifyReady => {
                 if self.waiting_for.remove(&addr) {
                     self.players.insert(addr);
                 }
-                //
                 if self.waiting_for.is_empty() {
                     trace!(
                         "Starting game with player actor controllers: {:?}",
                         self.players
                     );
-                    //
 
                     let mut gs = ClearRoomState::new();
                     let (x_list, y_list, z_list) = gs.map.get_ground_data();
@@ -75,7 +109,7 @@ impl State for EnterDungeonState {
                     }
                     info!("Players spawned");
                     let mut i = 0;
-                    while i < 5 {
+                    while i < self.bot_amount {
                         let position = Vec3::new(
                             rand::random_range(0..map_size.x),
                             1,

@@ -3,13 +3,13 @@
 [ext_resource type="Script" uid="uid://dkrw4mlbn7juf" path="res://objects/GUI/ChatBox.cs" id="1_iv7i8"]
 
 [node name="ChatBox" type="VBoxContainer" node_paths=PackedStringArray("LineEdit", "ChatList")]
-anchors_preset = 1
-anchor_left = 1.0
+anchors_preset = 15
 anchor_right = 1.0
-offset_left = -352.0
-offset_bottom = 246.0
-grow_horizontal = 0
-size_flags_horizontal = 4
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 6
+size_flags_vertical = 3
 script = ExtResource("1_iv7i8")
 LineEdit = NodePath("Edit/Edit")
 ChatList = NodePath("Messages/List")

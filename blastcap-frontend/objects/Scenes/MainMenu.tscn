@@ -10,23 +10,34 @@ colors = PackedColorArray(0.465402, 0.670186, 0.706926, 1, 0.798942, 0.894868, 0
 
 [sub_resource type="GradientTexture2D" id="GradientTexture2D_0wfyh"]
 gradient = SubResource("Gradient_o5qli")
-fill_to = Vector2(1, 1)
+fill_from = Vector2(1, 1)
+fill_to = Vector2(0, 0)
 
 [sub_resource type="BoxShape3D" id="BoxShape3D_0ykhv"]
 
-[node name="Node3D" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "MapList", "HostButton", "ConnectButton", "UserNameLabel", "UserAvatar")]
+[node name="Node3D" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "HostButton", "ConnectButton", "UserNameLabel", "UserAvatar", "MainMenuNode", "LaunchGameButton")]
 script = ExtResource("1_yqorp")
-ChatBox = NodePath("CanvasLayer/ChatBox")
-PlayerList = NodePath("CanvasLayer/PlayerList/Scroll/List")
-MapList = NodePath("CanvasLayer/MainMenu/MapList")
-HostButton = NodePath("CanvasLayer/MainMenu/Host/Button")
-ConnectButton = NodePath("CanvasLayer/MainMenu/Connect/Button")
-UserNameLabel = NodePath("CanvasLayer/PlayerList/UserInfo/HBoxContainer/Label")
-UserAvatar = NodePath("CanvasLayer/PlayerList/UserInfo/HBoxContainer/TextureRect")
+ChatBox = NodePath("CanvasLayer/MainMenu/ChatBox")
+PlayerList = NodePath("CanvasLayer/MainMenu/PlayerList/Scroll/List")
+HostButton = NodePath("CanvasLayer/MainMenu/MainMenu/Host/Button")
+ConnectButton = NodePath("CanvasLayer/MainMenu/MainMenu/Connect/Button")
+UserNameLabel = NodePath("CanvasLayer/MainMenu/PlayerList/UserInfo/HBoxContainer/Label")
+UserAvatar = NodePath("CanvasLayer/MainMenu/PlayerList/UserInfo/HBoxContainer/TextureRect")
+MainMenuNode = NodePath("CanvasLayer/MainMenu")
+LaunchGameButton = NodePath("CanvasLayer/MainMenu/MainMenu/LaunchGame")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
+[node name="MainMenu" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/MainMenu"]
+layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -34,55 +45,54 @@ grow_horizontal = 2
 grow_vertical = 2
 texture = SubResource("GradientTexture2D_0wfyh")
 
-[node name="MainMenu" type="VBoxContainer" parent="CanvasLayer"]
+[node name="MainMenu" type="VBoxContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
 offset_right = 318.0
 grow_vertical = 2
 
-[node name="Host" type="HBoxContainer" parent="CanvasLayer/MainMenu"]
+[node name="Host" type="HBoxContainer" parent="CanvasLayer/MainMenu/MainMenu"]
 layout_mode = 2
 
-[node name="Edit" type="LineEdit" parent="CanvasLayer/MainMenu/Host"]
+[node name="Edit" type="LineEdit" parent="CanvasLayer/MainMenu/MainMenu/Host"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "4000"
 placeholder_text = "Port"
 
-[node name="Button" type="Button" parent="CanvasLayer/MainMenu/Host"]
+[node name="Button" type="Button" parent="CanvasLayer/MainMenu/MainMenu/Host"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Host"
 
-[node name="Connect" type="HBoxContainer" parent="CanvasLayer/MainMenu"]
+[node name="Connect" type="HBoxContainer" parent="CanvasLayer/MainMenu/MainMenu"]
 layout_mode = 2
 
-[node name="Edit" type="LineEdit" parent="CanvasLayer/MainMenu/Connect"]
+[node name="Edit" type="LineEdit" parent="CanvasLayer/MainMenu/MainMenu/Connect"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "localhost:4000"
 placeholder_text = "Connect"
 
-[node name="Button" type="Button" parent="CanvasLayer/MainMenu/Connect"]
+[node name="Button" type="Button" parent="CanvasLayer/MainMenu/MainMenu/Connect"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Connect
 "
 
-[node name="MapList" type="VBoxContainer" parent="CanvasLayer/MainMenu"]
+[node name="LaunchGame" type="Button" parent="CanvasLayer/MainMenu/MainMenu"]
 visible = false
 layout_mode = 2
-size_flags_vertical = 3
+text = "Launch Game"
 
-[node name="Label" type="Label" parent="CanvasLayer/MainMenu/MapList"]
-layout_mode = 2
-text = "Select a map:"
-horizontal_alignment = 1
-vertical_alignment = 1
+[node name="ChatBox" parent="CanvasLayer/MainMenu" instance=ExtResource("2_0ykhv")]
+layout_mode = 1
+offset_left = 792.0
+offset_bottom = -411.0
 
-[node name="ChatBox" parent="CanvasLayer" instance=ExtResource("2_0ykhv")]
-
-[node name="PlayerList" type="VBoxContainer" parent="CanvasLayer"]
+[node name="PlayerList" type="VBoxContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
 anchor_top = 1.0
@@ -93,27 +103,27 @@ offset_top = -246.0
 grow_horizontal = 0
 grow_vertical = 0
 
-[node name="Label" type="Label" parent="CanvasLayer/PlayerList"]
+[node name="Label" type="Label" parent="CanvasLayer/MainMenu/PlayerList"]
 layout_mode = 2
 text = "- Players- "
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Scroll" type="ScrollContainer" parent="CanvasLayer/PlayerList"]
+[node name="Scroll" type="ScrollContainer" parent="CanvasLayer/MainMenu/PlayerList"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="List" type="VBoxContainer" parent="CanvasLayer/PlayerList/Scroll"]
+[node name="List" type="VBoxContainer" parent="CanvasLayer/MainMenu/PlayerList/Scroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="UserInfo" type="Panel" parent="CanvasLayer/PlayerList"]
+[node name="UserInfo" type="Panel" parent="CanvasLayer/MainMenu/PlayerList"]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/PlayerList/UserInfo"]
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/MainMenu/PlayerList/UserInfo"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -121,13 +131,13 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/PlayerList/UserInfo/HBoxContainer"]
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer/MainMenu/PlayerList/UserInfo/HBoxContainer"]
 custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 texture = ExtResource("3_j38x1")
 expand_mode = 1
 
-[node name="Label" type="Label" parent="CanvasLayer/PlayerList/UserInfo/HBoxContainer"]
+[node name="Label" type="Label" parent="CanvasLayer/MainMenu/PlayerList/UserInfo/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "User"
