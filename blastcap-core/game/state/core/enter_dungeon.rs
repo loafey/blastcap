@@ -82,6 +82,9 @@ impl State for EnterDungeonState {
                         self.players.insert(addr);
                     }
                     if self.waiting_for.is_empty() {
+                        arg.host
+                            .broadcast(ServerMessage::EnterClearRoomState)
+                            .await?;
                         trace!(
                             "Starting game with player actor controllers: {:?}",
                             self.players
