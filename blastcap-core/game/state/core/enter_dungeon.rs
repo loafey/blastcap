@@ -72,79 +72,85 @@ impl State for EnterDungeonState {
                 arg.host
                     .broadcast(ServerMessage::ReadyStatus(addr, ready))
                     .await?;
-                // if self.waiting_for.remove(&addr) {
-                //     self.players.insert(addr);
-                // }
-                // if self.waiting_for.is_empty() {
-                //     trace!(
-                //         "Starting game with player actor controllers: {:?}",
-                //         self.players
-                //     );
+                let ready = ready != 0;
+                if !ready {
+                    self.players.remove(&addr);
+                    self.waiting_for.insert(addr);
+                    Ok(None)
+                } else {
+                    if self.waiting_for.remove(&addr) {
+                        self.players.insert(addr);
+                    }
+                    if self.waiting_for.is_empty() {
+                        trace!(
+                            "Starting game with player actor controllers: {:?}",
+                            self.players
+                        );
 
-                //     let mut gs = ClearRoomState::new();
-                //     let (x_list, y_list, z_list) = gs.map.get_ground_data();
+                        let mut gs = ClearRoomState::new();
+                        let (x_list, y_list, z_list) = gs.map.get_ground_data();
 
-                //     arg.host
-                //         .broadcast(ServerMessage::SpawnMap {
-                //             x: x_list,
-                //             y: y_list,
-                //             z: z_list,
-                //         })
-                //         .await?;
-                //     let map_size = gs.map.get_size();
-                //     for (id, addr) in self.players.iter().copied().enumerate() {
-                //         let actor = Actor {
-                //             name: format!("Player {id}"),
-                //             controller: Controller::Player(addr),
-                //             position: Vec3::new(15, 1, 15),
-                //             abilities: Default::default(),
-                //             health: 10,
-                //             base_movement: u32::MAX, //rand::random_range(10..20),
-                //             resources: Default::default(),
-                //         };
-                //         while {
-                //             let position = Vec3::new(
-                //                 rand::random_range(0..map_size.x),
-                //                 1,
-                //                 rand::random_range(0..map_size.z),
-                //             );
-                //             let clone = actor.clone();
-                //             let res = gs
-                //                 .spawn_actor(arg.host, Actor { position, ..clone })
-                //                 .await?;
-                //             !res
-                //         } {}
-                //     }
-                //     info!("Players spawned");
-                //     let mut i = 0;
-                //     while i < self.bot_amount {
-                //         let position = Vec3::new(
-                //             rand::random_range(0..map_size.x),
-                //             1,
-                //             rand::random_range(0..map_size.z),
-                //         );
+                        arg.host
+                            .broadcast(ServerMessage::SpawnMap {
+                                x: x_list,
+                                y: y_list,
+                                z: z_list,
+                            })
+                            .await?;
+                        let map_size = gs.map.get_size();
+                        for (id, addr) in self.players.iter().copied().enumerate() {
+                            let actor = Actor {
+                                name: format!("Player {id}"),
+                                controller: Controller::Player(addr),
+                                position: Vec3::new(15, 1, 15),
+                                abilities: Default::default(),
+                                health: 10,
+                                base_movement: u32::MAX, //rand::random_range(10..20),
+                                resources: Default::default(),
+                            };
+                            while {
+                                let position = Vec3::new(
+                                    rand::random_range(0..map_size.x),
+                                    1,
+                                    rand::random_range(0..map_size.z),
+                                );
+                                let clone = actor.clone();
+                                let res = gs
+                                    .spawn_actor(arg.host, Actor { position, ..clone })
+                                    .await?;
+                                !res
+                            } {}
+                        }
+                        info!("Players spawned");
+                        let mut i = 0;
+                        while i < self.bot_amount {
+                            let position = Vec3::new(
+                                rand::random_range(0..map_size.x),
+                                1,
+                                rand::random_range(0..map_size.z),
+                            );
 
-                //         let mut actor = Actor {
-                //             name: format!("Bot {i}"),
-                //             controller: Controller::Bot,
-                //             position,
-                //             health: 15,
-                //             base_movement: rand::random_range(10..20),
-                //             abilities: Default::default(),
-                //             resources: Default::default(),
-                //         };
-                //         actor.reset_turn_resources();
-                //         if gs.spawn_actor(arg.host, actor).await? {
-                //             i += 1;
-                //         }
-                //     }
-                //     info!("Bots spawned");
-                //     gs.next_actor(arg.host).await?;
-                //     Ok(Some(gs))
-                // } else {
-                //     Ok(None)
-                // }
-                Ok(None)
+                            let mut actor = Actor {
+                                name: format!("Bot {i}"),
+                                controller: Controller::Bot,
+                                position,
+                                health: 15,
+                                base_movement: rand::random_range(10..20),
+                                abilities: Default::default(),
+                                resources: Default::default(),
+                            };
+                            actor.reset_turn_resources();
+                            if gs.spawn_actor(arg.host, actor).await? {
+                                i += 1;
+                            }
+                        }
+                        info!("Bots spawned");
+                        gs.next_actor(arg.host).await?;
+                        Ok(Some(gs))
+                    } else {
+                        Ok(None)
+                    }
+                }
             }
             req => self.default_client_request(addr, req, arg).await,
         }
