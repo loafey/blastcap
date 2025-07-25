@@ -18,12 +18,12 @@ use std::{pin::Pin, time::Duration};
 
 type Callback = Box<
     dyn FnOnce(
-            &'static mut GameStartedState,
+            &'static mut ClearRoomState,
             Arg<'static>,
         ) -> Pin<Box<dyn Future<Output = anyhow::Result<()>> + Send>>
         + Send,
 >;
-pub struct GameStartedState {
+pub struct ClearRoomState {
     pub actors: Vec<Actor>,
     pub actor_pointer: usize,
     pub map: Box<Map>,
@@ -31,7 +31,7 @@ pub struct GameStartedState {
     waiting: bool,
     callbacks: Channel<Callback>,
 }
-impl GameStartedState {
+impl ClearRoomState {
     pub fn new() -> Box<Self> {
         Box::new(Self {
             actors: Vec::new(),
@@ -186,7 +186,7 @@ impl GameStartedState {
     }
 
     fn timer<
-        I: FnOnce(&'static mut GameStartedState, Arg<'static>) -> F + Send + 'static,
+        I: FnOnce(&'static mut ClearRoomState, Arg<'static>) -> F + Send + 'static,
         F: Future<Output = anyhow::Result<()>> + Send,
     >(
         &mut self,
@@ -314,7 +314,7 @@ impl GameStartedState {
     }
 }
 #[async_trait::async_trait]
-impl State for GameStartedState {
+impl State for ClearRoomState {
     async fn host_poll_tick<'l>(&mut self, arg: Arg<'l>) -> Res {
         let curr_act = self.actors.get(self.actor_pointer);
         if let Some(actor) = curr_act
@@ -327,7 +327,7 @@ impl State for GameStartedState {
         while let Ok(fut) = self.callbacks.try_recv() {
             unsafe {
                 fut(
-                    std::mem::transmute::<&mut GameStartedState, &mut GameStartedState>(self),
+                    std::mem::transmute::<&mut ClearRoomState, &mut ClearRoomState>(self),
                     std::mem::transmute::<Arg<'_>, Arg<'_>>(arg.clone()),
                 )
                 .await?;

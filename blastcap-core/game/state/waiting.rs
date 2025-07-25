@@ -2,7 +2,7 @@ use super::Arg;
 use crate::{
     game::{
         actor::{Actor, Controller},
-        state::{GameStartedState, Res, State},
+        state::{ClearRoomState, Res, State},
     },
     network::messages::{ClientRequest, ServerMessage},
 };
@@ -37,7 +37,7 @@ impl State for WaitingState {
                     );
                     //
 
-                    let mut gs = GameStartedState::new();
+                    let mut gs = ClearRoomState::new();
                     let (x_list, y_list, z_list) = gs.map.get_ground_data();
 
                     arg.host

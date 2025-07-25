@@ -9,7 +9,7 @@ mod abilities;
 pub use abilities::*;
 
 use crate::{
-    game::{Arg, map::Piece, state::GameStartedState},
+    game::{Arg, map::Piece, state::ClearRoomState},
     network::messages::ClientRequest,
 };
 
@@ -33,7 +33,7 @@ pub struct Actor {
     pub resources: TurnResources,
 }
 impl Actor {
-    pub async fn bot_act<'l>(&self, state: &GameStartedState, arg: Arg<'l>) -> anyhow::Result<()> {
+    pub async fn bot_act<'l>(&self, state: &ClearRoomState, arg: Arg<'l>) -> anyhow::Result<()> {
         let neighs = state
             .get_neighbors(false, self.position)
             .into_iter()

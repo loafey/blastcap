@@ -7,8 +7,10 @@ use crate::{
 };
 use std::{any::type_name, time::Instant};
 
-mod game_started;
-pub use game_started::GameStartedState;
+mod core;
+
+mod clear_room;
+pub use clear_room::ClearRoomState;
 mod lobby;
 pub use lobby::LobbyState;
 mod waiting;
