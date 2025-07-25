@@ -14,6 +14,18 @@ public partial class LobbyScreen : Node {
     [Export]
     public SubViewport Viewport;
 
+    [Export]
+    public Panel ServerSettings;
+
+    [Export]
+    public Button ServerSettingsToggle;
+
+    [Export]
+    public SpinBox SettingsBotAmount;
+
+    [Export]
+    public CheckButton ReadyButton;
+
     private void DrawPlayerList() {
         foreach (var child in this.PlayerList.GetChildren()) {
             child.QueueFree();
@@ -24,7 +36,7 @@ public partial class LobbyScreen : Node {
                 SizeFlagsHorizontal = SizeFlags.ExpandFill,
                 HorizontalAlignment = HorizontalAlignment.Fill
             };
-            var readyLabel = new Label { Text = "Not Ready" };
+            var readyLabel = new Label { Text = "Not Ready", Name = "ReadyLabel" };
             var avatar = new TextureRect {
                 Texture = ImageTexture.CreateFromImage(
                     Image.LoadFromFile("uid://bynqq3gi3gdtv")
@@ -57,9 +69,29 @@ public partial class LobbyScreen : Node {
     public override void _Ready() {
         base._Ready();
         this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
+        this.nw.Inner.OnServerNotice += (msg) => {
+            this.ChatBox.ShowMessage($"SERVER: {msg}");
+        };
+        this.SettingsBotAmount.ValueChanged += (value) => {
+            this.nw.Inner.SendChangeDungeonSetting(0, (uint)value);
+        };
         this.DrawPlayerList();
         this.FixViewPortSize();
         this.GetViewport().SizeChanged += this.FixViewPortSize;
+        this.ServerSettings.Visible = false;
+        this.ServerSettingsToggle.Visible = this.nw.IsHost;
+        this.ServerSettingsToggle.Pressed += () => {
+            this.ServerSettings.Visible = !this.ServerSettings.Visible;
+        };
+
+        this.ReadyButton.Toggled += (val) => {
+            this.nw.Inner.SendNotifyReady(val ? (byte)1 : (byte)0);
+        };
+
+        this.nw.Inner.OnReadyStatus += (user, status) => {
+            this.PlayerList.GetNode<Label>($"{user}/ReadyLabel").Text =
+                status == 0 ? "Not Ready" : "Ready";
+        };
 
         this.nw.Inner.OnPlayerList += (playerList) => {
             this.nw.Players.Clear();

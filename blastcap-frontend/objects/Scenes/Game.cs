@@ -60,7 +60,7 @@ public partial class Game : Node3D {
     public override void _Ready() {
         base._Ready();
         this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
-        this.nw.Inner.SendNotifyReady();
+        this.nw.Inner.SendNotifyReady(1);
 
         this.nw.Inner.OnChatMessage += (user, msg) => this.ChatBox.ShowMessage($"{user}: {msg}");
         this.nw.Inner.OnNewUser += (user) => {

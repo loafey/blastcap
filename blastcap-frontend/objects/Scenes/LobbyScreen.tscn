@@ -9,8 +9,8 @@ bg_color = Color(0.165656, 0.165656, 0.165656, 1)
 border_width_left = 4
 border_width_right = 4
 border_color = Color(1, 1, 1, 1)
-expand_margin_left = 10.0
-expand_margin_right = 10.0
+expand_margin_left = 5.0
+expand_margin_right = 5.0
 shadow_color = Color(0, 0, 0, 0.317647)
 shadow_size = 25
 
@@ -39,11 +39,15 @@ glow_enabled = true
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ry6v8"]
 
-[node name="LobbyScreen" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "Viewport")]
+[node name="LobbyScreen" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "Viewport", "ServerSettings", "ServerSettingsToggle", "SettingsBotAmount", "ReadyButton")]
 script = ExtResource("1_ry6v8")
 ChatBox = NodePath("CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/ChatBox")
 PlayerList = NodePath("CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/PlayerList")
 Viewport = NodePath("Scene")
+ServerSettings = NodePath("CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettings")
+ServerSettingsToggle = NodePath("CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettingsToggle")
+SettingsBotAmount = NodePath("CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettings/VBoxContainer/BotAmount")
+ReadyButton = NodePath("CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/ReadyToggle")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -91,6 +95,37 @@ size_flags_vertical = 3
 size_flags_stretch_ratio = 2.0
 theme_override_styles/panel = SubResource("StyleBoxTexture_p4g3h")
 
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/HBoxContainer/Panel3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 2
+
+[node name="ServerSettings" type="Panel" parent="CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettings"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BotAmount" type="SpinBox" parent="CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettings/VBoxContainer"]
+layout_mode = 2
+max_value = 16.0
+rounded = true
+prefix = "Bot amount:"
+
+[node name="ServerSettingsToggle" type="Button" parent="CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer"]
+layout_mode = 2
+text = "Server Settings"
+
 [node name="Panel" type="Panel" parent="CanvasLayer/Control/HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -137,6 +172,12 @@ horizontal_alignment = 2
 [node name="ChatBox" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer" instance=ExtResource("1_k0ebd")]
 layout_mode = 2
 size_flags_horizontal = 3
+
+[node name="ReadyToggle" type="CheckButton" parent="CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer"]
+layout_mode = 2
+text = "Ready"
+alignment = 1
+icon_alignment = 1
 
 [node name="Scene" type="SubViewport" parent="."]
 size = Vector2i(400, 800)

@@ -8,6 +8,7 @@ use rkyv::{Archive, Deserialize, Serialize};
 pub enum ServerMessage {
     Pong,
     ChatMessage(u64, String),
+    ServerNotice(String),
     NewUser(u64),
     UserLeft(u64),
     PlayerList(Vec<u64>),
@@ -58,6 +59,7 @@ pub enum ServerMessage {
         z: Vec<usize>,
     },
     EnterDungeonState,
+    ReadyStatus(u64, u8),
 }
 
 #[repr(C)]
@@ -68,7 +70,7 @@ pub enum ClientRequest {
     ChatMessage(String),
     RequestMapList,
     StartMap(String),
-    NotifyReady,
+    NotifyReady(u8),
     Action(String, usize, usize, usize),
     EndTurn,
     ChangeDungeonSetting(u32, u32),
