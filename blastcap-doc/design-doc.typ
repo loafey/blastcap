@@ -76,8 +76,7 @@ Time to create is unknown, but probably long, as small team.
   gutter: 40pt,
   automaton(
     (
-      ED: (PC: ""),
-      PC: (CR: ""),
+      ED: (CR: ""),
       CR: (LR: "", F: ""),
       LR: (CR: ""),
     ),
@@ -105,14 +104,9 @@ The core loop of the game is relatively simple, and a normal game will play out 
   c[Enter Dungeon],
   [
     Enter a selected dungeon.
-    The host player chooses the dungeon from a list of pre-configured dungeons.
-  ],
-
-  c[*PC*],
-  c[Prepare Character],
-  [
-    Let players design a character that they will use through the dungeon.
-    Here classes and starting abilities are chosen.
+    The host player chooses the dungeon from a list of pre-configured dungeons,
+    and all players design
+    their character.
   ],
 
   c[*CR*],

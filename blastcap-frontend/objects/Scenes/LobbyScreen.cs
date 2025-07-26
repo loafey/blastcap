@@ -26,6 +26,9 @@ public partial class LobbyScreen : Node {
     [Export]
     public CheckButton ReadyButton;
 
+    [Export]
+    public CompressedTexture2D DefaultAvatar;
+
     private void DrawPlayerList() {
         foreach (var child in this.PlayerList.GetChildren()) {
             child.QueueFree();
@@ -38,9 +41,7 @@ public partial class LobbyScreen : Node {
             };
             var readyLabel = new Label { Text = "Not Ready", Name = "ReadyLabel" };
             var avatar = new TextureRect {
-                Texture = ImageTexture.CreateFromImage(
-                    Image.LoadFromFile("uid://bynqq3gi3gdtv")
-                ),
+                Texture = this.DefaultAvatar,
                 ExpandMode = TextureRect.ExpandModeEnum.FitWidth
             };
             this.nw.Inner.GetAvatar(player, (data, width, height) => {

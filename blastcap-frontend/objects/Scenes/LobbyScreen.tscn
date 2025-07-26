@@ -61,6 +61,7 @@ ServerSettings = NodePath("CanvasLayer/Control/HBoxContainer/Panel3/VBoxContaine
 ServerSettingsToggle = NodePath("CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettingsToggle")
 SettingsBotAmount = NodePath("CanvasLayer/Control/HBoxContainer/Panel3/VBoxContainer/ServerSettings/VBoxContainer/BotAmount")
 ReadyButton = NodePath("CanvasLayer/Control/HBoxContainer/Panel/VBoxContainer/ReadyToggle")
+DefaultAvatar = ExtResource("1_0rcyg")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
