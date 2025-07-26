@@ -37,30 +37,17 @@ pub struct Map {
     dead: Vec<Vec<Vec<Option<usize>>>>,
     size: Vec3,
 }
-impl Default for Map {
-    fn default() -> Self {
-        let size = Vec3 {
-            x: 80,
-            y: 40,
-            z: 80,
-        };
-
+impl Map {
+    pub fn gen_map(size: Vec3, f: fn(&mut Map)) -> Self {
         let mut map = Map {
             alive: matrix3d(size),
             dead: matrix3d(size),
             size,
         };
-
-        // map.gen_caves(Vec3::new(0, 0, 0), Vec3::new(20, 20, 20));
-        map.gen_sparse_floor(0, 10);
-        // map.gen_sparse_floor(10);
-        // map.gen_sparse_floor(20);
-
+        f(&mut map);
         map
     }
-}
-impl Map {
-    fn gen_caves(&mut self, min: Vec3, max: Vec3) {
+    pub fn gen_caves(&mut self, min: Vec3, max: Vec3) {
         let noise = Perlin::new(rand::random());
         for x in min.x.min(max.x)..min.x.max(max.x) {
             for y in min.y.min(max.y)..min.y.max(max.y) {
@@ -74,7 +61,7 @@ impl Map {
             }
         }
     }
-    fn gen_sparse_floor(&mut self, y: usize, floor_amount: usize) {
+    pub fn gen_sparse_floor(&mut self, y: usize, floor_amount: usize) {
         let mut boxes: HashMap<usize, (Box, Vec<usize>)> = Default::default();
         for i in 0..floor_amount {
             let x_size = rand::random_range(4..=16);

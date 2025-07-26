@@ -32,11 +32,11 @@ pub struct ClearRoomState {
     callbacks: Channel<Callback>,
 }
 impl ClearRoomState {
-    pub fn new() -> Box<Self> {
+    pub fn new(size: Vec3, f: fn(&mut Map)) -> Box<Self> {
         Box::new(Self {
             actors: Vec::new(),
             actor_pointer: 0,
-            map: Default::default(),
+            map: Box::new(Map::gen_map(size, f)),
             current_turn: None,
             waiting: false,
             callbacks: Channel::new(),

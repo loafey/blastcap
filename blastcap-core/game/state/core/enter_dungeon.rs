@@ -90,7 +90,11 @@ impl State for EnterDungeonState {
                             self.players
                         );
 
-                        let mut gs = ClearRoomState::new();
+                        let mut gs = ClearRoomState::new(Vec3::new(80, 40, 80), |m| {
+                            m.gen_sparse_floor(0, 3);
+                            // m.gen_sparse_floor(10, 3);
+                            // m.gen_sparse_floor(20, 3);
+                        });
                         let (x_list, y_list, z_list) = gs.map.get_ground_data();
 
                         arg.host
