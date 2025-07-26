@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://f1axvwf5favr"]
+[gd_scene load_steps=14 format=3 uid="uid://f1axvwf5favr"]
 
 [ext_resource type="Texture2D" uid="uid://bynqq3gi3gdtv" path="res://icon.svg" id="1_0rcyg"]
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="1_k0ebd"]
@@ -38,6 +38,19 @@ tonemap_mode = 2
 glow_enabled = true
 
 [sub_resource type="CapsuleMesh" id="CapsuleMesh_ry6v8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ry6v8"]
+albedo_color = Color(0.156863, 0.156863, 0.156863, 1)
+normal_scale = 3.68
+normal_texture = ExtResource("1_0rcyg")
+rim_tint = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_ry6v8"]
+material = SubResource("StandardMaterial3D_ry6v8")
+top_radius = 1.0
+bottom_radius = 1.0
+height = 0.1
+cap_bottom = false
 
 [node name="LobbyScreen" type="Node3D" node_paths=PackedStringArray("ChatBox", "PlayerList", "Viewport", "ServerSettings", "ServerSettingsToggle", "SettingsBotAmount", "ReadyButton")]
 script = ExtResource("1_ry6v8")
@@ -190,9 +203,13 @@ mesh = SubResource("CapsuleMesh_ry6v8")
 skeleton = NodePath("")
 
 [node name="Camera3D" type="Camera3D" parent="Scene"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1.9895)
+transform = Transform3D(1, 0, 0, 0, 0.965926, 0.258819, 0, -0.258819, 0.965926, 0, 0.705533, 1.9895)
 current = true
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="Scene"]
 transform = Transform3D(-0.681672, -0.539522, 0.494205, 0.688535, -0.244572, 0.682719, -0.247473, 0.805668, 0.538197, 1.37798, 1.36017, 2.26217)
 shadow_enabled = true
+
+[node name="MeshInstance3D2" type="MeshInstance3D" parent="Scene"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -1, 0)
+mesh = SubResource("CylinderMesh_ry6v8")
