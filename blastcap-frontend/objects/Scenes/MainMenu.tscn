@@ -23,7 +23,7 @@ HostButton = NodePath("CanvasLayer/MainMenu/MainMenu/Host/Button")
 ConnectButton = NodePath("CanvasLayer/MainMenu/MainMenu/Connect/Button")
 UserNameLabel = NodePath("CanvasLayer/MainMenu/PlayerList/UserInfo/HBoxContainer/Label")
 UserAvatar = NodePath("CanvasLayer/MainMenu/PlayerList/UserInfo/HBoxContainer/TextureRect")
-MainMenuNode = NodePath("CanvasLayer/MainMenu")
+MainMenuNode = NodePath("CanvasLayer/MainMenu/MainMenu")
 LaunchGameButton = NodePath("CanvasLayer/MainMenu/MainMenu/LaunchGame")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]

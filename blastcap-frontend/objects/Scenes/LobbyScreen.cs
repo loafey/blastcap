@@ -115,5 +115,8 @@ public partial class LobbyScreen : Node {
             var name = this.nw.Inner.GetName(id);
             this.ChatBox.ShowMessage($"{name}: {msg}");
         };
+        this.nw.Inner.OnEnterClearRoomState += () => {
+            this.GetTree().ChangeSceneToFile("uid://bjmfx6nsekf58");
+        };
     }
 }

@@ -44,6 +44,8 @@ impl State for LobbyState {
                 Ok(Some(EnterDungeonState::new(host.get_clients())))
             }
             ClientRequest::ChangeToEnterDungeon if Some(addr) == data.host_player => {
+                host.broadcast(ServerMessage::AbilityMap(Abilities::get_map().clone()))
+                    .await?;
                 host.broadcast(ServerMessage::EnterDungeonState).await?;
                 Ok(Some(EnterDungeonState::new(host.get_clients())))
             }
