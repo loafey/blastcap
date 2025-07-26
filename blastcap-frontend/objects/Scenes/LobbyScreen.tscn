@@ -180,7 +180,7 @@ alignment = 1
 icon_alignment = 1
 
 [node name="Scene" type="SubViewport" parent="."]
-size = Vector2i(400, 800)
+size = Vector2i(700, 800)
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="Scene"]
 environment = SubResource("Environment_sukb3")

@@ -61,8 +61,9 @@ public partial class LobbyScreen : Node {
 
     private void FixViewPortSize() {
         var size = this.GetViewport().GetVisibleRect().End;
+        var ratio = 16f / 7f;
         var min = size.X;
-        var max = size.Y * 3.5;
+        var max = size.Y * ratio;
         this.Viewport.Size = new Vector2I((int)min, (int)max);
     }
 
