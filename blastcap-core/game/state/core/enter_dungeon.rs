@@ -153,6 +153,11 @@ impl State for EnterDungeonState {
                         }
                         info!("Bots spawned");
                         gs.next_actor(arg.host).await?;
+                        arg.host
+                            .broadcast(ServerMessage::ActorList {
+                                names: gs.actors.iter().map(|a| a.name.clone()).collect(),
+                            })
+                            .await?;
                         Ok(Some(gs))
                     } else {
                         Ok(None)

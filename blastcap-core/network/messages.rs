@@ -61,6 +61,9 @@ pub enum ServerMessage {
     EnterDungeonState,
     ReadyStatus(u64, u8),
     EnterClearRoomState,
+    ActorList {
+        names: Vec<String>,
+    },
 }
 
 #[repr(C)]

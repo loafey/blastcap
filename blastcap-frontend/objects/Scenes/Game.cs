@@ -29,8 +29,6 @@ public partial class Game : Node3D {
     private Stopwatch _rtt = new();
     private ulong _tickCount = 0;
 
-
-
     private void SpawnCube(Node3D parent, Vector3 pos) {
         var floor = new MeshInstance3D();
         var mesh = new BoxMesh {
@@ -176,6 +174,9 @@ public partial class Game : Node3D {
                 this.nw.Inner.SendPing();
             };
         };
+
+        this.nw.Inner.OnActorList += (names) =>
+            this.PC.ActorList = names;
     }
 
     public override void _UnhandledInput(InputEvent @event) {

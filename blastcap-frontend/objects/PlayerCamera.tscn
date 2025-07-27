@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://objects/PlayerCamera.cs" id="1_11u5k"]
 [ext_resource type="PackedScene" uid="uid://bp7yq4iqifwrh" path="res://objects/GUI/TinyPopup.tscn" id="2_rckdw"]
 
-[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel", "MovementBar", "MovementLabel")]
+[node name="PlayerCamera" type="Node3D" node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel", "MovementBar", "MovementLabel", "ActorListContainer")]
 script = ExtResource("1_11u5k")
 BoomArm = NodePath("BoomArm")
 Camera = NodePath("BoomArm/Camera")
@@ -15,6 +15,7 @@ CurrentAbilityLabel = NodePath("CanvasLayer/Panel/HBoxContainer/VBoxContainer/Cu
 RTTLabel = NodePath("CanvasLayer/RTT")
 MovementBar = NodePath("CanvasLayer/Panel/HBoxContainer/Movement")
 MovementLabel = NodePath("CanvasLayer/Panel/HBoxContainer/Movement/MovementLabel")
+ActorListContainer = NodePath("CanvasLayer/ActorList/HBoxContainer")
 
 [node name="BoomArm" type="Node3D" parent="."]
 
@@ -109,3 +110,18 @@ offset_left = -40.0
 offset_top = -23.0
 grow_horizontal = 0
 grow_vertical = 0
+
+[node name="ActorList" type="ScrollContainer" parent="CanvasLayer"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -400.0
+offset_right = 400.0
+offset_bottom = 64.0
+grow_horizontal = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/ActorList"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1

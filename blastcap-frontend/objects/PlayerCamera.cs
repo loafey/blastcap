@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 public partial class PlayerCamera : Node3D {
     private float _cameraSpeed = 5.0f;
@@ -27,6 +28,21 @@ public partial class PlayerCamera : Node3D {
     [Export]
     public Label MovementLabel;
     public Actor MyActor;
+    [Export]
+    public HBoxContainer ActorListContainer;
+
+    public List<string> ActorList {
+        set {
+            foreach (var child in this.ActorListContainer.GetChildren()) {
+                child.QueueFree();
+            }
+
+            foreach (var name in value) {
+                var but = new Button { Text = name };
+                this.ActorListContainer.AddChild(but);
+            }
+        }
+    }
 
     public (uint, uint) Movement {
         set {
