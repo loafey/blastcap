@@ -30,8 +30,13 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="ChatBox" parent="CanvasLayer" instance=ExtResource("3_cpr0p")]
-offset_left = 807.0
-offset_bottom = -450.0
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+offset_left = -376.0
+offset_top = -190.0
+grow_horizontal = 0
+grow_vertical = 0
 
 [node name="WorldMesh" type="Node3D" parent="."]
 

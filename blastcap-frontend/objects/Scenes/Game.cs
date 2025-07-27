@@ -100,6 +100,7 @@ public partial class Game : Node3D {
             this.PC.MyTurn = true;
             this._myTurn = true;
             this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);
+            this.PC.CurrentActor = id;
         };
         this.nw.Inner.OnActorTurn += (id) => {
             var actor = this.ActorHolder.GetNode<Actor>(id.ToString()).ActorName;
@@ -107,6 +108,7 @@ public partial class Game : Node3D {
             // _chatBox.ShowMessage($"{actor.ToUpperInvariant()}'S TURN");
             this.PC.MyTurn = false;
             this._myTurn = false;
+            this.PC.CurrentActor = id;
         };
 
         this.nw.Inner.OnMoveActor += (id, movement, xList, yList, zList) => {

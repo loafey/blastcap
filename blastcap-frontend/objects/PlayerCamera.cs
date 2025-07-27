@@ -31,6 +31,15 @@ public partial class PlayerCamera : Node3D {
     [Export]
     public HBoxContainer ActorListContainer;
 
+    public ulong CurrentActor {
+        set {
+            var index = 0;
+            foreach (var child in this.ActorListContainer.GetChildren()) {
+                ((Button)child).Disabled = index != (int)value;
+                index += 1;
+            }
+        }
+    }
     public List<string> ActorList {
         set {
             foreach (var child in this.ActorListContainer.GetChildren()) {
@@ -38,7 +47,10 @@ public partial class PlayerCamera : Node3D {
             }
 
             foreach (var name in value) {
-                var but = new Button { Text = name };
+                var but = new Button {
+                    Text = name,
+                    Disabled = true
+                };
                 this.ActorListContainer.AddChild(but);
             }
         }
