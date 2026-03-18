@@ -43,10 +43,10 @@
           libGL
           fontconfig
           wayland
-          xorg.libXcursor
-          xorg.libXrandr
-          xorg.libXi
-          xorg.libX11
+          libxcursor
+          libxrandr
+          libxi
+          libx11
           python3
           wabt
           watchexec
@@ -61,7 +61,7 @@
           dotnetPackages.Nuget
 
           typst
-          typstfmt
+          typstyle
           tinymist
         ];
       in {
