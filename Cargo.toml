@@ -55,3 +55,4 @@ oneshot = "0.1"
 smol-concurrency-tools = { git = "https://github.com/loafey/smol-concurrency-tools.git", features = [
     "select",
 ] }
+data = { path = "blastcap-crates/data" }
