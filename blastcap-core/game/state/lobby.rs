@@ -4,10 +4,7 @@ use crate::{
         actor::Abilities,
         state::{EnterDungeonState, Res, State},
     },
-    network::{
-        IdentityExt as _,
-        messages::{ClientRequest, ServerMessage},
-    },
+    network::messages::{ClientRequest, ServerMessage},
 };
 
 pub struct LobbyState;

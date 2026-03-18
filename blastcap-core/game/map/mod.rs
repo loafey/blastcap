@@ -47,6 +47,7 @@ impl Map {
         f(&mut map);
         map
     }
+    #[allow(unused)]
     pub fn gen_caves(&mut self, min: Vec3, max: Vec3) {
         let noise = Perlin::new(rand::random());
         for x in min.x.min(max.x)..min.x.max(max.x) {

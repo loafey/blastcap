@@ -1,7 +1,6 @@
 #![feature(
     impl_trait_in_bindings,
     never_type,
-    vec_into_raw_parts,
     arbitrary_self_types_pointers,
     macro_metavar_expr
 )]

@@ -3,7 +3,6 @@ use crate::{
     network::{
         HostPoll, TICK_RATE,
         messages::{ClientRequest, ServerMessage},
-        metadata,
     },
 };
 use std::{any::type_name, time::Instant};
@@ -22,7 +21,7 @@ pub trait State: Sync + Send {
         arg.data.tick = arg.data.tick.wrapping_add(1);
         const TICK_DELAY: usize = 1;
         if let Some(addr) = arg.data.host_player
-            && arg.data.tick % (TICK_RATE * TICK_DELAY) == 0
+            && arg.data.tick.is_multiple_of(TICK_RATE * TICK_DELAY)
         {
             let msg = ServerMessage::Status {
                 user_count: arg.host.get_client_count(),
@@ -45,7 +44,7 @@ pub trait State: Sync + Send {
         addr: u64,
         Arg { data, host, .. }: Arg<'l>,
     ) -> Res {
-        println!("A user at {addr} connected");
+        info!("A user at {addr} connected");
         if host.get_client_count() == 1 {
             data.host_player = Some(addr);
             host.send(addr, ServerMessage::NotifyHost).await?;

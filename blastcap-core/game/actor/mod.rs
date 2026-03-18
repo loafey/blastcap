@@ -1,5 +1,4 @@
 use math::Vec3;
-use rand::seq::IndexedRandom;
 use serde::Deserialize;
 
 mod resources;
