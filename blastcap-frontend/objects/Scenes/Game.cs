@@ -94,9 +94,12 @@ public partial class Game : Node3D {
             }
         };
 
-        this.nw.Inner.OnYourTurn += (id, movement) => {
+        this.nw.Inner.OnYourTurn += (id, movement, cards) => {
             // _chatBox.ShowMessage("YOUR TURN");
             this.PC.DisplayTinyPopup("YOUR TURN");
+            foreach (var card in cards) {
+                GD.Print("Got card: ", card);
+            }
             this.PC.MyTurn = true;
             this._myTurn = true;
             this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);

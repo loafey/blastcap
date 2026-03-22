@@ -26,6 +26,7 @@ smol.workspace = true
 futures-concurrency.workspace = true
 oneshot.workspace = true
 smol-concurrency-tools.workspace = true
+data.workspace = true
 
 [workspace]
 members = ["blastcap-crates/*"]

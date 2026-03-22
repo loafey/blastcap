@@ -34,6 +34,7 @@ pub enum ServerMessage {
     YourTurn {
         actor: usize,
         movement: u32,
+        cards: Vec<String>,
     },
     ActorTurn {
         actor: usize,

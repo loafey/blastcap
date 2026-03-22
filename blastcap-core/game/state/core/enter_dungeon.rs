@@ -5,7 +5,7 @@ use math::Vec3;
 use crate::{
     game::{
         Arg,
-        actor::{Actor, Controller},
+        actor::{Actor, CardHolder, Controller},
         state::{ClearRoomState, Res, State},
     },
     network::messages::{ClientRequest, ServerMessage},
@@ -114,6 +114,7 @@ impl State for EnterDungeonState {
                                 health: 10,
                                 base_movement: u32::MAX, //rand::random_range(10..20),
                                 resources: Default::default(),
+                                cards: CardHolder::test_data(),
                             };
                             while {
                                 let position = Vec3::new(
@@ -145,6 +146,7 @@ impl State for EnterDungeonState {
                                 base_movement: rand::random_range(10..20),
                                 abilities: Default::default(),
                                 resources: Default::default(),
+                                cards: Default::default(),
                             };
                             actor.reset_turn_resources();
                             if gs.spawn_actor(arg.host, actor).await? {

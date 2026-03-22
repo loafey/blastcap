@@ -2,6 +2,7 @@ use serde::{Deserialize, de::DeserializeOwned};
 use std::{
     fmt, fs, io,
     marker::PhantomData,
+    ops::Deref,
     path::{Path, PathBuf},
     sync::OnceLock,
 };
@@ -64,6 +65,13 @@ pub struct Directory<T, S: InitState = Loaded> {
     path: PathBuf,
     #[serde(skip_deserializing, default = "OnceLock::new")]
     loaded: OnceLock<Vec<T>>,
+}
+impl<T> Deref for Directory<T, Loaded> {
+    type Target = Vec<T>;
+
+    fn deref(&self) -> &Self::Target {
+        self.loaded.get().unwrap()
+    }
 }
 impl<T: fmt::Debug + DeserializeOwned, S: InitState> fmt::Debug for Directory<T, S> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

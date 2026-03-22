@@ -7,6 +7,9 @@ pub use resources::*;
 mod abilities;
 pub use abilities::*;
 
+mod card_holder;
+pub use card_holder::*;
+
 use crate::{
     game::{Arg, map::Piece, state::ClearRoomState},
     network::messages::ClientRequest,
@@ -29,6 +32,7 @@ pub struct Actor {
     pub health: i32,
     pub base_movement: u32,
     pub abilities: Abilities,
+    pub cards: CardHolder,
     pub resources: TurnResources,
 }
 impl Actor {

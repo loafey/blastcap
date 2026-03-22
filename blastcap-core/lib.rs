@@ -29,6 +29,7 @@ use std::{
 };
 
 mod game;
+mod game_data;
 mod network;
 
 sharpify::constants!(
