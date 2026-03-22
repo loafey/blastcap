@@ -1,7 +1,5 @@
 name = "Cap - Default Set"
+version = "0.1"
 
-[testing-character]
-name = "Chandara Testnnyl"
-health = 10
-base_movement = 6
-abilities = ["Walk", "Jump"]
+[cards]
+path = "Cards"
