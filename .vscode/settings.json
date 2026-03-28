@@ -1,5 +1,4 @@
 {
-    "godotTools.editorPath.godot4": "/nix/store/2sdmqah6b0sd1p0jhpabk8n40dr3kd4y-godot-mono-4.4.1-stable/bin/godot-mono",
     "rust-analyzer.excludeGlobs": [
         ".direnv/**"
     ],
@@ -26,5 +25,13 @@
         "Perlin",
         "smol",
         "Uninit"
-    ]
+    ],
+    "dotnetAcquisitionExtension.sharedExistingDotnetPath": "/nix/store/msq6k9knc3iq0arjw6pdq1vwliqnrc7z-dotnet-sdk-wrapped-10.0.103/bin/dotnet",
+    "dotnet.server.useOmnisharp": true,
+    "omnisharp.dotNetCliPaths": [
+        "/nix/store/fmfza5b99sk7r4mwr86m40fix81sim82-dotnet-sdk-wrapped-8.0.418/bin/dotnet",
+        "/nix/store/msq6k9knc3iq0arjw6pdq1vwliqnrc7z-dotnet-sdk-wrapped-10.0.103/bin/dotnet"
+    ],
+    "omnisharp.dotnetPath": "/nix/store/fmfza5b99sk7r4mwr86m40fix81sim82-dotnet-sdk-wrapped-8.0.418/bin/dotnet",
+    "dotnet.server.path": "/nix/store/79c0za5s3fr11isxd90jvww188dry5h5-omnisharp-roslyn-1.39.14/bin/OmniSharp"
 }

@@ -9,12 +9,21 @@
     };
   };
 
-  outputs = { flake-utils, nixpkgs, naersk, fenix, ... }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      flake-utils,
+      nixpkgs,
+      naersk,
+      fenix,
+      ...
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         overlays = [ fenix.overlays.default ];
         pkgs = import nixpkgs { inherit system overlays; };
-        toolchain = with fenix.packages.${system};
+        toolchain =
+          with fenix.packages.${system};
           combine [
             minimal.cargo
             minimal.rustc
@@ -25,13 +34,15 @@
             targets.x86_64-unknown-linux-gnu.latest.rust-std
           ];
 
-        fetchy = (naersk.lib.${system}.override {
-          cargo = toolchain;
-          rustc = toolchain;
-        }).buildPackage {
-          src = ./.;
-          nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
-        };
+        fetchy =
+          (naersk.lib.${system}.override {
+            cargo = toolchain;
+            rustc = toolchain;
+          }).buildPackage
+            {
+              src = ./.;
+              nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
+            };
 
         min-pkgs = with pkgs; [
           pkg-config
@@ -54,39 +65,43 @@
           clang
           libclang
           godot-mono
-          dotnet-sdk_9
           dotnet-sdk_8
-          dotnetCorePackages.runtime_9_0-bin
+          dotnet-sdk_10
           cargo-expand
           dotnetPackages.Nuget
+          omnisharp-roslyn
 
           typst
           typstyle
           tinymist
         ];
-      in {
+      in
+      {
         defaultPackage = fetchy;
 
-        packages = { fetchy = fetchy; };
-
-        devShell = (naersk.lib.${system}.override {
-          cargo = toolchain;
-          rustc = toolchain;
-        }).buildPackage {
-          src = ./.;
-          nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
-          LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
-
-          # installPhase = ''
-          #   ls
-          #   install -m755 -D sys/libsteam_api.so $out/lib/libsteam_api.so
-          # '';
-
-          shellHook = ''
-            export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${
-              pkgs.lib.makeLibraryPath min-pkgs
-            }:$(dirname $(dirname $out))/sys/"
-          '';
+        packages = {
+          fetchy = fetchy;
         };
-      });
+
+        devShell =
+          (naersk.lib.${system}.override {
+            cargo = toolchain;
+            rustc = toolchain;
+          }).buildPackage
+            {
+              src = ./.;
+              nativeBuildInputs = with pkgs; [ ] ++ min-pkgs;
+              LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+
+              # installPhase = ''
+              #   ls
+              #   install -m755 -D sys/libsteam_api.so $out/lib/libsteam_api.so
+              # '';
+
+              shellHook = ''
+                export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:${pkgs.lib.makeLibraryPath min-pkgs}:$(dirname $(dirname $out))/sys/"
+              '';
+            };
+      }
+    );
 }
