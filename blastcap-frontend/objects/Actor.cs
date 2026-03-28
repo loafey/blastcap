@@ -34,11 +34,10 @@ public partial class Actor : Node3D {
         }
     }
 
-
     public List<string> Abilities = [];
     private List<Vector3I> _walkGoals = [];
-    private Vector3 _curPos = new();
-    private int _posCount = 0;
+    private Vector3 _curPos;
+    private int _posCount;
 
     public override void _Ready() {
         base._Ready();

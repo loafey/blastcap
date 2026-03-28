@@ -6,7 +6,7 @@ public partial class PlayerCamera : Node3D {
     private float _cameraSpeed = 5.0f;
     private float _cameraRotationSpeed = 1.4f;
     private float _cameraBoomSpeed = 0.005f;
-    private bool _cameraLock = false;
+    private bool _cameraLock;
     [Export]
     public Node3D BoomArm;
     [Export]
@@ -68,7 +68,7 @@ public partial class PlayerCamera : Node3D {
         set => this.RTTLabel.Text = $"RTT: {value.Item1}ms ({value.Item2})";
     }
 
-    private bool _myTurn = false;
+    private bool _myTurn;
     public bool MyTurn {
         get => this._myTurn;
         set {

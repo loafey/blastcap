@@ -9,7 +9,7 @@ public partial class NetworkManager : Node {
     public NetworkClient Inner { get; private set; }
     public HashSet<ulong> Players = [];
 
-    public bool IsHost => NetworkClient.IsHost;
+    public static bool IsHost => NetworkClient.IsHost;
 
     public override void _Ready() {
         this.Inner = new NetworkClient((err) => {

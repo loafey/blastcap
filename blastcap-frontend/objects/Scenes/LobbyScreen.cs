@@ -81,7 +81,7 @@ public partial class LobbyScreen : Node {
         this.FixViewPortSize();
         this.GetViewport().SizeChanged += this.FixViewPortSize;
         this.ServerSettings.Visible = false;
-        this.ServerSettingsToggle.Visible = this.nw.IsHost;
+        this.ServerSettingsToggle.Visible = NetworkManager.IsHost;
         this.ServerSettingsToggle.Pressed += () => {
             this.ServerSettings.Visible = !this.ServerSettings.Visible;
         };

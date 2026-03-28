@@ -4,6 +4,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
+#pragma warning disable CA1806
 public partial class Linker : Node {
     public delegate void Log([MarshalAs(UnmanagedType.LPUTF8Str)] string error);
 
@@ -14,7 +15,7 @@ public partial class Linker : Node {
         try {
             register_logging(GD.Print, GD.PrintErr);
         } catch (Exception e) {
-            GD.PrintErr($"= Registering logging callbacks: failed registering hook: {e}");
+            GD.PrintErr($"= Registering logging callbacks: failed registering hook ({e.HResult}): {e}");
         }
         GD.Print("= Registering logging callbacks: done");
         // var assembly = Assembly.GetExecutingAssembly();
@@ -33,3 +34,4 @@ public partial class Linker : Node {
     //     return IntPtr.Zero;
     // }
 }
+#pragma warning restore CA1806

@@ -2,6 +2,7 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 
 
 public partial class Game : Node3D {
@@ -24,10 +25,10 @@ public partial class Game : Node3D {
     [Export]
     public Node3D Temporaries;
     private bool _myTurn;
-    private string _currentAbility = null;
+    private string _currentAbility;
     private readonly Random _random = new();
     private Stopwatch _rtt = new();
-    private ulong _tickCount = 0;
+    private ulong _tickCount;
 
     private void SpawnCube(Node3D parent, Vector3 pos) {
         var floor = new MeshInstance3D();
@@ -72,7 +73,7 @@ public partial class Game : Node3D {
             var node = this.ActorScene.Instantiate<Actor>();
             node.Position = new Vector3(x, y, z);
             node.ActorName = name;
-            node.Name = id.ToString();
+            node.Name = id.ToString(new CultureInfo("en-US"));
             node.Abilities = abilities;
             node.MaxHealth = maxHealth;
             node.Health = health;
@@ -106,7 +107,7 @@ public partial class Game : Node3D {
             this.PC.CurrentActor = id;
         };
         this.nw.Inner.OnActorTurn += (id) => {
-            var actor = this.ActorHolder.GetNode<Actor>(id.ToString()).ActorName;
+            var actor = this.ActorHolder.GetNode<Actor>(id.ToString(new CultureInfo("en-US"))).ActorName;
             this.PC.DisplayTinyPopup($"{actor.ToUpperInvariant()}'S TURN");
             // _chatBox.ShowMessage($"{actor.ToUpperInvariant()}'S TURN");
             this.PC.MyTurn = false;
@@ -115,7 +116,7 @@ public partial class Game : Node3D {
         };
 
         this.nw.Inner.OnMoveActor += (id, movement, xList, yList, zList) => {
-            var actor = this.ActorHolder.GetNode<Actor>(id.ToString());
+            var actor = this.ActorHolder.GetNode<Actor>(id.ToString(new CultureInfo("en-US")));
             var goals = new List<Vector3I>();
             for (var i = 0; i < xList.Count; i++) {
                 var x = xList[i];
@@ -155,12 +156,12 @@ public partial class Game : Node3D {
         this.nw.Inner.OnSpawnMap += (xList, yList, zList) => {
             for (var i = 0; i < xList.Count; i++) {
                 var key = (int)yList[i];
-                if (!this._layers.ContainsKey(key)) {
-                    var par = new Node3D();
-                    this._layers[key] = par;
-                    this.WorldMeshHolder.AddChild(par);
+                if (!this._layers.TryGetValue(key, out var value)) {
+                    value = new Node3D();
+                    this._layers[key] = value;
+                    this.WorldMeshHolder.AddChild(value);
                 }
-                var parent = this._layers[key];
+                var parent = value;
                 var pos = new Vector3(xList[i], yList[i], zList[i]);
                 this.SpawnCube(parent, pos);
             }
