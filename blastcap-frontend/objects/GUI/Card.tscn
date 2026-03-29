@@ -1,0 +1,98 @@
+[gd_scene format=3 uid="uid://dbdu0n8yksdp1"]
+
+[ext_resource type="Texture2D" uid="uid://bynqq3gi3gdtv" path="res://icon.svg" id="1_caxlk"]
+[ext_resource type="Script" uid="uid://c1s0qsvaje2m5" path="res://objects/GUI/Card.cs" id="1_ug1o5"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pr8kj"]
+bg_color = Color(0.10747976, 0.10747973, 0.10747973, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 1, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+corner_radius_bottom_right = 8
+corner_radius_bottom_left = 8
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_caxlk"]
+bg_color = Color(0.6, 0.6, 0.6, 0)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.8, 1, 1, 1)
+corner_radius_top_left = 8
+corner_radius_top_right = 8
+
+[sub_resource type="LabelSettings" id="LabelSettings_pr8kj"]
+font_size = 12
+
+[node name="Card" type="Control" unique_id=1095382948 node_paths=PackedStringArray("cardTitleLabel", "cardPanel")]
+custom_minimum_size = Vector2(96, 128)
+layout_mode = 3
+anchor_right = 0.083000004
+anchor_bottom = 0.19800001
+offset_right = 0.38399506
+offset_bottom = -0.3040161
+grow_horizontal = 2
+grow_vertical = 2
+pivot_offset_ratio = Vector2(0.5, 0.5)
+script = ExtResource("1_ug1o5")
+cardTitleLabel = NodePath("CardBackground/Label")
+cardPanel = NodePath("CardBackground")
+metadata/_edit_use_anchors_ = true
+
+[node name="CardBackground" type="Panel" parent="." unique_id=480978239]
+custom_minimum_size = Vector2(96, 128)
+layout_mode = 1
+anchors_preset = -1
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_pr8kj")
+
+[node name="Panel2" type="Panel" parent="CardBackground" unique_id=1403458037]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 32.0
+grow_horizontal = 2
+mouse_filter = 1
+theme_override_styles/panel = SubResource("StyleBoxFlat_caxlk")
+
+[node name="Label" type="Label" parent="CardBackground" unique_id=2005298037]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -44.5
+offset_top = 2.0
+offset_right = 44.5
+offset_bottom = 30.0
+grow_horizontal = 2
+mouse_filter = 1
+text = "Card name"
+label_settings = SubResource("LabelSettings_pr8kj")
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 2
+uppercase = true
+
+[node name="TextureRect" type="TextureRect" parent="CardBackground" unique_id=2121116825]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -32.0
+offset_top = -16.0
+offset_right = 32.0
+offset_bottom = 48.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("1_caxlk")
+expand_mode = 1
