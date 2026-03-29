@@ -105,13 +105,16 @@ impl ClearRoomState {
                 self.current_turn = Some(actor.controller);
                 for cl in host.get_clients() {
                     if Some(cl) == addr {
-                        let current = self.current_actor();
+                        let actor = self.actor_pointer;
+                        let current = self.current_actor_mut();
+                        let cards = current.cards.draw(2);
+                        let movement = current.resources.movement;
                         host.send(
                             cl,
                             ServerMessage::YourTurn {
-                                actor: self.actor_pointer,
-                                movement: current.resources.movement,
-                                cards: Vec::new(),
+                                actor,
+                                movement,
+                                cards,
                             },
                         )
                         .await?;
