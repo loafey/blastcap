@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, time::Duration};
 
 use math::Vec3;
 
@@ -85,6 +85,8 @@ impl State for EnterDungeonState {
                         arg.host
                             .broadcast(ServerMessage::EnterClearRoomState)
                             .await?;
+                        // TODO: Make player send ready checks
+                        smol::Timer::after(Duration::from_secs(1)).await;
                         trace!(
                             "Starting game with player actor controllers: {:?}",
                             self.players
