@@ -6,6 +6,7 @@ use crate::game_data::DATA;
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct CardHolder {
+    hand: Vec<Card>,
     cards: Vec<Card>,
     trash: Vec<Card>,
 }
@@ -15,7 +16,7 @@ impl CardHolder {
         for _ in 0..amount {
             let Some(card) = self.cards.pop() else { break };
             data.push(card.name.clone());
-            self.trash.push(card);
+            self.hand.push(card);
         }
         data
     }
@@ -27,6 +28,7 @@ impl CardHolder {
         cards.append(&mut DATA.cards.clone());
         cards.shuffle(&mut rand::rng());
         Self {
+            hand: Vec::new(),
             cards,
             trash: Vec::new(),
         }
