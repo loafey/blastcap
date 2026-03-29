@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://bjmfx6nsekf58"]
+[gd_scene format=3 uid="uid://bjmfx6nsekf58"]
 
 [ext_resource type="PackedScene" uid="uid://d35nkowtrw54c" path="res://objects/PlayerCamera.tscn" id="1_ibkli"]
 [ext_resource type="Script" uid="uid://ow2rlu86ladi" path="res://objects/Scenes/Game.cs" id="1_qbsmt"]
@@ -7,7 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="3_cpr0p"]
 [ext_resource type="PackedScene" uid="uid://brortooqkibdb" path="res://objects/Effects/Sound.tscn" id="4_t1gdw"]
 
-[node name="Game" type="Node3D" node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder", "Temporaries")]
+[node name="Game" type="Node3D" unique_id=162207000 node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder", "Temporaries")]
 script = ExtResource("1_qbsmt")
 ActorScene = ExtResource("2_78awf")
 ActorHolder = NodePath("Actors")
@@ -18,26 +18,26 @@ ExplosionScene = ExtResource("3_bfu7n")
 SoundEffect = ExtResource("4_t1gdw")
 Temporaries = NodePath("Temporaries")
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=729423569]
 transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
 shadow_enabled = true
 
-[node name="PlayerCamera" parent="." instance=ExtResource("1_ibkli")]
+[node name="PlayerCamera" parent="." unique_id=1720251722 instance=ExtResource("1_ibkli")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
 
-[node name="Actors" type="Node3D" parent="."]
+[node name="Actors" type="Node3D" parent="." unique_id=1584489651]
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
+[node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=1051112688]
 
-[node name="ChatBox" parent="CanvasLayer" instance=ExtResource("3_cpr0p")]
-anchors_preset = 3
+[node name="ChatBox" parent="CanvasLayer" unique_id=1564263158 instance=ExtResource("3_cpr0p")]
+anchors_preset = 1
 anchor_left = 1.0
-anchor_top = 1.0
+anchor_bottom = 0.0
 offset_left = -376.0
-offset_top = -190.0
+offset_bottom = 190.0
 grow_horizontal = 0
-grow_vertical = 0
+grow_vertical = 1
 
-[node name="WorldMesh" type="Node3D" parent="."]
+[node name="WorldMesh" type="Node3D" parent="." unique_id=413768576]
 
-[node name="Temporaries" type="Node3D" parent="."]
+[node name="Temporaries" type="Node3D" parent="." unique_id=667807292]
