@@ -14,3 +14,4 @@ path = "lib.rs"
 serde = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
+rapidhash = { workspace = true }

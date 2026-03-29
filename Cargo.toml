@@ -27,6 +27,7 @@ futures-concurrency.workspace = true
 oneshot.workspace = true
 smol-concurrency-tools.workspace = true
 data.workspace = true
+rapidhash.workspace = true
 
 [workspace]
 members = ["blastcap-crates/*"]
@@ -59,3 +60,4 @@ smol-concurrency-tools = { git = "https://github.com/loafey/smol-concurrency-too
 data = { path = "blastcap-crates/data" }
 toml = "1.0"
 walkdir = "2.5"
+rapidhash = "4.4.1"
