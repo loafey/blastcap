@@ -114,7 +114,7 @@ impl State for EnterDungeonState {
                                 position: Vec3::new(15, 1, 15),
                                 abilities: Default::default(),
                                 health: 10,
-                                base_movement: u32::MAX, //rand::random_range(10..20),
+                                base_movement: 10,
                                 resources: Default::default(),
                                 cards: CardHolder::test_data(),
                             };
