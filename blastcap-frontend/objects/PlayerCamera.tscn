@@ -2,6 +2,7 @@
 
 [ext_resource type="Script" uid="uid://dybkqlr8kv6gf" path="res://objects/PlayerCamera.cs" id="1_11u5k"]
 [ext_resource type="PackedScene" uid="uid://bp7yq4iqifwrh" path="res://objects/GUI/TinyPopup.tscn" id="2_rckdw"]
+[ext_resource type="PackedScene" uid="uid://dbdu0n8yksdp1" path="res://objects/GUI/Card.tscn" id="3_rf44g"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_x0iuc"]
 bg_color = Color(0.18717611, 0.18717617, 0.18717602, 1)
@@ -11,8 +12,11 @@ border_width_right = 4
 border_color = Color(1, 1, 1, 1)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
+expand_margin_left = 4.0
+expand_margin_top = 4.0
+expand_margin_right = 4.0
 
-[node name="PlayerCamera" type="Node3D" unique_id=1195079771 node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel", "MovementBar", "MovementLabel", "ActorListContainer")]
+[node name="PlayerCamera" type="Node3D" unique_id=1195079771 node_paths=PackedStringArray("BoomArm", "Camera", "TinyPopupHolder", "AbilitiesGrid", "EndTurnButton", "CurrentAbilityLabel", "RTTLabel", "MovementBar", "MovementLabel", "ActorListContainer", "CardHolder")]
 script = ExtResource("1_11u5k")
 BoomArm = NodePath("BoomArm")
 Camera = NodePath("BoomArm/Camera")
@@ -25,6 +29,8 @@ RTTLabel = NodePath("CanvasLayer/RTT")
 MovementBar = NodePath("CanvasLayer/Panel/HBoxContainer/Movement")
 MovementLabel = NodePath("CanvasLayer/Panel/HBoxContainer/Movement/MovementLabel")
 ActorListContainer = NodePath("CanvasLayer/ActorList/HBoxContainer")
+CardHolder = NodePath("CanvasLayer/CardHolder")
+CardScene = ExtResource("3_rf44g")
 
 [node name="BoomArm" type="Node3D" parent="." unique_id=1231563749]
 
@@ -43,10 +49,10 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -500.0
-offset_top = -162.0
-offset_right = 500.0
-offset_bottom = -34.0
+offset_left = -200.0
+offset_top = -167.0
+offset_right = 200.0
+offset_bottom = -39.0
 grow_horizontal = 2
 grow_vertical = 0
 alignment = 1
@@ -57,11 +63,12 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -100.0
-offset_right = 200.0
+offset_left = -400.0
+offset_top = -64.0
+offset_right = 400.0
 grow_horizontal = 2
 grow_vertical = 0
+size_flags_vertical = 8
 theme_override_styles/panel = SubResource("StyleBoxFlat_x0iuc")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/Panel" unique_id=874628242]
@@ -88,14 +95,13 @@ size_flags_vertical = 3
 columns = 10
 
 [node name="EndTurn" type="Button" parent="CanvasLayer/Panel/HBoxContainer" unique_id=1514242321]
-custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
 tooltip_text = "Skip"
 text = "End
 Turn"
 
 [node name="Movement" type="ProgressBar" parent="CanvasLayer/Panel/HBoxContainer" unique_id=810411316]
-custom_minimum_size = Vector2(80, 100)
+custom_minimum_size = Vector2(80, 64)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 8

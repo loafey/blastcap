@@ -30,6 +30,10 @@ public partial class PlayerCamera : Node3D {
     public Actor MyActor;
     [Export]
     public HBoxContainer ActorListContainer;
+    [Export]
+    public HBoxContainer CardHolder;
+    [Export]
+    public PackedScene CardScene;
 
     public ulong CurrentActor {
         set {
@@ -122,6 +126,15 @@ public partial class PlayerCamera : Node3D {
             callback();
         };
         this.AbilitiesGrid.AddChild(button);
+    }
+
+    public void AddCards(List<string> cards) {
+        foreach (var card in cards) {
+            var cardChild = this.CardScene.Instantiate<Card>();
+            cardChild.Title = card;
+
+            this.CardHolder.AddChild(cardChild);
+        }
     }
 
     public override void _Ready() {
