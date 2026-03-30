@@ -10,15 +10,11 @@ pub struct CardHolder {
     trash: Vec<u64>,
 }
 impl CardHolder {
-    pub fn draw(&mut self, amount: usize) -> Vec<String> {
+    pub fn draw(&mut self, amount: usize) -> Vec<u64> {
         let mut data = Vec::new();
         for _ in 0..amount {
             let Some(card) = self.cards.pop() else { break };
-            let Some(card_data) = DATA.cards.get(&card) else {
-                error!("tried to fetch a card that does not exist");
-                continue;
-            };
-            data.push(card_data.name.clone());
+            data.push(card);
             self.hand.push(card);
         }
         data
