@@ -10,6 +10,10 @@ pub struct CardHolder {
     trash: Vec<u64>,
 }
 impl CardHolder {
+    pub fn check_hand(&self, index: usize) -> Option<u64> {
+        self.hand.get(index).copied()
+    }
+
     pub fn draw(&mut self, amount: usize) -> Vec<u64> {
         let mut data = Vec::new();
         for _ in 0..amount {

@@ -378,6 +378,23 @@ impl State for ClearRoomState {
                     }
                 }
             }
+            ClientRequest::UseCard(index, x, y, z) => {
+                let card = self.current_actor().cards.check_hand(index);
+                let Some(card) = card else {
+                    arg.host
+                        .broadcast(ServerMessage::ChatMessage(
+                            0,
+                            format!(
+                                "{} tried to use a card not in their inventory",
+                                self.actor_pointer
+                            ),
+                        ))
+                        .await?;
+                    return Ok(None);
+                };
+                info!("implement use card: {card}; {x}, {y}, {z}");
+                Ok(None)
+            }
             ClientRequest::EndTurn
                 if (Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
                     && !self.waiting =>
