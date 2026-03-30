@@ -130,9 +130,8 @@ public partial class PlayerCamera : Node3D {
 
     public void AddCards(List<ulong> cards) {
         foreach (var cardId in cards) {
-            var card = Data.Cards[cardId];
             var cardChild = this.CardScene.Instantiate<Card>();
-            cardChild.Title = card.Name;
+            cardChild.CardId = cardId;
 
             this.CardHolder.AddChild(cardChild);
         }

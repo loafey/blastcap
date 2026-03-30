@@ -2,40 +2,34 @@ using Godot;
 using System;
 
 public partial class Card : Control {
-    private string title;
+    private ulong cardId;
     private Vector2 currentOffset;
     private Vector2 targetOffset;
     private Vector2 currentScale = new(1, 1);
     private Vector2 targetScale = new(1, 1);
 
     [Export]
-    public string Title {
-        get => this.title;
-        set {
-            this.title = value;
-            this.SetLabel();
-        }
-    }
-
-    [Export]
     private Label cardTitleLabel;
     [Export]
     private Panel cardPanel;
+
+    public ulong CardId {
+        get => this.cardId;
+        set {
+            this.cardId = value;
+            var data = Data.Cards[this.cardId];
+            this.cardTitleLabel.Text = data.Name;
+        }
+    }
 
     [Export]
     public Vector2 HoverOffset = new(0, -4);
     [Export]
     public Vector2 HoverScale = new(1.1f, 1.1f);
 
-    private void SetLabel() {
-        this.cardTitleLabel.Text = this.Title;
-    }
-
     public override void _Ready() {
         base._Ready();
 
-
-        this.SetLabel();
         MouseEntered += this.MouseEnter;
         MouseExited += this.MouseLeave;
     }
