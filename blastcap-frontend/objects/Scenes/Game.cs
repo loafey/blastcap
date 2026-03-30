@@ -26,6 +26,7 @@ public partial class Game : Node3D {
     public Node3D Temporaries;
     private bool _myTurn;
     private string _currentAbility;
+    private ulong? _currentCard;
     private readonly Random _random = new();
     private Stopwatch _rtt = new();
     private ulong _tickCount;
@@ -98,11 +99,18 @@ public partial class Game : Node3D {
         this.nw.Inner.OnYourTurn += (id, movement, cards) => {
             // _chatBox.ShowMessage("YOUR TURN");
             this.PC.DisplayTinyPopup("YOUR TURN");
-            this.PC.AddCards(cards);
             this.PC.MyTurn = true;
             this._myTurn = true;
             this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);
             this.PC.CurrentActor = id;
+            for (var i = 0; i < cards.Count; i++) {
+                var j = i; // is passed by reference for some reason?
+                this.PC.AddCard(cards[j], () => {
+                    this._currentAbility = null;
+                    this._currentCard = (ulong)j;
+                    this.PC.CurrentAbility = Data.Cards[cards[j]].Name;
+                });
+            }
         };
         this.nw.Inner.OnActorTurn += (id) => {
             var actor = this.ActorHolder.GetNode<Actor>(id.ToString(new CultureInfo("en-US"))).ActorName;
@@ -202,13 +210,18 @@ public partial class Game : Node3D {
             }
 
             var pos = (Vector3)result["position"];
+            if (!this._myTurn) { return; }
+            var (x, y, z) = ((nuint)pos.X, (nuint)pos.Y, (nuint)pos.Z);
             // pos.Y += 1;
             // GD.Print($"{(nuint)pos.X}, {(nuint)pos.Y}, {(nuint)pos.Z}");
-            if (this._myTurn && this._currentAbility != null) {
-                this.nw.Inner.SendAction(this._currentAbility, (nuint)pos.X, (nuint)pos.Y, (nuint)pos.Z);
-                this._currentAbility = null;
-                this.PC.CurrentAbility = null;
+            if (this._currentAbility != null) {
+                this.nw.Inner.SendAction(this._currentAbility, x, y, z);
+            } else if (this._currentCard is ulong card) {
+                this.nw.Inner.SendUseCard(card, x, y, z);
             }
+            this._currentAbility = null;
+            this._currentCard = null;
+            this.PC.CurrentAbility = null;
         }
     }
 

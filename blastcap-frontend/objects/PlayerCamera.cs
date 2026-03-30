@@ -128,13 +128,12 @@ public partial class PlayerCamera : Node3D {
         this.AbilitiesGrid.AddChild(button);
     }
 
-    public void AddCards(List<ulong> cards) {
-        foreach (var cardId in cards) {
-            var cardChild = this.CardScene.Instantiate<Card>();
-            cardChild.CardId = cardId;
+    public void AddCard(ulong cardId, Action callback) {
+        var cardChild = this.CardScene.Instantiate<Card>();
+        cardChild.CardId = cardId;
+        cardChild.OnClick = callback.Invoke;
 
-            this.CardHolder.AddChild(cardChild);
-        }
+        this.CardHolder.AddChild(cardChild);
     }
 
     public override void _Ready() {

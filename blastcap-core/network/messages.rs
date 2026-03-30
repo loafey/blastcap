@@ -80,6 +80,7 @@ pub enum ClientRequest {
     StartMap(String),
     NotifyReady(u8),
     Action(String, usize, usize, usize),
+    UseCard(usize, usize, usize, usize),
     EndTurn,
     ChangeDungeonSetting(u32, u32),
     ChangeToEnterDungeon,
