@@ -63,7 +63,7 @@ public partial class NetworkClient {
     public delegate void AvatarCallbackRaw([MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 1)] byte[] data, int len, ushort width, ushort height);
     public void GetAvatar(ulong id, AvatarCallback cb) {
         [DllImport("blastcap", SetLastError = true)]
-        static extern unsafe string metadata_get_avatar(void* inner, ulong id, AvatarCallbackRaw cb);
+        static extern unsafe void metadata_get_avatar(void* inner, ulong id, AvatarCallbackRaw cb);
         unsafe { metadata_get_avatar(this._inner, id, (data, _len, w, h) => cb(data, w, h)); }
     }
 
