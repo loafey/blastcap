@@ -1,5 +1,5 @@
 use rapidhash::{RapidHashMap, quality::SeedableState};
-use serde::{Deserialize, de::DeserializeOwned};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{
     collections::HashMap,
     fmt, fs,
@@ -133,7 +133,7 @@ impl<T: DeserializeOwned> Initialize for Directory<T, NotLoaded> {
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Card {
     pub name: String,
 }

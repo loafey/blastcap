@@ -3,18 +3,30 @@
 [ext_resource type="Script" uid="uid://bndij16mql8pr" path="res://objects/Scenes/Loading.cs" id="1_tol6f"]
 [ext_resource type="Texture2D" uid="uid://c6n2fnh3a1i77" path="res://blastcap-data/Cap/UI/splash.png" id="2_n6nms"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_n6nms"]
+bg_color = Color(0, 0, 0, 1)
+
 [sub_resource type="LabelSettings" id="LabelSettings_ni3kl"]
 font_size = 45
 
-[node name="Loading" type="Node2D" unique_id=1684913536 node_paths=PackedStringArray("loadingLabel", "tidbitLabel", "spinner", "loadingTimer", "tidbitTimer")]
+[node name="Loading" type="Node2D" unique_id=1684913536 node_paths=PackedStringArray("loadingLabel", "tidbitLabel", "loadingProgress", "spinner", "loadingTimer", "tidbitTimer")]
 script = ExtResource("1_tol6f")
 loadingLabel = NodePath("CanvasLayer/VBoxContainer/Loading")
-tidbitLabel = NodePath("CanvasLayer/VBoxContainer/Tidbit")
+tidbitLabel = NodePath("CanvasLayer/VBoxContainer/HBoxContainer/Tidbit")
+loadingProgress = NodePath("CanvasLayer/VBoxContainer/HBoxContainer/Label")
 spinner = NodePath("CanvasLayer/Spinner")
 loadingTimer = NodePath("LoadingTimer")
 tidbitTimer = NodePath("TidbitTimer")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="." unique_id=677130021]
+
+[node name="Panel" type="Panel" parent="CanvasLayer" unique_id=628663990]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_n6nms")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer" unique_id=1131732162]
 anchors_preset = 12
@@ -31,7 +43,14 @@ layout_mode = 2
 text = "Loading...."
 label_settings = SubResource("LabelSettings_ni3kl")
 
-[node name="Tidbit" type="Label" parent="CanvasLayer/VBoxContainer" unique_id=415103963]
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/VBoxContainer" unique_id=1681409891]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/VBoxContainer/HBoxContainer" unique_id=91309660]
+layout_mode = 2
+text = "(0/0)"
+
+[node name="Tidbit" type="Label" parent="CanvasLayer/VBoxContainer/HBoxContainer" unique_id=415103963]
 layout_mode = 2
 text = "Fun Fact..."
 

@@ -65,6 +65,9 @@ pub enum ServerMessage {
     ActorList {
         names: Vec<String>,
     },
+    // Loading messages
+    GameLoadingTotal(usize),
+    GameLoadingCard(u64, Vec<u8>),
 }
 
 #[repr(C)]

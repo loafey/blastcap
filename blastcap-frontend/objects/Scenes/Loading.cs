@@ -1,15 +1,22 @@
 using Godot;
+using MessagePack;
 using System;
+using System.Buffers;
 
 public partial class Loading : Node2D {
     private readonly Random random = new();
     private NetworkManager nw;
+    private ulong loadTotal = int.MaxValue;
+    private ulong loadCurrent;
 
     [Export]
     private Label loadingLabel;
 
     [Export]
     private Label tidbitLabel;
+
+    [Export]
+    private Label loadingProgress;
 
     [Export]
     private TextureRect spinner;
@@ -38,16 +45,33 @@ public partial class Loading : Node2D {
         this.tidbitLabel.Text = this.tidbits[index];
     }
 
+    private void UpdateProgress() {
+        this.loadingProgress.Text = $"({this.loadCurrent}/{this.loadTotal})";
+        if (this.loadTotal == this.loadCurrent) {
+            this.GetTree().ChangeSceneToFile("uid://bo5tvenb8rnc8");
+        }
+    }
+
     public override void _Ready() {
         base._Ready();
         this.nw = this.GetNode<NetworkManager>("/root/NetworkManager");
+
+        this.nw.Inner.OnGameLoadingTotal += (amount) => {
+            this.loadTotal = amount;
+            this.UpdateProgress();
+        };
+        this.nw.Inner.OnGameLoadingCard += (id, cardData) => {
+            var card = MessagePackSerializer.Deserialize<Data.Card>(new ReadOnlySequence<byte>([.. cardData]));
+            Data.Cards.Add(id, card);
+            this.loadCurrent += 1;
+            this.UpdateProgress();
+        };
+
+        this.nw.Inner.StartLoadingGameContent();
         this.RandomTidbit();
         this.loadingTimer.Timeout += () => {
             this.loadingTick = (this.loadingTick + 1) % 4;
             this.loadingLabel.Text = $"Loading{new string('.', this.loadingTick)}";
-
-            // TODO: remove this once the actual loading has been implemented
-            this.GetTree().ChangeSceneToFile("uid://bo5tvenb8rnc8");
         };
         this.tidbitTimer.Timeout += this.RandomTidbit;
     }

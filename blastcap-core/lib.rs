@@ -2,14 +2,15 @@
     impl_trait_in_bindings,
     never_type,
     arbitrary_self_types_pointers,
-    macro_metavar_expr
+    macro_metavar_expr,
+    try_blocks
 )]
 #![warn(clippy::print_stdout, clippy::print_stderr)]
 
 #[macro_use]
 extern crate tracing;
 
-use smol::channel;
+use smol::channel::{self, SendError};
 use smol_concurrency_tools::select;
 
 use crate::{
@@ -17,6 +18,7 @@ use crate::{
         Arg, ServerData,
         state::{LobbyState, State},
     },
+    game_data::DATA,
     network::{
         ClientPoll,
         messages::{ClientRequest, ServerMessage},
@@ -25,7 +27,7 @@ use crate::{
 };
 use std::{
     ffi::{CStr, CString},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 mod game;
@@ -303,5 +305,39 @@ impl ClientHandle {
         let (ptr, length, _capacity) = data.into_raw_parts();
         callback(ptr, length as u32, width, height);
         // Vec::from_raw_parts(ptr, length, capacity);
+    }
+
+    /// # Safety
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn load_game_content(self: *mut Self) {
+        let client = unsafe { &mut *self } as &mut ClientHandle;
+        let Some(channel) = client.server_send.as_mut() else {
+            error!("failed to start loading game content!");
+            return;
+        };
+        let channel = channel.clone();
+        let send = async move |msg| {
+            channel
+                .send(msg)
+                .await
+                .map_err(|_| anyhow::Error::msg("failed sending to client"))
+        };
+        let encode = |t| rmp_serde::to_vec(t).map_err(|e| anyhow::Error::msg(format!("{e}")));
+        smol::spawn(async move {
+            smol::Timer::after(Duration::from_secs(1)).await;
+            let error: anyhow::Result<()> = try {
+                let total = DATA.cards.len();
+                send(ServerMessage::GameLoadingTotal(total)).await?;
+
+                for (id, card) in DATA.cards.iter() {
+                    let data = encode(card)?;
+                    send(ServerMessage::GameLoadingCard(*id, data)).await?;
+                }
+            };
+            if let Err(e) = error {
+                error!("load failure: {e}!");
+            }
+        })
+        .detach();
     }
 }

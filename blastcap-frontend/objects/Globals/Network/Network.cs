@@ -67,6 +67,12 @@ public partial class NetworkClient {
         unsafe { metadata_get_avatar(this._inner, id, (data, _len, w, h) => cb(data, w, h)); }
     }
 
+    public void StartLoadingGameContent() {
+        [DllImport("blastcap", SetLastError = true)]
+        static extern unsafe void load_game_content(void* inner);
+        unsafe { load_game_content(this._inner); }
+    }
+
     public void Drop() {
         unsafe {
             [DllImport("blastcap", SetLastError = true)]
