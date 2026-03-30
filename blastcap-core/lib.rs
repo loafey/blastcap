@@ -10,7 +10,7 @@
 #[macro_use]
 extern crate tracing;
 
-use smol::channel::{self, SendError};
+use smol::channel;
 use smol_concurrency_tools::select;
 
 use crate::{

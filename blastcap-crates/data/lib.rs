@@ -1,7 +1,6 @@
 use rapidhash::{RapidHashMap, quality::SeedableState};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{
-    collections::HashMap,
     fmt, fs,
     hash::{BuildHasher, Hash},
     io,
