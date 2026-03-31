@@ -133,6 +133,13 @@ impl<T: DeserializeOwned> Initialize for Directory<T, NotLoaded> {
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum CardType {
+    Projectile,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Card {
     pub name: String,
+    pub r#type: CardType,
+    pub projectile_speed: Option<f32>,
 }

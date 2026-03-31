@@ -1,1 +1,3 @@
 name = "Dynamite!"
+type = "Projectile"
+projectile_speed = 1.2
