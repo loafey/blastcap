@@ -76,6 +76,7 @@ fn csharp_type(ty: &str) -> String {
         "bool" => "bool".to_string(),
         "f32" => "float".to_string(),
         "f64" => "double".to_string(),
+        "data :: Card" => "Data.Card".to_string(),
         _ if ty.starts_with("Vec < ") && ty.ends_with(" >") => {
             format!("List<{}>", csharp_type(&ty[6..ty.len() - 2]))
         }

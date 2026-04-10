@@ -59,8 +59,7 @@ public partial class Loading : Node2D {
             this.loadTotal = amount;
             this.UpdateProgress();
         };
-        this.nw.Inner.OnGameLoadingCard += (id, cardData) => {
-            var card = MessagePackSerializer.Deserialize<Data.Card>(new ReadOnlySequence<byte>([.. cardData]));
+        this.nw.Inner.OnGameLoadingCard += (id, card) => {
             Data.Cards.Add(id, card);
             this.loadCurrent += 1;
             this.UpdateProgress();

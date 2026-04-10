@@ -1,4 +1,5 @@
 use rapidhash::{RapidHashMap, quality::SeedableState};
+use rkyv::Archive;
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::{
     fmt, fs,
@@ -132,14 +133,18 @@ impl<T: DeserializeOwned> Initialize for Directory<T, NotLoaded> {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(
+    Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
+)]
 pub enum CardType {
     Projectile,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone)]
+#[derive(
+    Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
+)]
 pub struct Card {
     pub name: String,
-    pub r#type: CardType,
     pub projectile_speed: Option<f32>,
+    pub r#type: CardType,
 }

@@ -280,6 +280,7 @@ name = "data"
 version = "0.1.0"
 dependencies = [
  "rapidhash",
+ "rkyv",
  "serde",
  "toml",
  "walkdir",

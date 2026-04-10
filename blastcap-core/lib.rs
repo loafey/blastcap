@@ -322,7 +322,6 @@ impl ClientHandle {
                 .await
                 .map_err(|_| anyhow::Error::msg("failed sending to client"))
         };
-        let encode = |t| rmp_serde::to_vec(t).map_err(|e| anyhow::Error::msg(format!("{e}")));
         smol::spawn(async move {
             smol::Timer::after(Duration::from_secs(1)).await;
             let error: anyhow::Result<()> = try {
@@ -330,8 +329,7 @@ impl ClientHandle {
                 send(ServerMessage::GameLoadingTotal(total)).await?;
 
                 for (id, card) in DATA.cards.iter() {
-                    let data = encode(card)?;
-                    send(ServerMessage::GameLoadingCard(*id, data)).await?;
+                    send(ServerMessage::GameLoadingCard(*id, card.clone())).await?;
                 }
             };
             if let Err(e) = error {

@@ -67,7 +67,7 @@ pub enum ServerMessage {
     },
     // Loading messages
     GameLoadingTotal(usize),
-    GameLoadingCard(u64, Vec<u8>),
+    GameLoadingCard(u64, data::Card),
 }
 
 #[repr(C)]
