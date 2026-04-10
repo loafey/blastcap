@@ -32,18 +32,23 @@ fn csharp_gen_conv(name: &str, ty: &str) -> String {
     }
 
     format!(
-        "byte[] {name}_conv = MessagePackSerializer.Serialize({name});
+        "var {name}_data = new ArrayBufferWriter<byte>();
+        var {name}_option = CborOptions.Default;
+        {name}_option.ArrayLengthMode = LengthMode.DefiniteLength;
+        {name}_option.MapLengthMode = LengthMode.DefiniteLength;
+        Cbor.Serialize({name}, {name}_data, {name}_option);
+        byte[] {name}_conv = {name}_data.WrittenMemory.ToArray();
         UInt32 {name}_len = (UInt32){name}_conv.Length;"
     )
 }
 
 fn csharp_gen_de_conv(name: &str, ty: &str) -> String {
     if is_rust_prim(ty) {
-        return format!("                var {name}_conv = {name};");
+        return format!("var {name}_conv = {name};");
     }
 
     format!(
-        "                var {name}_conv = MessagePackSerializer.Deserialize<{}>({name});",
+        "var {name}_conv = Cbor.Deserialize<{}>({name});",
         csharp_type(ty)
     )
 }
@@ -106,7 +111,7 @@ fn rust_convert_arg(arg: &str, ty: &str) -> String {
     }
     format!(
         "let {arg} = unsafe {{ std::slice::from_raw_parts({arg} as *const u8, {arg}_len as usize) }};
-    let {arg} = rmp_serde::from_slice({arg}).unwrap();\n"
+    let {arg} = minicbor_serde::from_slice({arg}).unwrap();\n"
     )
 }
 
@@ -116,7 +121,7 @@ fn rust_poll_pre(arg: &str, ty: &str) -> String {
     }
 
     format!(
-        "let ({arg}, {arg}_len, {arg}_size) = rmp_serde::to_vec(&{arg}).unwrap().into_raw_parts();
+        "let ({arg}, {arg}_len, {arg}_size) = minicbor_serde::to_vec(&{arg}).unwrap().into_raw_parts();
 let {arg}_len = {arg}_len as u32;
 let {arg} = {arg} as *const i8;"
     )
@@ -238,7 +243,9 @@ pub unsafe extern \"C\" fn {rust_name}({rust_arg_string}) {{
     }
     csharp_out = format!(
         "using System;
-using MessagePack;
+using Godot;
+using Dahomey.Cbor;
+using System.Buffers;
 using System.Runtime.InteropServices;
 
 public partial class NetworkClient {{{csharp_out}}}"
@@ -411,7 +418,8 @@ pub fn client_poll(_attr: TS1, item_og: TS1) -> TS1 {
         "using System.Runtime.InteropServices;
 using System;
 using Godot;
-using MessagePack;
+using Dahomey.Cbor;
+using System.Buffers;
 using System.Collections.Generic;
 
 public partial class NetworkClient {{

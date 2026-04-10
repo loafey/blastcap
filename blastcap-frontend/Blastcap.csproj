@@ -7,7 +7,7 @@
     <NoWarn>AD0001,IDE0005</NoWarn>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="MessagePack" Version="3.1.4" />
+    <PackageReference Include="Dahomey.Cbor" Version="1.26.2" />
   </ItemGroup>
   <!-- <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Debug'"> -->
   <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent">
