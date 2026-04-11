@@ -6,8 +6,16 @@ mod inner {
     #[derive(
         Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
     )]
-    pub enum CardType {
+    pub enum AttackType {
         Projectile,
+    }
+
+    #[derive(
+        Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
+    )]
+    pub struct AttackData {
+        pub projectile_speed: Option<f32>,
+        pub r#type: AttackType,
     }
 
     #[derive(
@@ -15,8 +23,7 @@ mod inner {
     )]
     pub struct Card {
         pub name: String,
-        pub projectile_speed: Option<f32>,
-        pub r#type: CardType,
+        pub attack: Option<AttackData>,
     }
 }
 pub use inner::*;
