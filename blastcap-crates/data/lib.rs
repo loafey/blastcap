@@ -144,7 +144,10 @@ pub enum CardType {
     Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
 )]
 pub struct Card {
+    #[serde(rename(serialize = "Name"))]
     pub name: String,
+    #[serde(rename(serialize = "ProjectileSpeed"))]
     pub projectile_speed: Option<f32>,
+    #[serde(rename(serialize = "Type"))]
     pub r#type: CardType,
 }
