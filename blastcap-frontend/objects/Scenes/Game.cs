@@ -83,7 +83,7 @@ public partial class Game : Node3D {
             if (mine) {
                 this.PC.MyActor = node;
                 foreach (var item in abilities) {
-                    var tt = Data.Abilities[item];
+                    var tt = Data.AbilitiesOld[item];
                     this.PC.AddAbilityButton(
                         item,
                         tt,

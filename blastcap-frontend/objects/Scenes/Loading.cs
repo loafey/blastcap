@@ -64,6 +64,11 @@ public partial class Loading : Node2D {
             this.loadCurrent += 1;
             this.UpdateProgress();
         };
+        this.nw.Inner.OnGameLoadingAbility += (id, card) => {
+            Data.Abilities.Add(id, card);
+            this.loadCurrent += 1;
+            this.UpdateProgress();
+        };
 
         this.nw.Inner.StartLoadingGameContent();
         this.RandomTidbit();

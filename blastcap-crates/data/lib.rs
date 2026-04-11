@@ -61,6 +61,7 @@ pub struct DataSetInfo<S: InitState = Loaded> {
     pub name: String,
     pub version: String,
     pub cards: Directory<Card, S>,
+    pub abilities: Directory<Card, S>,
 }
 impl Initialize for DataSetInfo<NotLoaded> {
     type Output = DataSetInfo<Loaded>;
@@ -71,12 +72,14 @@ impl Initialize for DataSetInfo<NotLoaded> {
             name,
             version,
             cards,
+            abilities,
         } = self;
         Ok(DataSetInfo {
             state: PhantomData,
             name,
             version,
-            cards: cards.init(parent)?,
+            cards: cards.init(parent.clone())?,
+            abilities: abilities.init(parent)?,
         })
     }
 }

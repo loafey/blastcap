@@ -326,11 +326,15 @@ impl ClientHandle {
         smol::spawn(async move {
             smol::Timer::after(Duration::from_secs(1)).await;
             let error: anyhow::Result<()> = try {
-                let total = DATA.cards.len();
+                let total = DATA.cards.len() + DATA.abilities.len();
                 send(ServerMessage::GameLoadingTotal(total)).await?;
 
                 for (id, card) in DATA.cards.iter() {
                     send(ServerMessage::GameLoadingCard(*id, card.clone())).await?;
+                }
+
+                for (id, card) in DATA.abilities.iter() {
+                    send(ServerMessage::GameLoadingAbility(*id, card.clone())).await?;
                 }
             };
             if let Err(e) = error {

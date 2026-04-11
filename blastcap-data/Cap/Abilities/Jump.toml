@@ -1,0 +1,5 @@
+name = "Jump"
+
+[movement]
+move_to_target = true
+fly = true

@@ -1,0 +1,4 @@
+name = "Walk"
+
+[movement]
+move_to_target = true
