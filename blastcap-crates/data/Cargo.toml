@@ -16,3 +16,4 @@ toml = { workspace = true }
 walkdir = { workspace = true }
 rapidhash = { workspace = true }
 rkyv = { workspace = true }
+sharpify = { workspace = true }

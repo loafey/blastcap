@@ -1,6 +1,5 @@
 use rapidhash::{RapidHashMap, quality::SeedableState};
-use rkyv::Archive;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{Deserialize, de::DeserializeOwned};
 use std::{
     fmt, fs,
     hash::{BuildHasher, Hash},
@@ -11,6 +10,9 @@ use std::{
     sync::{LazyLock, OnceLock},
 };
 use walkdir::WalkDir;
+
+pub mod types;
+use types::*;
 
 static HASHER: LazyLock<SeedableState> = LazyLock::new(|| {
     SeedableState::custom(
@@ -131,23 +133,4 @@ impl<T: DeserializeOwned> Initialize for Directory<T, NotLoaded> {
             loaded: self.loaded,
         })
     }
-}
-
-#[derive(
-    Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
-)]
-pub enum CardType {
-    Projectile,
-}
-
-#[derive(
-    Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
-)]
-pub struct Card {
-    #[serde(rename(serialize = "Name"))]
-    pub name: String,
-    #[serde(rename(serialize = "ProjectileSpeed"))]
-    pub projectile_speed: Option<f32>,
-    #[serde(rename(serialize = "Type"))]
-    pub r#type: CardType,
 }

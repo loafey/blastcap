@@ -76,9 +76,12 @@ fn csharp_type(ty: &str) -> String {
         "bool" => "bool".to_string(),
         "f32" => "float".to_string(),
         "f64" => "double".to_string(),
-        "data :: Card" => "Data.Card".to_string(),
+        "data :: types :: Card" => "Data.Card".to_string(),
         _ if ty.starts_with("Vec < ") && ty.ends_with(" >") => {
             format!("List<{}>", csharp_type(&ty[6..ty.len() - 2]))
+        }
+        _ if ty.starts_with("Option < ") && ty.ends_with(" >") => {
+            format!("{}?", csharp_type(&ty[9..ty.len() - 2]))
         }
         _ if ty.starts_with("HashMap < ") && ty.ends_with(" >") => {
             format!("Dictionary<{}>", csharp_type(&ty[10..ty.len() - 2]))
@@ -89,7 +92,7 @@ fn csharp_type(ty: &str) -> String {
             };
             format!("{}, {}", csharp_type(a), csharp_type(b))
         }
-        _ => panic!("unsupported C# type {ty:?}"),
+        x => format!("Data.{x}"),
     }
 }
 
@@ -511,4 +514,72 @@ pub fn constants(item_og: TS1) -> TS1 {
     let mut f = std::fs::File::create("blastcap-frontend/objects/Globals/Constants.cs").unwrap();
     f.write_all(csharp_code.as_bytes()).unwrap();
     item_og
+}
+
+#[proc_macro_attribute]
+pub fn sharpify_types(_attr: TS1, item_og: TS1) -> TS1 {
+    let data = syn::parse_macro_input!(item_og as ItemMod);
+    let name = data.ident;
+
+    let Some((_, content)) = data.content else {
+        panic!("can only use on modules with content")
+    };
+
+    let mut data = quote::quote! {};
+    let mut output = String::new();
+    for item in content {
+        let tokens = item.to_token_stream();
+        data = quote::quote! {
+            #data
+            #tokens
+        };
+        let mut item_string = String::new();
+        match item {
+            Item::Enum(e) => {
+                let name = e.ident.to_string();
+                for (i, variant) in e.variants.into_iter().enumerate() {
+                    let name = variant.ident.to_string();
+                    item_string.push_str(&format!("{name} = {i},\n"));
+                }
+                item_string = format!("public enum {name} {{\n{item_string}}}\n")
+            }
+            Item::Struct(s) => {
+                let name = s.ident.to_string();
+                for (i, field) in s.fields.into_iter().enumerate() {
+                    let name = field
+                        .ident
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| format!("Field{i}"))
+                        .replace("r#", "");
+                    let ty = csharp_type(&field.ty.to_token_stream().to_string());
+                    item_string.push_str(&format!("public required {ty} {name};\n"));
+                }
+                item_string = format!("public class {name} {{\n{item_string}}}\n")
+            }
+            // Item::Type(_) => todo!("Type"),
+            _ => continue,
+        }
+        output.push_str(&item_string);
+    }
+
+    let mut file = File::create("blastcap-frontend/objects/Globals/Data.Types.cs").unwrap();
+    file.write_all(
+        format!(
+            "using System.Collections.Generic;
+#nullable enable
+public static partial class Data {{ 
+{output}
+}}
+#nullable restore"
+        )
+        .as_bytes(),
+    )
+    .unwrap();
+
+    quote::quote! {
+        mod #name {
+            #data
+        }
+    }
+    .into()
 }

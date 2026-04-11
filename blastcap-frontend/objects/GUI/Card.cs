@@ -23,7 +23,7 @@ public partial class Card : Control {
         set {
             this.cardId = value;
             var data = Data.Cards[this.cardId];
-            this.cardTitleLabel.Text = data.Name;
+            this.cardTitleLabel.Text = data.name;
         }
     }
 

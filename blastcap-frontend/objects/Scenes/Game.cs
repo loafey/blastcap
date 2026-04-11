@@ -108,7 +108,7 @@ public partial class Game : Node3D {
                 this.PC.AddCard(cards[j], () => {
                     this._currentAbility = null;
                     this._currentCard = (ulong)j;
-                    this.PC.CurrentAbility = Data.Cards[cards[j]].Name;
+                    this.PC.CurrentAbility = Data.Cards[cards[j]].name;
                 });
             }
         };
