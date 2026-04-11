@@ -262,7 +262,7 @@ impl ClearRoomState {
         Ok(Some(Duration::from_secs_f32(time)))
     }
 
-    async fn current_punch_actor(
+    async fn current_attack_actor(
         &mut self,
         arg: Arg<'_>,
         pos: Vec3,
@@ -359,7 +359,7 @@ impl State for ClearRoomState {
                         Ok(None)
                     }
                     "Punch" => {
-                        if let Some(t) = self.current_punch_actor(arg, Vec3::new(x, y, z)).await? {
+                        if let Some(t) = self.current_attack_actor(arg, Vec3::new(x, y, z)).await? {
                             self.timer(t, async |s, _| {
                                 s.waiting = false;
                                 Ok(())
@@ -392,6 +392,7 @@ impl State for ClearRoomState {
                         .await?;
                     return Ok(None);
                 };
+
                 info!("implement use card: {card}; {x}, {y}, {z}");
                 Ok(None)
             }
