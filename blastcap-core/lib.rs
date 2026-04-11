@@ -10,6 +10,7 @@
 #[macro_use]
 extern crate tracing;
 
+pub use random::bindings as __random_bindings;
 use smol::channel;
 use smol_concurrency_tools::select;
 

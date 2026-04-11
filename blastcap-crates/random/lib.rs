@@ -4,6 +4,7 @@ use std::ops::Range;
 pub const POOL_SIZE: usize = 1024;
 const SOURCE: &[u8] = include_bytes!("rand.bin");
 
+pub mod bindings;
 mod randomize;
 
 /// this is not cryptographically secure, and should not be treated as such :)

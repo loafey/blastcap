@@ -12,3 +12,4 @@ path = "main.rs"
 
 [dependencies]
 rand.workspace = true
+pastey.workspace = true

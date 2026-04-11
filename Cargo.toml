@@ -29,6 +29,7 @@ smol-concurrency-tools.workspace = true
 data.workspace = true
 rapidhash.workspace = true
 random.workspace = true
+pastey.workspace = true
 
 [workspace]
 members = ["blastcap-crates/*"]
@@ -63,3 +64,4 @@ toml = "1.0"
 walkdir = "2.5"
 rapidhash = "4.4.1"
 random = { path = "blastcap-crates/random" }
+pastey = "0.2"
