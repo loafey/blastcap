@@ -1,9 +1,6 @@
 use super::Arg;
 use crate::{
-    game::{
-        actor::Abilities,
-        state::{EnterDungeonState, Res, State},
-    },
+    game::state::{EnterDungeonState, Res, State},
     network::messages::{ClientRequest, ServerMessage},
 };
 
@@ -36,13 +33,9 @@ impl State for LobbyState {
             }
             ClientRequest::StartMap(map) if Some(addr) == data.host_player => {
                 host.broadcast(ServerMessage::StartMap(map)).await?;
-                host.broadcast(ServerMessage::AbilityMap(Abilities::get_map().clone()))
-                    .await?;
                 Ok(Some(EnterDungeonState::new(host.get_clients())))
             }
             ClientRequest::ChangeToEnterDungeon if Some(addr) == data.host_player => {
-                host.broadcast(ServerMessage::AbilityMap(Abilities::get_map().clone()))
-                    .await?;
                 host.broadcast(ServerMessage::EnterDungeonState).await?;
                 Ok(Some(EnterDungeonState::new(host.get_clients())))
             }

@@ -1,5 +1,6 @@
 name = "Jump"
+unique_id = "card_jump"
 
 [movement]
 move_to_target = true
-fly = true
+type = "Jump"

@@ -1,4 +1,6 @@
 name = "Walk"
+unique_id = "card_walk"
 
 [movement]
 move_to_target = true
+type = "Walk"

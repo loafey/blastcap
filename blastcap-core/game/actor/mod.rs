@@ -4,14 +4,12 @@ use serde::Deserialize;
 mod resources;
 pub use resources::*;
 
-mod abilities;
-pub use abilities::*;
-
 mod card_holder;
 pub use card_holder::*;
 
 use crate::{
     game::{Arg, map::Piece, state::ClearRoomState},
+    game_data::DATA,
     network::messages::ClientRequest,
 };
 
@@ -31,11 +29,20 @@ pub struct Actor {
     pub position: Vec3,
     pub health: i32,
     pub base_movement: u32,
-    pub abilities: Abilities,
+    pub abilities: Vec<u64>,
     pub cards: CardHolder,
     pub resources: TurnResources,
 }
 impl Actor {
+    pub fn default_abilities() -> Vec<u64> {
+        DATA.cards
+            .iter()
+            .filter_map(|(id, c)| c.unique_id.as_ref().map(|r| (id, r)))
+            .filter(|(_, m)| matches!(&***m, "card_jump" | "card_walk" | "card_punch"))
+            .map(|(id, _)| *id)
+            .collect()
+    }
+
     pub async fn bot_act<'l>(&self, state: &ClearRoomState, arg: Arg<'l>) -> anyhow::Result<()> {
         let neighs = state
             .get_neighbors(false, self.position)
@@ -51,14 +58,15 @@ impl Actor {
         /*&& rand::random_range(0..=1) == 0*/
         {
             let pos = neighs[rand::random_range(0..neighs.len())];
-            arg.host
-                .mock(ClientRequest::Action(
-                    "Punch".to_string(),
-                    pos.x,
-                    pos.y,
-                    pos.z,
-                ))
-                .await?
+            // !TODO!
+            // arg.host
+            //     .mock(ClientRequest::Action(
+            //         "Punch".to_string(),
+            //         pos.x,
+            //         pos.y,
+            //         pos.z,
+            //     ))
+            //     .await?
         } else {
             let others = state
                 .actors
@@ -89,9 +97,10 @@ impl Actor {
                 )))
                 .await?;
 
-            arg.host
-                .mock(ClientRequest::Action("Walk".to_string(), x, y, z))
-                .await?
+            // !TODO!
+            // arg.host
+            //     .mock(ClientRequest::Action("Walk".to_string(), x, y, z))
+            //     .await?
         };
         Ok(())
     }

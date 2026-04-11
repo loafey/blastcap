@@ -21,9 +21,28 @@ mod inner {
     #[derive(
         Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
     )]
+    pub enum MovementType {
+        Walk,
+        Fly,
+        Jump,
+    }
+
+    #[derive(
+        Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
+    )]
+    pub struct MovementData {
+        pub move_to_target: bool,
+        pub r#type: MovementType,
+    }
+
+    #[derive(
+        Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
+    )]
     pub struct Card {
         pub name: String,
+        pub unique_id: Option<String>,
         pub attack: Option<AttackData>,
+        pub movement: Option<MovementData>,
     }
 }
 pub use inner::*;

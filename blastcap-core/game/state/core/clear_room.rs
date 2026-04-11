@@ -6,12 +6,14 @@ use crate::{
         map::{Map, Piece},
         state::{Res, State},
     },
+    game_data::DATA,
     network::{
         IdentityExt, NetworkHost,
         channel::Channel,
         messages::{ClientRequest, ServerMessage},
     },
 };
+use data::types::MovementType;
 use math::Vec3;
 use smol::Timer;
 use std::{pin::Pin, time::Duration};
@@ -73,7 +75,6 @@ impl ClearRoomState {
                     x: actor.position.x,
                     y: actor.position.y,
                     z: actor.position.z,
-                    abilities: actor.abilities.get_keys(),
                     yours: actor.controller == Controller::Player(addr),
                     health: actor.health,
                     max_health: actor.health,
@@ -108,12 +109,14 @@ impl ClearRoomState {
                         let actor = self.actor_pointer;
                         let current = self.current_actor_mut();
                         let cards = current.cards.draw(2);
+                        let abilities = current.abilities.clone();
                         let movement = current.resources.movement;
                         host.send(
                             cl,
                             ServerMessage::YourTurn {
                                 actor,
                                 movement,
+                                abilities,
                                 cards,
                             },
                         )
@@ -210,7 +213,7 @@ impl ClearRoomState {
         .detach();
     }
 
-    async fn move_current_actor(
+    async fn walk_current_actor(
         &mut self,
         arg: Arg<'_>,
         pos: Vec3,
@@ -259,7 +262,7 @@ impl ClearRoomState {
             .await?;
         self.waiting = true;
 
-        Ok(Some(Duration::from_secs_f32(time)))
+        Ok(Some(Duration::from_secs_f32(time + 0.5)))
     }
 
     async fn current_attack_actor(
@@ -317,6 +320,53 @@ impl ClearRoomState {
         self.waiting = true;
         Ok(Some(Duration::from_secs_f32(0.5)))
     }
+
+    async fn act(&mut self, arg: Arg<'_>, addr: u64, pos: Vec3, index: usize, card: bool) -> Res {
+        if !((Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
+            && !self.waiting)
+        {
+            return Ok(None);
+        }
+        let cid = if card {
+            error!("allow player to use card");
+            return Ok(None);
+        } else {
+            self.current_actor().abilities.get(index).copied()
+        };
+        let Some(card) = cid.and_then(|i| DATA.cards.get(&i)) else {
+            return Ok(None);
+        };
+        if let Some(md) = &card.movement {
+            match md.r#type {
+                MovementType::Walk => {
+                    if let Some(t) = self.walk_current_actor(arg, pos).await? {
+                        self.timer(t, async |s, _| {
+                            s.waiting = false;
+                            Ok(())
+                        });
+                    }
+                }
+                MovementType::Fly => error!("flight not supported yet"),
+                MovementType::Jump => error!("jump not supported yet"),
+            };
+        }
+        if let Some(ad) = &card.attack {
+            error!("combat actions not supported yet");
+        }
+        // !TODO!
+        // match &*act {
+        //     "Punch" => {
+        //         if let Some(t) = self.current_attack_actor(arg, Vec3::new(x, y, z)).await? {
+        //             self.timer(t, async |s, _| {
+        //                 s.waiting = false;
+        //                 Ok(())
+        //             });
+        //         }
+        //         Ok(None)
+        //     }
+        // }
+        Ok(None)
+    }
 }
 #[async_trait::async_trait]
 impl State for ClearRoomState {
@@ -343,58 +393,11 @@ impl State for ClearRoomState {
 
     async fn client_req<'l>(&mut self, addr: u64, req: ClientRequest, arg: Arg<'l>) -> Res {
         match req {
-            ClientRequest::Action(act, x, y, z)
-                if (Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
-                    && !self.waiting
-                    && self.current_actor().abilities.contains(&act) =>
-            {
-                match &*act {
-                    "Walk" => {
-                        if let Some(t) = self.move_current_actor(arg, Vec3::new(x, y, z)).await? {
-                            self.timer(t + Duration::from_secs_f32(0.5), async |s, _| {
-                                s.waiting = false;
-                                Ok(())
-                            });
-                        }
-                        Ok(None)
-                    }
-                    "Punch" => {
-                        if let Some(t) = self.current_attack_actor(arg, Vec3::new(x, y, z)).await? {
-                            self.timer(t, async |s, _| {
-                                s.waiting = false;
-                                Ok(())
-                            });
-                        }
-                        Ok(None)
-                    }
-                    _ => {
-                        arg.host
-                            .send(
-                                addr,
-                                ServerMessage::ChatMessage(0, format!("unknown ability: {act:?}")),
-                            )
-                            .await?;
-                        Ok(None)
-                    }
-                }
+            ClientRequest::UseCard(i, x, y, z) => {
+                self.act(arg, addr, Vec3::new(x, y, z), i, true).await
             }
-            ClientRequest::UseCard(index, x, y, z) => {
-                let card = self.current_actor().cards.check_hand(index);
-                let Some(card) = card else {
-                    arg.host
-                        .broadcast(ServerMessage::ChatMessage(
-                            0,
-                            format!(
-                                "{} tried to use a card not in their inventory",
-                                self.actor_pointer
-                            ),
-                        ))
-                        .await?;
-                    return Ok(None);
-                };
-
-                info!("implement use card: {card}; {x}, {y}, {z}");
-                Ok(None)
+            ClientRequest::Action(i, x, y, z) => {
+                self.act(arg, addr, Vec3::new(x, y, z), i, false).await
             }
             ClientRequest::EndTurn
                 if (Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())

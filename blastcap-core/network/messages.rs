@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use rkyv::{Archive, Deserialize, Serialize};
 
 #[repr(C, i32)]
@@ -26,7 +24,6 @@ pub enum ServerMessage {
         x: usize,
         y: usize,
         z: usize,
-        abilities: Vec<String>,
         movement: u32,
         health: i32,
         max_health: i32,
@@ -34,6 +31,7 @@ pub enum ServerMessage {
     YourTurn {
         actor: usize,
         movement: u32,
+        abilities: Vec<u64>,
         cards: Vec<u64>,
     },
     ActorTurn {
@@ -46,7 +44,6 @@ pub enum ServerMessage {
         y: Vec<usize>,
         z: Vec<usize>,
     },
-    AbilityMap(HashMap<String, String>),
     Action {
         action: String,
         actor: usize,
@@ -68,7 +65,6 @@ pub enum ServerMessage {
     // Loading messages
     GameLoadingTotal(usize),
     GameLoadingCard(u64, data::types::Card),
-    GameLoadingAbility(u64, data::types::Card),
 }
 
 #[repr(C)]
@@ -80,7 +76,7 @@ pub enum ClientRequest {
     RequestMapList,
     StartMap(String),
     NotifyReady(u8),
-    Action(String, usize, usize, usize),
+    Action(usize, usize, usize, usize),
     UseCard(usize, usize, usize, usize),
     EndTurn,
     ChangeDungeonSetting(u32, u32),

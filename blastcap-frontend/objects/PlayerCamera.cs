@@ -115,10 +115,9 @@ public partial class PlayerCamera : Node3D {
         this.EndTurnButton.Disabled = false;
     }
 
-    public void AddAbilityButton(string name, string tooltip, Action callback) {
+    public void AddAbilityButton(ulong id, Action callback) {
         var button = new Button {
-            Text = name,
-            TooltipText = tooltip,
+            Text = Data.Cards[id].name,
             KeepPressedOutside = false
         };
         button.Pressed += () => {

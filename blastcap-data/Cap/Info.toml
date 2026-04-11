@@ -2,4 +2,3 @@ name = "Cap - Default Set"
 version = "0.1"
 
 cards.path = "Cards"
-abilities.path = "Abilities"

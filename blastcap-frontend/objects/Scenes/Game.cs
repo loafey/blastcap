@@ -25,7 +25,7 @@ public partial class Game : Node3D {
     [Export]
     public Node3D Temporaries;
     private bool _myTurn;
-    private string _currentAbility;
+    private ulong? _currentAbility;
     private ulong? _currentCard;
     private readonly Random _random = new();
     private Stopwatch _rtt = new();
@@ -70,39 +70,35 @@ public partial class Game : Node3D {
             this.ChatBox.ShowMessage($"{user} left");
         };
 
-        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, z, abilities, movement, health, maxHealth) => {
+        this.nw.Inner.OnSpawnActor += (mine, name, id, x, y, z, movement, health, maxHealth) => {
             var node = this.ActorScene.Instantiate<Actor>();
             node.Position = new Vector3(x, y, z);
             node.ActorName = name;
             node.Name = id.ToString(new CultureInfo("en-US"));
-            node.Abilities = abilities;
             node.MaxHealth = maxHealth;
             node.Health = health;
             node.BaseMovement = movement;
             this.ActorHolder.AddChild(node);
             if (mine) {
                 this.PC.MyActor = node;
-                foreach (var item in abilities) {
-                    var tt = Data.AbilitiesOld[item];
-                    this.PC.AddAbilityButton(
-                        item,
-                        tt,
-                        () => {
-                            this._currentAbility = item;
-                            this.PC.CurrentAbility = item;
-                        }
-                    );
-                }
             }
         };
 
-        this.nw.Inner.OnYourTurn += (id, movement, cards) => {
+        this.nw.Inner.OnYourTurn += (id, movement, abilities, cards) => {
             // _chatBox.ShowMessage("YOUR TURN");
             this.PC.DisplayTinyPopup("YOUR TURN");
             this.PC.MyTurn = true;
             this._myTurn = true;
             this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);
             this.PC.CurrentActor = id;
+            for (var i = 0; i < abilities.Count; i++) {
+                var j = i; // is passed by reference for some reason?
+                this.PC.AddAbilityButton(abilities[j], () => {
+                    this._currentAbility = (ulong)j;
+                    this._currentCard = null;
+                    this.PC.CurrentAbility = Data.Cards[abilities[j]].name;
+                });
+            }
             for (var i = 0; i < cards.Count; i++) {
                 var j = i; // is passed by reference for some reason?
                 this.PC.AddCard(cards[j], () => {
@@ -214,8 +210,8 @@ public partial class Game : Node3D {
             var (x, y, z) = ((nuint)pos.X, (nuint)pos.Y, (nuint)pos.Z);
             // pos.Y += 1;
             // GD.Print($"{(nuint)pos.X}, {(nuint)pos.Y}, {(nuint)pos.Z}");
-            if (this._currentAbility != null) {
-                this.nw.Inner.SendAction(this._currentAbility, x, y, z);
+            if (this._currentAbility is ulong ability) {
+                this.nw.Inner.SendAction(ability, x, y, z);
             } else if (this._currentCard is ulong card) {
                 this.nw.Inner.SendUseCard(card, x, y, z);
             }

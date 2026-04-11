@@ -112,7 +112,7 @@ impl State for EnterDungeonState {
                                 name: format!("Player {id}"),
                                 controller: Controller::Player(addr),
                                 position: Vec3::new(15, 1, 15),
-                                abilities: Default::default(),
+                                abilities: Actor::default_abilities(),
                                 health: 10,
                                 base_movement: 10,
                                 resources: Default::default(),
@@ -146,7 +146,7 @@ impl State for EnterDungeonState {
                                 position,
                                 health: 15,
                                 base_movement: rand::random_range(10..20),
-                                abilities: Default::default(),
+                                abilities: Actor::default_abilities(),
                                 resources: Default::default(),
                                 cards: Default::default(),
                             };
