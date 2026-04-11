@@ -1,2 +1,4 @@
 name = "Shoot"
+
+[attack]
 type = "Projectile"
