@@ -51,6 +51,10 @@ impl Random {
         data
     }
 
+    pub fn bool(&mut self) -> bool {
+        self.get_u8() < const { 255 / 2 }
+    }
+
     #[allow(private_bounds)]
     pub fn get_float<T: RandomizeFloat>(&mut self) -> T {
         T::from_u64(self.get::<u64>()) / T::DIV

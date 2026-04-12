@@ -1,3 +1,4 @@
+use mapgen::Piece;
 use math::Vec3;
 use serde::Deserialize;
 
@@ -8,7 +9,7 @@ mod card_holder;
 pub use card_holder::*;
 
 use crate::{
-    game::{Arg, map::Piece, state::ClearRoomState},
+    game::{Arg, state::ClearRoomState},
     game_data::DATA,
     network::messages::ClientRequest,
 };

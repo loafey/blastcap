@@ -3,7 +3,7 @@ use crate::{
     game::{
         Arg,
         actor::{Actor, Controller},
-        map::{Map, Piece},
+        map::Map,
         state::{Res, State},
     },
     game_data::DATA,
@@ -14,6 +14,7 @@ use crate::{
     },
 };
 use data::types::{AttackData, MovementType};
+use mapgen::Piece;
 use math::Vec3;
 use smol::Timer;
 use std::{pin::Pin, time::Duration};

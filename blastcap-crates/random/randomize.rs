@@ -16,7 +16,9 @@ macro_rules! randomize {
         })+
     };
 }
-randomize!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+randomize!(
+    u8, u16, u32, u64, u128, i8, i16, i32, i64, i128, usize, isize
+);
 pub(crate) trait RandomizeFloat:
     Sized
     + Copy
