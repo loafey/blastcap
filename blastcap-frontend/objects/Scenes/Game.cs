@@ -133,11 +133,12 @@ public partial class Game : Node3D {
             }
         };
 
-        this.nw.Inner.OnAction += (action, actorIndex, targetIndex, targetDamage, time) => {
+        this.nw.Inner.OnAction += (cardId, actorIndex, targetIndex) => {
+            var card = Data.Cards[cardId];
             var children = this.ActorHolder.GetChildren();
             var actor = (Actor)children[(int)actorIndex];
             var target = (Actor)children[(int)targetIndex];
-            var middle = (actor.Position + target.Position) / 2;
+            var middle = actor.Position.Lerp(target.Position, card.attack.particle_location ?? 0.5f);
 
             var node = this.ExplosionScene.Instantiate<Explosion>();
             node.Position = middle;
@@ -146,8 +147,12 @@ public partial class Game : Node3D {
             var sound = this.SoundEffect.Instantiate<Node3D>();
             sound.Position = middle;
             this.Temporaries.AddChild(sound);
-            target.Health -= targetDamage;
+            target.Health -= card.attack.damage;
             target.Visible = target.Health > 0;
+        };
+
+        this.nw.Inner.OnRemoveCardFromHand += (cardIndex) => {
+            this.PC.CardHolder.GetChildren()[(int)cardIndex].QueueFree();
         };
 
         this.PC.EndTurnPressed = () => {

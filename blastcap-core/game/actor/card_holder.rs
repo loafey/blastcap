@@ -10,6 +10,14 @@ pub struct CardHolder {
     trash: Vec<u64>,
 }
 impl CardHolder {
+    pub fn trash_card(&mut self, index: usize) {
+        if self.hand.len() >= index {
+            return;
+        }
+        let card = self.hand.remove(index);
+        self.trash.push(card);
+    }
+
     pub fn check_hand(&self, index: usize) -> Option<u64> {
         self.hand.get(index).copied()
     }
@@ -25,7 +33,13 @@ impl CardHolder {
     }
 
     pub fn test_data() -> Self {
-        let mut cards = DATA.cards.clone().keys().copied().collect::<Vec<_>>();
+        let mut cards = DATA
+            .cards
+            .clone()
+            .iter()
+            .filter(|(_, c)| c.unique_id.is_none())
+            .map(|(i, _)| *i)
+            .collect::<Vec<_>>();
         let clone = cards.clone();
         cards.append(&mut clone.clone());
         cards.append(&mut clone.clone());

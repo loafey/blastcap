@@ -1,2 +1,7 @@
 name = "Punch"
 unique_id = "card_punch"
+
+[attack]
+type = "Ray"
+damage = 15
+range = 1

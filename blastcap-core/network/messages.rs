@@ -45,11 +45,9 @@ pub enum ServerMessage {
         z: Vec<usize>,
     },
     Action {
-        action: String,
+        action: u64,
         actor: usize,
         target: usize,
-        target_damage: i32,
-        time: f32,
     },
     SpawnMap {
         x: Vec<usize>,
@@ -62,6 +60,7 @@ pub enum ServerMessage {
     ActorList {
         names: Vec<String>,
     },
+    RemoveCardFromHand(usize),
     // Loading messages
     GameLoadingTotal(usize),
     GameLoadingCard(u64, data::types::Card),

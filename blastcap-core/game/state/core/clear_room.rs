@@ -13,7 +13,7 @@ use crate::{
         messages::{ClientRequest, ServerMessage},
     },
 };
-use data::types::MovementType;
+use data::types::{AttackData, MovementType};
 use math::Vec3;
 use smol::Timer;
 use std::{pin::Pin, time::Duration};
@@ -269,28 +269,35 @@ impl ClearRoomState {
         &mut self,
         arg: Arg<'_>,
         pos: Vec3,
+        cid: u64,
+        attack: &AttackData,
     ) -> anyhow::Result<Option<Duration>> {
         let cur_act = self.current_actor();
         if cur_act.resources.abilities == 0 {
+            error!("attack: no abilities");
             return Ok(None);
         }
         let actor_pos = cur_act.position;
         let distance = actor_pos.distance(pos);
-        if distance > 1 {
+        if distance > attack.range {
+            error!("attack: out of range: {distance} > {}", attack.range);
             return Ok(None);
         }
         let hit = self.map.get(pos);
         let Some(Piece::Actor(hit_ptr)) = hit else {
+            error!("attack: target not found");
             return Ok(None);
         };
         if hit_ptr == self.actor_pointer {
+            error!("attack: attacked self");
             return Ok(None);
         }
         let Some(hit) = self.actors.get(hit_ptr) else {
+            error!("attack: target not found");
             return Ok(None);
         };
 
-        let dmg = 15;
+        let dmg = attack.damage;
         arg.host
             .broadcast(ServerMessage::ChatMessage(
                 0,
@@ -299,11 +306,9 @@ impl ClearRoomState {
             .await?;
         arg.host
             .broadcast(ServerMessage::Action {
-                action: "Punch".to_string(),
+                action: cid,
                 actor: self.actor_pointer,
                 target: hit_ptr,
-                target_damage: dmg,
-                time: 0.5,
             })
             .await?;
         if let Some(hit) = self.actors.get_mut(hit_ptr) {
@@ -321,25 +326,36 @@ impl ClearRoomState {
         Ok(Some(Duration::from_secs_f32(0.5)))
     }
 
-    async fn act(&mut self, arg: Arg<'_>, addr: u64, pos: Vec3, index: usize, card: bool) -> Res {
+    async fn act(
+        &mut self,
+        arg: Arg<'_>,
+        addr: u64,
+        pos: Vec3,
+        index: usize,
+        is_card: bool,
+    ) -> Res {
         if !((Some(Controller::Player(addr)) == self.current_turn || addr.is_bot())
             && !self.waiting)
         {
             return Ok(None);
         }
-        let cid = if card {
-            error!("allow player to use card");
-            return Ok(None);
+        let cid = if is_card {
+            self.current_actor_mut().cards.check_hand(index)
         } else {
             self.current_actor().abilities.get(index).copied()
         };
-        let Some(card) = cid.and_then(|i| DATA.cards.get(&i)) else {
+        let Some(cid) = cid else {
+            error!("act: no index");
+            return Ok(None);
+        };
+        let Some(card) = DATA.cards.get(&cid) else {
+            error!("act: no card");
             return Ok(None);
         };
         if let Some(md) = &card.movement {
             match md.r#type {
                 MovementType::Walk => {
-                    if let Some(t) = self.walk_current_actor(arg, pos).await? {
+                    if let Some(t) = self.walk_current_actor(unsafe { arg.clone() }, pos).await? {
                         self.timer(t, async |s, _| {
                             s.waiting = false;
                             Ok(())
@@ -350,21 +366,22 @@ impl ClearRoomState {
                 MovementType::Jump => error!("jump not supported yet"),
             };
         }
-        if let Some(ad) = &card.attack {
-            error!("combat actions not supported yet");
+        if let Some(ad) = &card.attack
+            && let Some(t) = self
+                .current_attack_actor(unsafe { arg.clone() }, pos, cid, ad)
+                .await?
+        {
+            if is_card {
+                self.current_actor_mut().cards.trash_card(index);
+                arg.host
+                    .send(addr, ServerMessage::RemoveCardFromHand(index))
+                    .await?;
+            }
+            self.timer(t, async |s, _| {
+                s.waiting = false;
+                Ok(())
+            });
         }
-        // !TODO!
-        // match &*act {
-        //     "Punch" => {
-        //         if let Some(t) = self.current_attack_actor(arg, Vec3::new(x, y, z)).await? {
-        //             self.timer(t, async |s, _| {
-        //                 s.waiting = false;
-        //                 Ok(())
-        //             });
-        //         }
-        //         Ok(None)
-        //     }
-        // }
         Ok(None)
     }
 }

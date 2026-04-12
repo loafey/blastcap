@@ -8,14 +8,18 @@ mod inner {
     )]
     pub enum AttackType {
         Projectile,
+        Ray,
     }
 
     #[derive(
         Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
     )]
     pub struct AttackData {
+        pub damage: i32,
         pub projectile_speed: Option<f32>,
+        pub range: usize,
         pub r#type: AttackType,
+        pub particle_location: Option<f32>,
     }
 
     #[derive(

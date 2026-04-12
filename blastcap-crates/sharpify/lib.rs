@@ -566,6 +566,7 @@ pub fn sharpify_types(_attr: TS1, item_og: TS1) -> TS1 {
     file.write_all(
         format!(
             "using System.Collections.Generic;
+using System;
 #nullable enable
 public static partial class Data {{ 
 {output}

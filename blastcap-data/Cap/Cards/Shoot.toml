@@ -2,3 +2,6 @@ name = "Shoot"
 
 [attack]
 type = "Projectile"
+damage = 25
+range = 15
+particle_location = 1.0
