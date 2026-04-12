@@ -313,13 +313,12 @@ impl ClearRoomState {
             .await?;
         if let Some(hit) = self.actors.get_mut(hit_ptr) {
             hit.health -= dmg;
-            if hit.health <= 0 {
-                let Some(Piece::Actor(id)) = self.map.get(hit.position) else {
-                    unreachable!()
-                };
+            if hit.health <= 0
+                && let Some(Piece::Actor(id)) = self.map.get(hit.position)
+            {
                 self.map.set(hit.position, Piece::Empty);
                 self.map.dead_set(hit.position, Some(id));
-            }
+            };
         };
         self.current_actor_mut().resources.abilities -= 1;
         self.waiting = true;
