@@ -17,6 +17,7 @@ pub struct Arg<'l> {
     pub last_tick: &'l mut Instant,
 }
 impl<'l> Arg<'l> {
+    // TODO: Don't know what I was thinking when adding this function... this should be removed.
     pub unsafe fn clone(&self) -> Self {
         unsafe {
             let new = MaybeUninit::uninit();
