@@ -248,7 +248,7 @@ dotnet_diagnostic.IDE1006.severity = silent
 dotnet_diagnostic.IDE0001.severity = silent
 dotnet_diagnostic.IDE0055.severity = silent
 
-[blastcap-frontend/objects/Globals/Network/Network_ClientCalls.cs]
+[frontend/objects/Globals/Network/Network_ClientCalls.cs]
 dotnet_analyzer_diagnostic.severity = silent
 dotnet_analyzer_diagnostic.category-Style.severity = silent
 dotnet_diagnostic.IDE1006.severity = silent
@@ -258,7 +258,7 @@ dotnet_analyzer_diagnostic.severity = silent
 dotnet_analyzer_diagnostic.category-Style.severity = silent
 dotnet_diagnostic.IDE1006.severity = silent
 
-[blastcap-frontend/objects/Globals/Network/Network_Polling.cs]
+[frontend/objects/Globals/Network/Network_Polling.cs]
 dotnet_analyzer_diagnostic.severity = silent
 dotnet_analyzer_diagnostic.category-Style.severity = silent
 dotnet_diagnostic.IDE1006.severity = silent
@@ -268,7 +268,7 @@ dotnet_analyzer_diagnostic.severity = silent
 dotnet_analyzer_diagnostic.category-Style.severity = silent
 dotnet_diagnostic.IDE1006.severity = silent
 
-[blastcap-frontend/objects/Globals/Constants.cs]
+[frontend/objects/Globals/Constants.cs]
 dotnet_analyzer_diagnostic.severity = silent
 dotnet_analyzer_diagnostic.category-Style.severity = silent
 dotnet_diagnostic.IDE1006.severity = silent

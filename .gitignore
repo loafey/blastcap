@@ -3,5 +3,5 @@
 .env
 dump.rs
 dump.cs
-blastcap-core/lib_gen.rs
-blastcap-core/lib_poll.rs
+core/lib_gen.rs
+core/lib_poll.rs

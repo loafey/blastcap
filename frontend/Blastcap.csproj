@@ -12,14 +12,14 @@
   <!-- <Target Name="PreBuild" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Debug'"> -->
   <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent">
     <Exec Command="cargo build" WorkingDirectory="$(ProjectDir)/.." />
-    <!-- <Exec Command="cp target/debug/libblastcap.so blastcap-frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
-    <!-- <Exec Command="cp target/debug/libblastcap.so blastcap-frontend/.godot/mono/temp/bin/Debug/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
+    <!-- <Exec Command="cp target/debug/libblastcap.so frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
+    <!-- <Exec Command="cp target/debug/libblastcap.so frontend/.godot/mono/temp/bin/Debug/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
     <Exec Command="cp target/debug/libblastcap.so sys/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
-    <!-- <Exec Command="cp sys/* blastcap-frontend/.godot/mono/temp/bin/Debug/" WorkingDirectory="$(ProjectDir)/.." /> -->
+    <!-- <Exec Command="cp sys/* frontend/.godot/mono/temp/bin/Debug/" WorkingDirectory="$(ProjectDir)/.." /> -->
   </Target>
   <Target Name="PreBuildRelease" BeforeTargets="PreBuildEvent" Condition="'$(Configuration)' == 'Release'">
     <Exec Command="cargo build --release" WorkingDirectory="$(ProjectDir)/.." />
-    <Exec Command="cp target/release/libblastcap.so blastcap-frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
-    <!-- <Exec Command="cp target/release/libblastcap.so blastcap-frontend/.godot/mono/temp/bin/Debug/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
+    <Exec Command="cp target/release/libblastcap.so frontend/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." />
+    <!-- <Exec Command="cp target/release/libblastcap.so frontend/.godot/mono/temp/bin/Debug/libblastcap.so" WorkingDirectory="$(ProjectDir)/.." /> -->
   </Target>
 </Project>
