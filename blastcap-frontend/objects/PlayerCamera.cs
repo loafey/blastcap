@@ -115,6 +115,10 @@ public partial class PlayerCamera : Node3D {
         this.EndTurnButton.Disabled = false;
     }
 
+    public void ClearSetup() {
+        foreach (var child in this.AbilitiesGrid.GetChildren()) { child.QueueFree(); }
+    }
+
     public void AddAbilityButton(ulong id, Action callback) {
         var button = new Button {
             Text = Data.Cards[id].name,

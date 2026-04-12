@@ -91,6 +91,7 @@ public partial class Game : Node3D {
             this._myTurn = true;
             this.PC.Movement = (movement, this.PC.MyActor.BaseMovement);
             this.PC.CurrentActor = id;
+            this.PC.ClearSetup();
             for (var i = 0; i < abilities.Count; i++) {
                 var j = i; // is passed by reference for some reason?
                 this.PC.AddAbilityButton(abilities[j], () => {
