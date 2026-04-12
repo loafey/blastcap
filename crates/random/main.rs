@@ -10,7 +10,7 @@ fn main() {
     //     println!("{:?}", a.get_range_float::<f32>(0.0..65565.0));
     // }
 
-    let path = "blastcap-crates/random/rand.bin";
+    let path = "crates/random/rand.bin";
     if std::fs::exists(path).unwrap() {
         eprintln!("rand file already exists, please remove to rerun it");
         std::process::exit(1);
