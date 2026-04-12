@@ -1,0 +1,9 @@
+[package]
+name = "mapgen"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+random = { workspace = true }
+math = { workspace = true }
+smol = { workspace = true }

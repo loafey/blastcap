@@ -1,7 +1,5 @@
-use std::collections::HashMap;
-
-use math::{Vec2, Vec3};
-use noise::{NoiseFn, Perlin};
+use mapgen::Piece;
+use math::Vec3;
 
 fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     let mut z_vec = Vec::with_capacity(size.z);
@@ -19,19 +17,6 @@ fn matrix3d<T: Default>(size: Vec3) -> Vec<Vec<Vec<T>>> {
     z_vec
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
-struct Box {
-    x1: usize,
-    x2: usize,
-    z1: usize,
-    z2: usize,
-}
-impl Box {
-    fn intersect(&self, rhs: Self) -> bool {
-        self.x1 <= rhs.x2 && self.x2 >= rhs.x1 && self.z1 <= rhs.z2 && self.z2 >= rhs.z1
-    }
-}
-
 pub struct Map {
     alive: Vec<Vec<Vec<Piece>>>,
     dead: Vec<Vec<Vec<Option<usize>>>>,
@@ -47,79 +32,11 @@ impl Map {
         f(&mut map);
         map
     }
-    #[allow(unused)]
-    pub fn gen_caves(&mut self, min: Vec3, max: Vec3) {
-        let noise = Perlin::new(rand::random());
-        for x in min.x.min(max.x)..min.x.max(max.x) {
-            for y in min.y.min(max.y)..min.y.max(max.y) {
-                for z in min.z.min(max.z)..min.z.max(max.z) {
-                    let f = noise.get([x as f64 * 10.0, y as f64 * 10.0, z as f64 * 10.0]);
-                    trace!("{f}");
-                    if f > 0.5 {
-                        self.set(Vec3::new(x, y, z), Piece::Ground);
-                    }
-                }
-            }
-        }
-    }
-    pub fn gen_sparse_floor(&mut self, y: usize, floor_amount: usize) {
-        let mut boxes: HashMap<usize, (Box, Vec<usize>)> = Default::default();
-        for i in 0..floor_amount {
-            let x_size = rand::random_range(4..=16);
-            let z_size = rand::random_range(4..=16);
-            let x = rand::random_range(0..=self.size.x - x_size);
-            let z = rand::random_range(0..=self.size.z - z_size);
-            let b = Box {
-                x1: x,
-                x2: x + x_size,
-                z1: z,
-                z2: z + z_size,
-            };
-            let mut clean = true;
-            for (a, _) in boxes.values() {
-                if a.intersect(b) {
-                    clean = false;
-                    break;
-                }
-            }
-            if clean {
-                boxes.insert(i, (b, Vec::new()));
-            }
-        }
-        for (b, _) in boxes.values() {
-            for x in b.x1..b.x2 {
-                for z in b.z1..b.z2 {
-                    self.set(Vec3::new(x, y, z), Piece::Ground);
-                }
-            }
-        }
-        for (a, _) in boxes.values() {
-            for (b, _) in boxes.values() {
-                if a == b {
-                    continue;
-                }
-                let a_middle = Vec2::new(((a.x2 - a.x1) / 2) + a.x1, ((a.z2 - a.z1) / 2) + a.z1);
-                let b_middle = Vec2::new(((b.x2 - b.x1) / 2) + b.x1, ((b.z2 - b.z1) / 2) + b.z1);
-
-                let middle = if rand::random_bool(0.5) {
-                    Vec2::new(a_middle.x, b_middle.y)
-                } else {
-                    Vec2::new(b_middle.x, a_middle.y)
-                };
-                self.set(Vec3::new(middle.x, y, middle.y), Piece::Ground);
-                for p in a_middle.y.min(b_middle.y)..a_middle.y.max(b_middle.y) {
-                    self.set(Vec3::new(middle.x, y, p), Piece::Ground);
-                }
-                for p in a_middle.x.min(b_middle.x)..a_middle.x.max(b_middle.x) {
-                    self.set(Vec3::new(p, y, middle.y), Piece::Ground);
-                }
-            }
-        }
-    }
 
     pub fn get_size(&self) -> Vec3 {
         self.size
     }
+
     pub fn get_ground_data(&self) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
         let (mut x_list, mut y_list, mut z_list) = (Vec::new(), Vec::new(), Vec::new());
         for z in 0..self.size.z {
@@ -171,11 +88,4 @@ impl Map {
         };
         *piece = value;
     }
-}
-#[derive(Default, Debug, Clone, Copy)]
-pub enum Piece {
-    #[default]
-    Empty,
-    Actor(usize),
-    Ground,
 }

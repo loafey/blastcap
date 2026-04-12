@@ -1,6 +1,7 @@
 use std::{collections::HashSet, time::Duration};
 
 use math::Vec3;
+use smol::channel;
 
 use crate::{
     game::{
@@ -93,9 +94,11 @@ impl State for EnterDungeonState {
                         );
 
                         let mut gs = ClearRoomState::new(Vec3::new(80, 40, 80), |m| {
-                            m.gen_sparse_floor(0, 3);
-                            // m.gen_sparse_floor(10, 3);
-                            // m.gen_sparse_floor(20, 3);
+                            let (rx, tx) = channel::unbounded();
+                            mapgen::generate_map(0xdeadbeef, rx, m.get_size());
+                            while let Ok((pos, val)) = tx.recv_blocking() {
+                                m.set(pos, val);
+                            }
                         });
                         let (x_list, y_list, z_list) = gs.map.get_ground_data();
 
