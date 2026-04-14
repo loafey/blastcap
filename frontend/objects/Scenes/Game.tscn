@@ -6,6 +6,43 @@
 [ext_resource type="PackedScene" uid="uid://0et8vkoetkb7" path="res://objects/Effects/Explosion.tscn" id="3_bfu7n"]
 [ext_resource type="PackedScene" uid="uid://5kl4v2ka7ejj" path="res://objects/GUI/ChatBox.tscn" id="3_cpr0p"]
 [ext_resource type="PackedScene" uid="uid://brortooqkibdb" path="res://objects/Effects/Sound.tscn" id="4_t1gdw"]
+[ext_resource type="Shader" uid="uid://c1777da85qx3" path="res://objects/Effects/Water.gdshader" id="7_scfou"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_scfou"]
+sky_horizon_color = Color(0.70091677, 0.725462, 0.8408546, 1)
+sky_curve = 0.14999992
+ground_bottom_color = Color(0.18852708, 0.18888626, 0.5515177, 1)
+ground_horizon_color = Color(0.70091677, 0.725462, 0.8408546, 1)
+ground_curve = 0.005358869
+sun_curve = 0.1351875
+
+[sub_resource type="Sky" id="Sky_vmo3i"]
+sky_material = SubResource("ProceduralSkyMaterial_scfou")
+
+[sub_resource type="Environment" id="Environment_553xd"]
+background_mode = 2
+sky = SubResource("Sky_vmo3i")
+tonemap_mode = 2
+glow_enabled = true
+
+[sub_resource type="FastNoiseLite" id="FastNoiseLite_scfou"]
+noise_type = 3
+frequency = 0.1172
+
+[sub_resource type="NoiseTexture3D" id="NoiseTexture3D_scfou"]
+noise = SubResource("FastNoiseLite_scfou")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_vmo3i"]
+render_priority = 0
+shader = ExtResource("7_scfou")
+shader_parameter/Noise1 = SubResource("NoiseTexture3D_scfou")
+shader_parameter/Noise2 = SubResource("NoiseTexture3D_scfou")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_t1gdw"]
+size = Vector2(400, 400)
+subdivide_width = 400
+subdivide_depth = 400
+center_offset = Vector3(50, 0, 50)
 
 [node name="Game" type="Node3D" unique_id=162207000 node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder", "Temporaries")]
 script = ExtResource("1_qbsmt")
@@ -18,8 +55,12 @@ ExplosionScene = ExtResource("3_bfu7n")
 SoundEffect = ExtResource("4_t1gdw")
 Temporaries = NodePath("Temporaries")
 
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=541267829]
+environment = SubResource("Environment_553xd")
+
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=729423569]
-transform = Transform3D(-0.866023, -0.433016, 0.250001, 0, 0.499998, 0.866027, -0.500003, 0.749999, -0.43301, 0, 0, 0)
+transform = Transform3D(-0.12491752, -0.65593654, 0.7444078, -0.5621206, 0.66503984, 0.49167305, -0.8175671, -0.35702842, -0.45179054, 0, 7.8029585, 0)
+light_energy = 2.194
 shadow_enabled = true
 
 [node name="PlayerCamera" parent="." unique_id=1720251722 instance=ExtResource("1_ibkli")]
@@ -41,3 +82,8 @@ grow_vertical = 1
 [node name="WorldMesh" type="Node3D" parent="." unique_id=413768576]
 
 [node name="Temporaries" type="Node3D" parent="." unique_id=667807292]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=1023259350]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.8, 0)
+material_override = SubResource("ShaderMaterial_vmo3i")
+mesh = SubResource("PlaneMesh_t1gdw")
