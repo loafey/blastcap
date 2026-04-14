@@ -3,6 +3,8 @@ use random::Random;
 use smol::channel;
 use std::collections::HashMap;
 
+pub mod bindings;
+
 #[derive(Default, Debug, Clone, Copy)]
 pub enum Piece {
     #[default]
