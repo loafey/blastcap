@@ -23,7 +23,7 @@ pub struct Map {
     size: Vec3,
 }
 impl Map {
-    pub fn gen_map(size: Vec3, f: fn(&mut Map)) -> Self {
+    pub fn gen_map(size: Vec3, f: impl FnOnce(&mut Map)) -> Self {
         let mut map = Map {
             alive: matrix3d(size),
             dead: matrix3d(size),
@@ -37,22 +37,6 @@ impl Map {
         self.size
     }
 
-    pub fn get_ground_data(&self) -> (Vec<usize>, Vec<usize>, Vec<usize>) {
-        let (mut x_list, mut y_list, mut z_list) = (Vec::new(), Vec::new(), Vec::new());
-        for z in 0..self.size.z {
-            for y in 0..self.size.y {
-                for x in 0..self.size.x {
-                    if let Some(Piece::Ground) = self.get(Vec3::new(x, y, z)) {
-                        x_list.push(x);
-                        y_list.push(y);
-                        z_list.push(z);
-                    }
-                }
-            }
-        }
-
-        (x_list, y_list, z_list)
-    }
     pub fn get(&self, Vec3 { x, y, z }: Vec3) -> Option<Piece> {
         self.alive
             .get(z)

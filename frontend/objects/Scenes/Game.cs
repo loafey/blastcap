@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Threading;
 
 
 public partial class Game : Node3D {
@@ -30,8 +31,20 @@ public partial class Game : Node3D {
     private readonly Random _random = new();
     private Stopwatch _rtt = new();
     private ulong _tickCount;
+    private readonly MapGen _mp = new();
 
-    private void SpawnCube(Node3D parent, Vector3 pos) {
+    private delegate void AddChildDelegate(Node parent, Node child);
+
+    public void SpawnCube(Vector3I pos) {
+        static void spawn(Node parent, Node child) {
+            parent.CallDeferred("add_child", child);
+        }
+
+        if (!this._layers.TryGetValue(pos.Y, out var parent)) {
+            parent = new Node3D();
+            this._layers[pos.Y] = parent;
+            spawn(this.WorldMeshHolder, parent);
+        }
         var floor = new MeshInstance3D();
         var mesh = new BoxMesh {
             // CenterOffset = new Vector3(0.5f, 0, 0.5f),
@@ -52,9 +65,9 @@ public partial class Game : Node3D {
         var shape = new BoxShape3D();
         collShape.Shape = shape;
 
-        coll.AddChild(collShape);
-        floor.AddChild(coll);
-        parent.AddChild(floor);
+        spawn(coll, collShape);
+        spawn(floor, coll);
+        spawn(parent, floor);
     }
 
     public override void _Ready() {
@@ -161,18 +174,8 @@ public partial class Game : Node3D {
             this.PC.CurrentAbility = null;
         };
 
-        this.nw.Inner.OnSpawnMap += (xList, yList, zList) => {
-            for (var i = 0; i < xList.Count; i++) {
-                var key = (int)yList[i];
-                if (!this._layers.TryGetValue(key, out var value)) {
-                    value = new Node3D();
-                    this._layers[key] = value;
-                    this.WorldMeshHolder.AddChild(value);
-                }
-                var parent = value;
-                var pos = new Vector3(xList[i], yList[i], zList[i]);
-                this.SpawnCube(parent, pos);
-            }
+        this.nw.Inner.OnGenerateMap += (seed, x, y, z) => {
+            this._mp.Generate(seed, x, y, z, this);
         };
 
         this.nw.Inner.SendPing();

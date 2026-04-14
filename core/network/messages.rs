@@ -49,10 +49,11 @@ pub enum ServerMessage {
         actor: usize,
         target: usize,
     },
-    SpawnMap {
-        x: Vec<usize>,
-        y: Vec<usize>,
-        z: Vec<usize>,
+    GenerateMap {
+        seed: u64,
+        x: u64,
+        y: u64,
+        z: u64,
     },
     EnterDungeonState,
     ReadyStatus(u64, u8),

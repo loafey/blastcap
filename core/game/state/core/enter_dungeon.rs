@@ -93,20 +93,22 @@ impl State for EnterDungeonState {
                             self.players
                         );
 
-                        let mut gs = ClearRoomState::new(Vec3::new(80, 40, 80), |m| {
+                        let seed = 0xdeadbeef;
+                        let size = Vec3::new(80, 40, 80);
+                        let mut gs = ClearRoomState::new(size, move |m| {
                             let (rx, tx) = channel::unbounded();
-                            mapgen::generate_map(0xdeadbeef, rx, m.get_size());
+                            mapgen::generate_map(seed, rx, m.get_size());
                             while let Ok((pos, val)) = tx.recv_blocking() {
                                 m.set(pos, val);
                             }
                         });
-                        let (x_list, y_list, z_list) = gs.map.get_ground_data();
 
                         arg.host
-                            .broadcast(ServerMessage::SpawnMap {
-                                x: x_list,
-                                y: y_list,
-                                z: z_list,
+                            .broadcast(ServerMessage::GenerateMap {
+                                seed,
+                                x: size.x as u64,
+                                y: size.y as u64,
+                                z: size.z as u64,
                             })
                             .await?;
                         let map_size = gs.map.get_size();
