@@ -49,7 +49,7 @@ impl Actor {
             .get_neighbors(false, self.position)
             .into_iter()
             .filter_map(|(f, p)| match f {
-                Piece::Actor(i) if state.actors[i].health > 0 => Some(p),
+                Some(Piece::Actor(i)) if state.actors[i].health > 0 => Some(p),
                 _ => None,
             })
             .collect::<Vec<_>>();
@@ -82,9 +82,9 @@ impl Actor {
             }
             let random = others[rand::random_range(0..others.len())];
             let Some((Vec3 { x, y, z }, _, _)) = state
-                .get_neighbors(false, random.position)
+                .get_neighbors(true, random.position)
                 .into_iter()
-                .filter(|(a, _)| matches!(a, Piece::Empty))
+                .filter(|(a, _)| a.is_none())
                 .map(|a| a.1)
                 .filter_map(|a| state.pathfind(self.position, a).map(|(b, c)| (a, b, c)))
                 .min_by_key(|(_, _, c)| *c)

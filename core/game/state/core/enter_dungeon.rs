@@ -95,24 +95,17 @@ impl State for EnterDungeonState {
                         );
 
                         let seed = rand::random();
-                        let size = Vec3::new(80, 40, 80);
-                        let mut gs = ClearRoomState::new(size, move |m| {
+                        let mut gs = ClearRoomState::new(move |m| {
                             let (rx, tx) = channel::unbounded();
-                            mapgen::generate_map(seed, Output::new(rx), m.get_size());
+                            mapgen::generate_map(seed, Output::new(rx));
                             while let Ok((pos, val)) = tx.recv_blocking() {
                                 m.set(pos, val);
                             }
                         });
 
                         arg.host
-                            .broadcast(ServerMessage::GenerateMap {
-                                seed,
-                                x: size.x as u64,
-                                y: size.y as u64,
-                                z: size.z as u64,
-                            })
+                            .broadcast(ServerMessage::GenerateMap { seed })
                             .await?;
-                        let map_size = gs.map.get_size();
                         for (id, addr) in self.players.iter().copied().enumerate() {
                             let actor = Actor {
                                 name: format!("Player {id}"),
@@ -124,41 +117,58 @@ impl State for EnterDungeonState {
                                 resources: Default::default(),
                                 cards: CardHolder::test_data(),
                             };
+                            // What was I thinking here?
                             while {
-                                let position = Vec3::new(
-                                    rand::random_range(0..map_size.x),
-                                    1,
-                                    rand::random_range(0..map_size.z),
-                                );
-                                let clone = actor.clone();
-                                let res = gs
-                                    .spawn_actor(arg.host, Actor { position, ..clone })
-                                    .await?;
-                                !res
+                                let mut good = None;
+                                for pos in gs.map.get_map_positions() {
+                                    if rand::random_bool(0.01) {
+                                        good = Some(Vec3 {
+                                            y: pos.y + 1,
+                                            ..pos
+                                        });
+                                        break;
+                                    }
+                                }
+                                if let Some(position) = good {
+                                    let clone = actor.clone();
+                                    let res = gs
+                                        .spawn_actor(arg.host, Actor { position, ..clone })
+                                        .await?;
+                                    !res
+                                } else {
+                                    true
+                                }
                             } {}
                         }
                         info!("Players spawned");
                         let mut i = 0;
                         while i < self.bot_amount {
-                            let position = Vec3::new(
-                                rand::random_range(0..map_size.x),
-                                1,
-                                rand::random_range(0..map_size.z),
-                            );
+                            let mut good = None;
+                            for pos in gs.map.get_map_positions() {
+                                if rand::random_bool(0.01) {
+                                    good = Some(Vec3 {
+                                        y: pos.y + 1,
+                                        ..pos
+                                    });
+                                    break;
+                                }
+                            }
 
-                            let mut actor = Actor {
-                                name: format!("Bot {i}"),
-                                controller: Controller::Bot,
-                                position,
-                                health: 15,
-                                base_movement: rand::random_range(10..20),
-                                abilities: Actor::default_abilities(),
-                                resources: Default::default(),
-                                cards: Default::default(),
-                            };
-                            actor.reset_turn_resources();
-                            if gs.spawn_actor(arg.host, actor).await? {
-                                i += 1;
+                            if let Some(position) = good {
+                                let mut actor = Actor {
+                                    name: format!("Bot {i}"),
+                                    controller: Controller::Bot,
+                                    position,
+                                    health: 15,
+                                    base_movement: rand::random_range(10..20),
+                                    abilities: Actor::default_abilities(),
+                                    resources: Default::default(),
+                                    cards: Default::default(),
+                                };
+                                actor.reset_turn_resources();
+                                if gs.spawn_actor(arg.host, actor).await? {
+                                    i += 1;
+                                }
                             }
                         }
                         info!("Bots spawned");

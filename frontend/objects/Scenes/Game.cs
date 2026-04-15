@@ -203,8 +203,8 @@ public partial class Game : Node3D {
             this.PC.CurrentAbility = null;
         };
 
-        this.nw.Inner.OnGenerateMap += (seed, x, y, z) => {
-            this._mp.Generate(seed, x, y, z, this);
+        this.nw.Inner.OnGenerateMap += (seed) => {
+            this._mp.Generate(seed, this);
         };
 
         this.nw.Inner.SendPing();
@@ -245,7 +245,7 @@ public partial class Game : Node3D {
 
             var pos = (Vector3)result["position"];
             if (!this._myTurn) { return; }
-            var (x, y, z) = ((nuint)pos.X, (nuint)pos.Y, (nuint)pos.Z);
+            var (x, y, z) = ((long)pos.X, (long)pos.Y, (long)pos.Z);
             // pos.Y += 1;
             // GD.Print($"{(nuint)pos.X}, {(nuint)pos.Y}, {(nuint)pos.Z}");
             if (this._currentAbility is ulong ability) {

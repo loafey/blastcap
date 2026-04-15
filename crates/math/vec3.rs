@@ -9,12 +9,12 @@ use serde::{Deserialize, Serialize};
     Debug, Default, Clone, Copy, PartialEq, PartialOrd, Ord, Eq, Hash, Deserialize, Serialize,
 )]
 pub struct Vec3 {
-    pub x: usize,
-    pub y: usize,
-    pub z: usize,
+    pub x: i64,
+    pub y: i64,
+    pub z: i64,
 }
 impl Vec3 {
-    pub fn new(x: usize, y: usize, z: usize) -> Self {
+    pub fn new(x: i64, y: i64, z: i64) -> Self {
         Self { x, y, z }
     }
 
@@ -35,10 +35,10 @@ impl Display for Vec3 {
         write!(f, "({}, {}, {})", self.x, self.y, self.z)
     }
 }
-impl Add<usize> for Vec3 {
+impl Add<i64> for Vec3 {
     type Output = Self;
 
-    fn add(self, rhs: usize) -> Self::Output {
+    fn add(self, rhs: i64) -> Self::Output {
         let Vec3 { x, y, z } = self;
         Self {
             x: x + rhs,
@@ -47,10 +47,10 @@ impl Add<usize> for Vec3 {
         }
     }
 }
-impl Div<usize> for Vec3 {
+impl Div<i64> for Vec3 {
     type Output = Self;
 
-    fn div(self, rhs: usize) -> Self::Output {
+    fn div(self, rhs: i64) -> Self::Output {
         let Vec3 { x, y, z } = self;
         Self {
             x: x / rhs,

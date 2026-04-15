@@ -15,9 +15,9 @@ public class MapGen {
     }
 
     [DllImport("blastcap", SetLastError = true, CallingConvention = CallingConvention.Cdecl)]
-    private static extern void __generate_map(ulong seed, MapGenFuncs funcs, ulong x, ulong y, ulong z);
+    private static extern void __generate_map(ulong seed, MapGenFuncs funcs);
 
-    public void Generate(ulong seed, ulong x, ulong y, ulong z, Game game) {
+    public void Generate(ulong seed, Game game) {
         if (this._funcs != null) { throw new MethodAccessException("already in use"); }
         var funcs = new MapGenFuncs(
             (x, y, z, groundType) => game.SpawnCube(new((int)x, (int)y, (int)z), groundType),
@@ -25,6 +25,6 @@ public class MapGen {
         );
         this._funcs = funcs;
         GD.Print(game);
-        __generate_map(seed, funcs, x, y, z);
+        __generate_map(seed, funcs);
     }
 }

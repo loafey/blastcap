@@ -42,7 +42,6 @@ shader_parameter/Noise2 = SubResource("NoiseTexture3D_scfou")
 size = Vector2(400, 400)
 subdivide_width = 400
 subdivide_depth = 400
-center_offset = Vector3(50, 0, 50)
 
 [node name="Game" type="Node3D" unique_id=162207000 node_paths=PackedStringArray("ActorHolder", "ChatBox", "PC", "WorldMeshHolder", "Temporaries")]
 script = ExtResource("1_qbsmt")

@@ -35,11 +35,11 @@ pub struct ClearRoomState {
     callbacks: Channel<Callback>,
 }
 impl ClearRoomState {
-    pub fn new(size: Vec3, f: impl FnOnce(&mut Map)) -> Box<Self> {
+    pub fn new(f: impl FnOnce(&mut Map)) -> Box<Self> {
         Box::new(Self {
             actors: Vec::new(),
             actor_pointer: 0,
-            map: Box::new(Map::gen_map(size, f)),
+            map: Box::new(Map::gen_map(f)),
             current_turn: None,
             waiting: false,
             callbacks: Channel::new(),
@@ -51,7 +51,7 @@ impl ClearRoomState {
         host: &mut NetworkHost,
         actor: Actor,
     ) -> anyhow::Result<bool> {
-        let Some(Piece::Empty) = self.map.get(actor.position) else {
+        let None = self.map.get(actor.position) else {
             return Ok(false);
         };
         if actor.position.y == 0 {
@@ -145,8 +145,8 @@ impl ClearRoomState {
         &mut self.actors[self.actor_pointer]
     }
 
-    pub fn get_neighbors(&self, air: bool, Vec3 { x, y, z }: Vec3) -> Vec<(Piece, Vec3)> {
-        let (nx, ny, nz) = (x as isize, y as isize, z as isize);
+    pub fn get_neighbors(&self, air: bool, Vec3 { x, y, z }: Vec3) -> Vec<(Option<Piece>, Vec3)> {
+        let (nx, ny, nz) = (x, y, z);
         let mut neighs = Vec::with_capacity(9);
         for z in -1..=1 {
             for y in -1..=1 {
@@ -154,20 +154,18 @@ impl ClearRoomState {
                     if x == 0 && y == 0 && z == 0 {
                         continue;
                     }
-                    let z = (nz + z) as usize;
-                    let y = (ny + y) as usize;
-                    let x = (nx + x) as usize;
+                    let z = nz + z;
+                    let y = ny + y;
+                    let x = nx + x;
                     let v = Vec3::new(x, y, z);
-                    if let Some(piece) = self.map.get(v) {
-                        if air {
-                            neighs.push((piece, v));
-                        } else if let Some(Piece::Ground(_)) = self.map.get(Vec3 {
-                            x,
-                            y: y.wrapping_sub(1),
-                            z,
-                        }) {
-                            neighs.push((piece, v));
-                        }
+                    if air {
+                        neighs.push((None, v));
+                    } else if let Some(ground @ Piece::Ground(_)) = self.map.get(Vec3 {
+                        x,
+                        y: y.wrapping_sub(1),
+                        z,
+                    }) {
+                        neighs.push((Some(ground), v));
                     }
                 }
             }
@@ -181,13 +179,7 @@ impl ClearRoomState {
             |p| {
                 self.get_neighbors(false, *p)
                     .into_iter()
-                    .filter_map(|(p, v)| {
-                        if let Piece::Empty = p {
-                            Some((v, 1))
-                        } else {
-                            None
-                        }
-                    })
+                    .filter_map(|(p, v)| if p.is_some() { Some((v, 1)) } else { None })
             },
             |pos| (pos.distance_f32(to) * 10.0) as usize,
             |a| *a == to,
@@ -219,7 +211,7 @@ impl ClearRoomState {
         arg: Arg<'_>,
         pos: Vec3,
     ) -> anyhow::Result<Option<Duration>> {
-        let Some(Piece::Empty) = self.map.get(pos) else {
+        if self.map.get(pos).is_some() {
             self.waiting = false;
             return Ok(None);
         };
@@ -238,10 +230,9 @@ impl ClearRoomState {
         self.actors[self.actor_pointer].resources.movement = mov.saturating_sub(cost as u32);
         let time = path.len() as f32 / TILES_PER_SECOND as f32;
         {
-            let a = self.map.get(pos).unwrap();
-            let b = self.map.get(old).unwrap();
-            self.map.set(pos, b);
-            self.map.set(old, a);
+            if let Some(value) = self.map.remove(old) {
+                self.map.set(pos, value);
+            }
         }
         self.actors[self.actor_pointer].position = path[path.len() - 1];
         let mut x_list = Vec::new();
@@ -317,8 +308,8 @@ impl ClearRoomState {
             if hit.health <= 0
                 && let Some(Piece::Actor(id)) = self.map.get(hit.position)
             {
-                self.map.set(hit.position, Piece::Empty);
-                self.map.dead_set(hit.position, Some(id));
+                self.map.remove(hit.position);
+                self.map.dead_set(hit.position, id);
             };
         };
         self.current_actor_mut().resources.abilities -= 1;

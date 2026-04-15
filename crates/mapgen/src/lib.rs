@@ -1,15 +1,13 @@
 use data::types::GroundType;
-use math::{Vec2, Vec3};
+use math::Vec3;
 use random::Random;
 use smol::channel;
-use std::{collections::HashMap, f64};
+use std::f64;
 
 pub mod bindings;
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub enum Piece {
-    #[default]
-    Empty,
     Actor(usize),
     Ground(GroundType),
 }
@@ -40,7 +38,7 @@ impl Box {
     }
 }
 
-fn spawn_circle(middle: Vec3, size: usize, ground_type: GroundType, spawn: Output) {
+fn spawn_circle(middle: Vec3, size: i64, ground_type: GroundType, spawn: Output) {
     for x in (middle.x - size)..(middle.x + size) {
         for z in (middle.z - size)..(middle.z + size) {
             let pos = Vec3::new(x, middle.y, z);
@@ -52,11 +50,8 @@ fn spawn_circle(middle: Vec3, size: usize, ground_type: GroundType, spawn: Outpu
     }
 }
 
-fn gen_ice_map(rand: &mut Random, y: usize, floor_amount: usize, size: Vec3, spawn: Output) {
-    let middle = Vec3 {
-        y,
-        ..((size / 2) + 2)
-    };
+fn gen_ice_map(rand: &mut Random, y: i64, floor_amount: usize, spawn: Output) {
+    let middle = Vec3 { x: 0, y, z: 0 };
     let size = rand.get_range(8..12);
     spawn_circle(middle, size, GroundType::Ice, spawn.clone());
 
@@ -120,9 +115,9 @@ fn gen_ice_map(rand: &mut Random, y: usize, floor_amount: usize, size: Vec3, spa
     */
 }
 
-pub fn generate_map(seed: u64, spawn: Output, size: Vec3) {
+pub fn generate_map(seed: u64, spawn: Output) {
     std::thread::spawn(move || {
         let mut random = Random::new(seed);
-        gen_ice_map(&mut random, 0, 3, size, spawn);
+        gen_ice_map(&mut random, 0, 3, spawn);
     });
 }
