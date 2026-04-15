@@ -12,7 +12,7 @@ pub struct GenerateMapFuncs {
 #[unsafe(no_mangle)]
 pub extern "C" fn __generate_map(seed: u64, funcs: GenerateMapFuncs, x: usize, y: usize, z: usize) {
     let (rx, tx) = channel::unbounded();
-    generate_map(seed, rx, Vec3::new(x, y, z));
+    generate_map(seed, crate::Output::new(rx), Vec3::new(x, y, z));
     std::thread::spawn(move || {
         while let Ok((p, piece)) = tx.recv_blocking() {
             match piece {

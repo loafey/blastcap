@@ -280,7 +280,7 @@ impl ClearRoomState {
         }
         let actor_pos = cur_act.position;
         let distance = actor_pos.distance(pos);
-        if distance > attack.range {
+        if distance > attack.range as f64 {
             error!("attack: out of range: {distance} > {}", attack.range);
             return Ok(None);
         }

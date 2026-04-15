@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    ops::{Add, Div},
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -15,10 +18,10 @@ impl Vec3 {
         Self { x, y, z }
     }
 
-    pub fn distance(&self, rhs: Self) -> usize {
+    pub fn distance(&self, rhs: Self) -> f64 {
         let (px, py, pz) = (self.x as isize, self.y as isize, self.z as isize);
         let (qx, qy, qz) = (rhs.x as isize, rhs.y as isize, rhs.z as isize);
-        ((px - qx).pow(2) + (py - qy).pow(2) + (pz - qz).pow(2)).isqrt() as usize
+        ((px - qx).pow(2) as f64 + (py - qy).pow(2) as f64 + (pz - qz).pow(2) as f64).sqrt()
     }
 
     pub fn distance_f32(&self, rhs: Self) -> f32 {
@@ -30,5 +33,40 @@ impl Vec3 {
 impl Display for Vec3 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({}, {}, {})", self.x, self.y, self.z)
+    }
+}
+impl Add<usize> for Vec3 {
+    type Output = Self;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        let Vec3 { x, y, z } = self;
+        Self {
+            x: x + rhs,
+            y: y + rhs,
+            z: z + rhs,
+        }
+    }
+}
+impl Div<usize> for Vec3 {
+    type Output = Self;
+
+    fn div(self, rhs: usize) -> Self::Output {
+        let Vec3 { x, y, z } = self;
+        Self {
+            x: x / rhs,
+            y: y / rhs,
+            z: z / rhs,
+        }
+    }
+}
+impl Add<Vec3> for Vec3 {
+    type Output = Self;
+
+    fn add(self, rhs: Vec3) -> Self::Output {
+        Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
     }
 }

@@ -1,5 +1,6 @@
 use std::{collections::HashSet, time::Duration};
 
+use mapgen::Output;
 use math::Vec3;
 use smol::channel;
 
@@ -93,11 +94,11 @@ impl State for EnterDungeonState {
                             self.players
                         );
 
-                        let seed = 0xdeadbeef;
+                        let seed = rand::random();
                         let size = Vec3::new(80, 40, 80);
                         let mut gs = ClearRoomState::new(size, move |m| {
                             let (rx, tx) = channel::unbounded();
-                            mapgen::generate_map(seed, rx, m.get_size());
+                            mapgen::generate_map(seed, Output::new(rx), m.get_size());
                             while let Ok((pos, val)) = tx.recv_blocking() {
                                 m.set(pos, val);
                             }
