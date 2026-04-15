@@ -3,7 +3,7 @@ using System;
 using System.Runtime.InteropServices;
 
 public class MapGen {
-    private delegate void SpawnBlock(ulong x, ulong y, ulong z);
+    private delegate void SpawnBlock(ulong x, ulong y, ulong z, Data.GroundType groundType);
     private delegate void Done();
 
     private MapGenFuncs? _funcs;
@@ -20,7 +20,7 @@ public class MapGen {
     public void Generate(ulong seed, ulong x, ulong y, ulong z, Game game) {
         if (this._funcs != null) { throw new MethodAccessException("already in use"); }
         var funcs = new MapGenFuncs(
-            (x, y, z) => game.SpawnCube(new((int)x, (int)y, (int)z)),
+            (x, y, z, groundType) => game.SpawnCube(new((int)x, (int)y, (int)z), groundType),
             () => this._funcs = null
         );
         this._funcs = funcs;

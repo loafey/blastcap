@@ -7,3 +7,4 @@ edition = "2024"
 random = { workspace = true }
 math = { workspace = true }
 smol = { workspace = true }
+data = { workspace = true }

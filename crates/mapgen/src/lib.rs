@@ -1,3 +1,4 @@
+use data::types::GroundType;
 use math::{Vec2, Vec3};
 use random::Random;
 use smol::channel;
@@ -10,7 +11,7 @@ pub enum Piece {
     #[default]
     Empty,
     Actor(usize),
-    Ground,
+    Ground(GroundType),
 }
 
 pub type Output = channel::Sender<(Vec3, Piece)>;
@@ -56,7 +57,7 @@ fn gen_sparse_floor(rand: &mut Random, y: usize, floor_amount: usize, size: Vec3
     for (b, _) in boxes.values() {
         for x in b.x1..b.x2 {
             for z in b.z1..b.z2 {
-                set((Vec3::new(x, y, z), Piece::Ground));
+                set((Vec3::new(x, y, z), Piece::Ground(GroundType::Ice)));
             }
         }
     }
@@ -74,12 +75,15 @@ fn gen_sparse_floor(rand: &mut Random, y: usize, floor_amount: usize, size: Vec3
             } else {
                 Vec2::new(b_middle.x, a_middle.y)
             };
-            set((Vec3::new(middle.x, y, middle.y), Piece::Ground));
+            set((
+                Vec3::new(middle.x, y, middle.y),
+                Piece::Ground(GroundType::Wood),
+            ));
             for p in a_middle.y.min(b_middle.y)..a_middle.y.max(b_middle.y) {
-                set((Vec3::new(middle.x, y, p), Piece::Ground));
+                set((Vec3::new(middle.x, y, p), Piece::Ground(GroundType::Wood)));
             }
             for p in a_middle.x.min(b_middle.x)..a_middle.x.max(b_middle.x) {
-                set((Vec3::new(p, y, middle.y), Piece::Ground));
+                set((Vec3::new(p, y, middle.y), Piece::Ground(GroundType::Wood)));
             }
         }
     }

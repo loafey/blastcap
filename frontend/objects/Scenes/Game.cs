@@ -35,7 +35,7 @@ public partial class Game : Node3D {
 
     private delegate void AddChildDelegate(Node parent, Node child);
 
-    public void SpawnCube(Vector3I pos) {
+    public void SpawnCube(Vector3I pos, Data.GroundType groundType) {
         static void spawn(Node parent, Node child) {
             parent.CallDeferred("add_child", child);
         }
@@ -52,8 +52,37 @@ public partial class Game : Node3D {
         };
         floor.Mesh = mesh;
         var mat = new StandardMaterial3D();
-        var color = this._random.NextInt64() % 256 / 256.0f;
-        mat.AlbedoColor = new Color(color, color, color);
+        switch (groundType) {
+            case Data.GroundType.Ice:
+                mat.Transparency = BaseMaterial3D.TransparencyEnum.AlphaDepthPrePass;
+                mat.BlendMode = BaseMaterial3D.BlendModeEnum.Mix;
+                mat.ProximityFadeEnabled = true;
+                mat.ProximityFadeDistance = 0.2f;
+                var mut = (float)(this._random.NextDouble() * 32.0) - 16.0f;
+                var alpha = (float)(0.5 + (this._random.NextDouble() / 4));
+                mat.AlbedoColor = new Color(
+                    (201 + mut - 50) / 255.0f,
+                    (233 + mut - 50) / 255.0f,
+                    (234 + mut - 50) / 255.0f,
+                    alpha);
+                break;
+            case Data.GroundType.Wood:
+                // (186, 140, 99)
+                mut = (float)(this._random.NextDouble() * 32.0) - 16.0f;
+                mat.AlbedoColor = new Color(
+                    (186f + mut - 50) / 255.0f,
+                    (140f + mut - 50) / 255.0f,
+                    (99f + mut - 50) / 255.0f);
+                break;
+            case Data.GroundType.Invisible:
+                mat.AlbedoColor = new Color(
+                    this._random.NextInt64() % 256 / 256.0f,
+                    this._random.NextInt64() % 256 / 256.0f,
+                    this._random.NextInt64() % 256 / 256.0f);
+                break;
+            default:
+                break;
+        }
         floor.MaterialOverride = mat;
         var position = new Vector3(pos.X, pos.Y, pos.Z);
         floor.Position = position + new Vector3(0.5f, 0.5f, 0.5f);

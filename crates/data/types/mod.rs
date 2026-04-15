@@ -3,6 +3,25 @@ use sharpify::sharpify_types;
 mod inner {
     use rkyv::Archive;
     use serde::{Deserialize, Serialize};
+
+    #[derive(
+        Debug,
+        Deserialize,
+        Serialize,
+        Copy,
+        Clone,
+        PartialEq,
+        Archive,
+        rkyv::Deserialize,
+        rkyv::Serialize,
+    )]
+    #[repr(C)]
+    pub enum GroundType {
+        Ice,
+        Wood,
+        Invisible,
+    }
+
     #[derive(
         Debug, Deserialize, Serialize, Clone, PartialEq, Archive, rkyv::Deserialize, rkyv::Serialize,
     )]

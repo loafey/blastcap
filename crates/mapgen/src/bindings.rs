@@ -1,10 +1,11 @@
 use crate::{Piece, generate_map};
+use data::types::GroundType;
 use math::Vec3;
 use smol::channel;
 
 #[repr(C)]
 pub struct GenerateMapFuncs {
-    pub spawn_block: extern "C" fn(usize, usize, usize),
+    pub spawn_block: extern "C" fn(usize, usize, usize, GroundType),
     pub done: extern "C" fn(),
 }
 
@@ -17,7 +18,7 @@ pub extern "C" fn __generate_map(seed: u64, funcs: GenerateMapFuncs, x: usize, y
             match piece {
                 Piece::Empty => todo!(),
                 Piece::Actor(_) => todo!(),
-                Piece::Ground => (funcs.spawn_block)(p.x, p.y, p.z),
+                Piece::Ground(gtype) => (funcs.spawn_block)(p.x, p.y, p.z, gtype),
             }
         }
         (funcs.done)()

@@ -57,7 +57,7 @@ impl ClearRoomState {
         if actor.position.y == 0 {
             return Ok(false);
         }
-        let Some(Piece::Ground) = self.map.get(Vec3 {
+        let Some(Piece::Ground(_)) = self.map.get(Vec3 {
             x: actor.position.x,
             y: actor.position.y - 1,
             z: actor.position.z,
@@ -161,7 +161,7 @@ impl ClearRoomState {
                     if let Some(piece) = self.map.get(v) {
                         if air {
                             neighs.push((piece, v));
-                        } else if let Some(Piece::Ground) = self.map.get(Vec3 {
+                        } else if let Some(Piece::Ground(_)) = self.map.get(Vec3 {
                             x,
                             y: y.wrapping_sub(1),
                             z,
