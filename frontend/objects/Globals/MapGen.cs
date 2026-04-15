@@ -21,9 +21,7 @@ public class MapGen {
         if (this._funcs != null) { throw new MethodAccessException("already in use"); }
         var funcs = new MapGenFuncs(
             (x, y, z) => game.SpawnCube(new((int)x, (int)y, (int)z)),
-            () => {
-                this._funcs = null;
-            } //Console.WriteLine("Done")
+            () => this._funcs = null
         );
         this._funcs = funcs;
         GD.Print(game);
